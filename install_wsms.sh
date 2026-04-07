@@ -305,18 +305,159 @@ EOF
 # 11. wp-help.sh
 deploy "wp-help.sh" << 'EOF'
 #!/bin/bash
+# =================================================================
+# 🆘 WSMS PRO v4.0 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
+source $HOME/scripts/wsms-config.sh
+
+# Professional UI Colors
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'
+PURPLE='\033[0;35m'; CYAN='\033[0;36m'; WHITE='\033[1;37m'; NC='\033[0m'
+
 clear
-echo -e "\033[0;36mWSMS PRO 4.0 - COMMAND REFERENCE\033[0m"
-echo "---------------------------------------------------------"
-echo -e "\033[0;32mwp-status\033[0m      : Executive Health Dashboard"
-echo -e "\033[0;32mwp-fleet\033[0m       : Version & Technical Debt Audit"
-echo -e "\033[0;32mwp-update-safe\033[0m : Production-Safe Update Path (Backup -> Patch)"
-echo -e "\033[0;32mnas-sync\033[0m       : Manually trigger Off-site Sync"
-echo -e "\033[0;32mwp-backup-ui\033[0m   : Interactive CLI Menu for manual recovery"
-echo -e "\033[0;32mred-robin\033[0m      : Bare-metal OS Configuration Backup"
-echo -e "\033[0;32mclamav-scan\033[0m    : Daily Malware recursive scan"
-echo "---------------------------------------------------------"
+echo -e "${WHITE}🆘 WORDPRESS MANAGEMENT SYSTEM - MASTER REFERENCE GUIDE${NC}"
+echo -e "${BLUE}=========================================================${NC}"
+echo -e "⏰ System Time: $(date)"
+echo -e "📦 Version:     4.0 (Production Ready)"
+echo ""
+
+show_section() { echo -e "${CYAN}▶ $1${NC}"; echo -e "${CYAN}$(printf '%.0s-' {1..60})${NC}"; }
+show_cmd() { printf "  ${GREEN}%-20s${NC} | %s\n" "$1" "$2"; }
+
+# ==================== QUICK START ====================
+show_section "⚡ QUICK START - MOST USED"
+show_cmd "wp-status"          "Executive overview: Hardware + Fleet Health"
+show_cmd "wp-fleet"           "Monitor WordPress versions and pending updates"
+show_cmd "wp-update-safe"     "Recommended Update Path (Backup -> Patch -> Clean)"
+show_cmd "wp-backup-lite"     "Fast daily assets backup (DB + Themes/Plugins)"
+show_cmd "nas-sync"           "Manual trigger for off-site NAS synchronization"
+echo ""
+
+# ==================== DIAGNOSTICS & OBSERVABILITY ====================
+show_section "🔍 OBSERVABILITY & MONITORING"
+show_cmd "system-diag"        "Full hardware audit (CPU, RAM, Disk, Services)"
+show_cmd "wp-audit"           "Deep-dive site diagnostics & Site-Health scores"
+show_cmd "wp-cli-validator"   "Verify WP-CLI connectivity & isolation for all sites"
+show_cmd "scripts-dir"        "List all underlying WSMS automation files"
+echo ""
+
+# ==================== MAINTENANCE & SECURITY ====================
+show_section "🛠️  MAINTENANCE & SECURITY ORCHESTRATION"
+show_cmd "wp-update-all"      "Trigger unattended fleet-wide patching"
+show_cmd "wp-fix-perms"       "Enforce security isolation and restore ACL policies"
+show_cmd "clamav-scan"        "Execute daily malware signature recursive audit"
+show_cmd "clamav-deep-scan"   "Execute root-level system-wide malware audit (/)"
+echo ""
+
+# ==================== BACKUP & DISASTER RECOVERY ====================
+show_section "💾 BACKUP & DISASTER RECOVERY (DR)"
+show_cmd "wp-backup-lite"     "Daily assets backup (14-day local retention)"
+show_cmd "wp-backup-full"     "Full bare-metal snapshots (35-day local retention)"
+show_cmd "wp-backup-ui"       "Interactive CLI menu for on-demand recovery"
+show_cmd "red-robin"          "Emergency OS-state and configuration backup"
+show_cmd "backup-size"        "Audit current storage consumption per repository"
+show_cmd "backup-clean"       "Manually trigger heuristic smart retention engine"
+echo ""
+
+# ==================== HYBRID CLOUD SYNC (NAS) ====================
+show_section "🔄 OFF-SITE SYNC (SYNOLOGY NAS)"
+show_cmd "nas-sync"           "Uplink all local archives to remote NAS vault"
+show_cmd "nas-sync-status"    "Check result of the last sync operation"
+show_cmd "nas-sync-logs"      "Stream synchronization logs in real-time"
+echo -e "  ${YELLOW}📋 Off-site Context:${NC}"
+echo -e "     • Remote Host: $NAS_HOST:$NAS_PORT"
+echo -e "     • Remote Path: $NAS_PATH"
+echo -e "     • Policy:      120 days retention (Ensures min $NAS_MIN_KEEP_COPIES copies)"
+echo ""
+
+# ==================== DATABASE MANAGEMENT ====================
+show_section "🗄️  DATABASE OPERATIONS (MySQL)"
+show_cmd "db-backup all"      "Force snapshots for every managed database"
+show_cmd "db-backup list"     "List all available database snapshots"
+show_cmd "db-backup [site]"   "Targeted snapshot for a specific instance"
+echo ""
+
+# ==================== CYBERSECURITY DETAILS ====================
+show_section "🦠 CYBERSECURITY (ClamAV & Firewall)"
+show_cmd "clamav-status"      "Monitor ClamAV protection daemon health"
+show_cmd "clamav-update"      "Manually synchronize virus definitions (freshclam)"
+show_cmd "clamav-logs"        "Review security audit history and detections"
+show_cmd "clamav-quarantine"  "Inspect isolated malicious files in /var/quarantine"
+show_cmd "sudo ufw status"    "Verify system firewall rules and active jails"
+echo ""
+
+# ==================== SERVER ADMINISTRATION ====================
+show_section "🖥️  SERVER ADMINISTRATION"
+show_cmd "sudo apt update"    "Refresh system software repositories"
+show_cmd "sudo apt upgrade"   "Deploy latest OS-level security patches"
+show_cmd "sudo reboot"        "Execute safe system restart"
+show_cmd "htop"               "Interactive real-time process monitoring"
+echo ""
+
+# ==================== LOGS & JOURNALS ====================
+show_section "📊 SYSTEM LOGS & JOURNALS"
+show_cmd "nas-sync-logs"      "NAS synchronization event stream"
+show_cmd "clamav-logs"        "Antivirus scan result stream"
+show_cmd "tail -f /var/log/nginx/error.log" "Web server error event stream"
+show_cmd "journalctl -u php8.4-fpm -f"     "PHP engine event stream"
+echo ""
+
+# ==================== AUTOMATION (CRON) ====================
+show_section "⏰ AUTOMATION SCHEDULE (CRONTAB)"
+echo -e "  ${BLUE}Daily 01:00${NC} | Malware definition updates"
+echo -e "  ${BLUE}Daily 02:00${NC} | Off-site synchronization to Synology NAS"
+echo -e "  ${BLUE}Daily 03:00${NC} | Proactive malware audit (/home + /var/www)"
+echo -e "  ${BLUE}Daily 04:00${NC} | Smart Retention Engine (Resource cleanup)"
+echo -e "  ${BLUE}Sunday 06:00${NC}| Fleet-wide security patching (Core/Plugins)"
+echo -e "  ${BLUE}Sun/Wed 02:00${NC}| High-frequency Lite backups"
+echo -e "  ${BLUE}1st Day 03:00${NC}| Full Bare-metal system snapshots"
+echo ""
+
+# ==================== DATA RETENTION POLICY ====================
+show_section "📋 DATA RETENTION POLICIES"
+echo -e "  ${YELLOW}⚡ Lite Assets:${NC} $RETENTION_LITE days | ${YELLOW}💾 Full Snapshots:${NC} $RETENTION_FULL days"
+echo -e "  ${YELLOW}🗄️ MySQL Dumps:${NC}  $RETENTION_MYSQL days | ${YELLOW}🔄 Cloud NAS Vault:${NC} $NAS_RETENTION_DAYS days"
+echo -e "  ${RED}⚠️ EMERGENCY MODE:${NC} Keeps only 2 latest copies when disk usage > $DISK_ALERT_THRESHOLD%"
+echo -e "  ${GREEN}🛡️ SAFETY RULE:${NC} System ALWAYS preserves the last valid copy (Safety First)."
+echo ""
+
+# ==================== DYNAMIC SITE SHORTCUTS ====================
+show_section "📌 DYNAMIC SITE SHORTCUTS"
+for site in "${SITES[@]}"; do
+    IFS=':' read -r name path user <<< "$site"
+    echo -e "  ${YELLOW}wp-$name${NC} | ${YELLOW}wp-backup-$name${NC}"
+done
+echo ""
+
+# ==================== INCIDENT RESPONSE (SOP) ====================
+show_section "🚨 INCIDENT RESPONSE (SOP)"
+echo -e "  ${RED}Disk Usage >$DISK_ALERT_THRESHOLD%?${NC}  → Run 'backup-clean' to reclaim space."
+echo -e "  ${RED}Permission Denied?${NC}      → Run 'wp-fix-perms' to realign ACLs."
+echo -e "  ${RED}Update Failure?${NC}        → Run 'wp-fix-perms' then 'wp-update-safe'."
+echo -e "  ${RED}Sync Failure?${NC}          → Check SSH keys and run 'nas-sync' manually."
+echo ""
+
+# ==================== SCRIPT INVENTORY ====================
+show_section "📜 INFRASTRUCTURE MODULES (Physical Files)"
+ls -la ~/scripts/ 2>/dev/null | grep "^-" | awk '{print "  📜 " $9}' | sed 's/\.sh//' | sort
+echo ""
+
+echo -e "${GREEN}✅ ALL SYSTEMS OPERATIONAL${NC}"
+echo -e "${BLUE}💡 PRO-TIP:${NC} Use 'wp-status' for an instant infrastructure health report."
+echo ""
 EOF
+echo ""
+
+# ==================== AVAILABLE SCRIPTS ====================
+show_section "📜 INFRASTRUCTURE MODULES (Physical Files)"
+ls -la ~/scripts/ 2>/dev/null | grep "^-" | awk '{print "  📜 " $9}' | sed 's/\.sh//' | sort
+echo ""
+
+echo -e "${GREEN}✅ SYSTEM OPERATIONAL${NC}"
+echo -e "${BLUE}💡 PRO-TIP:${NC} Start your shift with 'wp-status' for an instant fleet audit."
+echo ""
 
 # 12. wp-interactive-backup-tool.sh
 deploy "wp-interactive-backup-tool.sh" << 'EOF'
@@ -387,23 +528,60 @@ echo -e "${GREEN}✅ All 17 operational modules deployed.${NC}"
 echo -e "\n${BLUE}🔧 Phase 5: Provisioning Shell Aliases...${NC}"
 RC_FILE="$HOME/.bashrc"
 sed -i '/# WSMS/d' "$RC_FILE" 2>/dev/null
+
 cat >> "$RC_FILE" << 'EOF'
 # ==================== WSMS PRO ALIASES ==================== # WSMS
 export SCRIPTS_DIR="$HOME/scripts"
+
+# Executive & Help
 alias wp-help="bash $SCRIPTS_DIR/wp-help.sh" # WSMS
 alias wp-status="bash $SCRIPTS_DIR/server-health-audit.sh" # WSMS
+alias system-diag="wp-status" # WSMS
+
+# Diagnostics & Observability
 alias wp-fleet="bash $SCRIPTS_DIR/wp-fleet-status-monitor.sh" # WSMS
+alias wp-audit="bash $SCRIPTS_DIR/wp-multi-instance-audit.sh" # WSMS
+alias wp-cli-validator="bash $SCRIPTS_DIR/wp-cli-infrastructure-validator.sh" # WSMS
+alias scripts-dir="ls -la $SCRIPTS_DIR" # WSMS
+
+# Maintenance & Security
 alias wp-update-all="bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh" # WSMS
 alias wp-update-safe="wp-backup-lite && sleep 5 && wp-update-all" # WSMS
 alias wp-fix-perms="bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh" # WSMS
+
+# Backups & Recovery
 alias wp-backup-lite="bash $SCRIPTS_DIR/wp-essential-assets-backup.sh" # WSMS
 alias wp-backup-full="bash $SCRIPTS_DIR/wp-full-recovery-backup.sh" # WSMS
 alias wp-backup-ui="bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh" # WSMS
 alias red-robin="bash $SCRIPTS_DIR/red-robin-system-backup.sh" # WSMS
 alias db-backup="bash $SCRIPTS_DIR/mysql-backup-manager.sh" # WSMS
-alias backup-clean="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh" # WSMS
+
+# Retention & Disk Management
+alias backup-clean="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh apply" # WSMS
+alias backup-size="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh list" # WSMS
+
+# Hybrid Cloud Sync (NAS)
 alias nas-sync="bash $SCRIPTS_DIR/nas-sftp-sync.sh" # WSMS
+alias nas-sync-logs="tail -f $HOME/logs/nas_sync.log" # WSMS
+alias nas-sync-status="echo '📊 Last NAS sync:'; tail -10 $HOME/logs/nas_sync.log 2>/dev/null || echo 'No logs yet'" # WSMS
+
+# CyberSecurity (ClamAV)
 alias clamav-scan="bash $SCRIPTS_DIR/clamav-auto-scan.sh" # WSMS
+alias clamav-deep-scan="bash $SCRIPTS_DIR/clamav-full-scan.sh" # WSMS
+alias clamav-status="sudo systemctl status clamav-daemon --no-pager | head -15" # WSMS
+alias clamav-update="sudo freshclam" # WSMS
+alias clamav-logs="sudo tail -f /var/log/clamav/auto_scan.log" # WSMS
+alias clamav-quarantine="sudo ls -la /var/quarantine/" # WSMS
+alias clamav-clean-quarantine="sudo rm -rf /var/quarantine/* && echo '✅ Quarantine cleaned'" # WSMS
+EOF
+
+# Dynamic per-site shortcuts
+for site in "${MANAGED_SITES[@]}"; do
+    IFS=':' read -r name path user <<< "$site"
+    echo "alias wp-$name=\"sudo -u $user wp --path=$path\"" >> "$RC_FILE" # WSMS
+    echo "alias wp-backup-$name=\"db-backup $name && wp-backup-lite\"" >> "$RC_FILE" # WSMS
+done
+echo -e "${GREEN}✅ Aliases aligned with Help System.${NC}"
 EOF
 
 # Dynamic per-site aliases
