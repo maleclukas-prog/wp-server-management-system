@@ -1,28 +1,21 @@
-🚀 WORDPRESS MANAGEMENT SYSTEM (WSMS) - IMPLEMENTATION GUIDE
-This guide provides a step-by-step walkthrough for deploying a professional-grade WordPress management and disaster recovery system on Ubuntu Server.
+# 🚀 WSMS Deployment & Operations Guide
 
-📋 TABLE OF CONTENTS
-Directory Infrastructure
+This document provides a comprehensive, step-by-step Standard Operating Procedure (SOP) for deploying the WordPress Management System (WSMS) on a production-ready Ubuntu Server environment.
 
-Script Deployment
+## 📋 Table of Contents
+1. Infrastructure Initialization
+2. Modular Script Deployment
+3. Shell Environment Provisioning
+4. Automated Task Scheduling (Crontab)
+5. System Verification
+6. Incident Response & SOP (Troubleshooting)
 
-Environment Aliases
+---
 
-Automation (Crontab)
+### 1. DIRECTORY INFRASTRUCTURE
 
-System Validation
-
-Troubleshooting & SOP
-
-1. DIRECTORY INFRASTRUCTURE
 Initialize the environment by creating a dedicated structure for scripts, security, and multi-tier backups.
 
-code
-Bash
-
-download
-
-content_copy
 
 expand_less
 # Create operational directories
@@ -36,15 +29,10 @@ mkdir -p ~/mysql-backups
 sudo mkdir -p /var/quarantine
 sudo mkdir -p /var/log/clamav
 sudo chown $USER:$USER /var/log/clamav
-2. SCRIPT DEPLOYMENT
+
+### 2. SCRIPT DEPLOYMENT
 Deploy the core modules of the system. Replace the placeholders with the English versions of the scripts provided in our previous steps.
 
-code
-Bash
-
-download
-
-content_copy
 
 expand_less
 # --- CORE RETENTION ENGINE ---
@@ -102,15 +90,10 @@ EOF
 
 # Set global execution permissions
 chmod +x ~/scripts/*.sh
-3. ENVIRONMENT ALIASES
+
+### 3. ENVIRONMENT ALIASES
 Add these aliases to your ~/.bashrc to increase operational velocity.
 
-code
-Bash
-
-download
-
-content_copy
 
 expand_less
 cat >> ~/.bashrc << 'EOF'
@@ -160,26 +143,15 @@ alias wp-status="system-diag && wp-fleet"
 EOF
 
 source ~/.bashrc
-4. AUTOMATION (CRONTAB)
+
+### 4. AUTOMATION (CRONTAB)
 Schedule the following tasks for fully unattended infrastructure management.
 
-code
-Bash
-
-download
-
-content_copy
 
 expand_less
 crontab -e
 Add the following schedule:
 
-code
-Bash
-
-download
-
-content_copy
 
 expand_less
 # --- WSMS AUTOMATED SCHEDULE ---
@@ -204,15 +176,10 @@ expand_less
 
 # 03:00 - Full System Snapshot (1st of Month)
 0 3 1 * * /home/ubuntu/scripts/wp-full-recovery-backup.sh
-5. SYSTEM VALIDATION
+
+### 5. SYSTEM VALIDATION
 Verify the deployment using the following diagnostic commands:
 
-code
-Bash
-
-download
-
-content_copy
 
 expand_less
 # Check if all scripts are accessible
@@ -229,7 +196,8 @@ wp-backup-ui
 
 # Verify help system
 wp-help
-6. TROUBLESHOOTING & SOP
+
+### 6. TROUBLESHOOTING & SOP
 Issue	Standard Operating Procedure (SOP)
 Low Disk Space	Run backup-clean to trigger the smart retention engine.
 Permission Errors	Execute wp-fix-perms to realign ownership and security isolation.
