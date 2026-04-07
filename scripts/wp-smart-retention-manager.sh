@@ -1,77 +1,45 @@
 #!/bin/bash
 # =================================================================
-# 🧠 SMART RETENTION MANAGER - DYNAMIC VERSION
+# 🧠 SMART RETENTION & DISK SPACE MANAGER (PRO)
+# Description: Heuristic cleanup engine that manages disk space 
+#              while ensuring the "Last Known Good" backup is safe.
 # =================================================================
-source ~/scripts/wsms-config.sh
+source $HOME/scripts/wsms-config.sh
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
 
-BACKUP_DIRS=("$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MANUAL_DIR" "$BACKUP_MYSQL_DIR")
-declare -A RETENTION=(
-    ["$BACKUP_LITE_DIR"]=$RETENTION_LITE
-    ["$BACKUP_FULL_DIR"]=$RETENTION_FULL
-    ["$BACKUP_MANUAL_DIR"]=$RETENTION_LITE
-    ["$BACKUP_MYSQL_DIR"]=$RETENTION_MYSQL
-)
+echo -e "${CYAN}🧹 INITIATING SMART RETENTION ENGINE...${NC}"
 
-apply_retention() {
-    local dir="$1"
-    local days="${RETENTION[$dir]}"
-    [ ! -d "$dir" ] && return
-    
-    echo -e "${CYAN}📂 Auditing: $(basename "$dir") (Policy: $days days)${NC}"
-    
-    # Find latest file per pattern
-    declare -A latest
-    while IFS= read -r file; do
-        [[ -z "$file" ]] && continue
-        if [[ "$file" =~ (backup-[a-z0-9-]+|mysql-[a-z0-9-]+) ]]; then
-            pattern="${BASH_REMATCH[1]}"
-            mtime=$(stat -c %Y "$file")
-            if [ -z "${latest[$pattern]}" ] || [ "$mtime" -gt "${latest[$pattern]}" ]; then
-                latest[$pattern]="$mtime"
-                latest["${pattern}_path"]="$file"
+# Logic: Check current disk usage
+usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+
+apply_policy() {
+    local dir=$1
+    local days=$2
+    echo -e "📂 Auditing: $(basename $dir)"
+
+    if [ "$usage" -ge "$DISK_LIMIT" ]; then
+        echo -e "   ${RED}⚠️ EMERGENCY MODE ($usage% usage): Keeping only 2 latest copies!${NC}"
+        # Keeps 2 latest, deletes the rest regardless of age
+        ls -t $dir/* 2>/dev/null | tail -n +3 | xargs -d '\n' rm -f 2>/dev/null
+    else
+        echo -e "   ✅ Standard Mode ($usage%): Policy $days days."
+        # Standard retention but PROTECTS the last copy
+        files_to_check=$(find $dir -type f -mtime +$days 2>/dev/null)
+        for f in $files_to_check; do
+            total_in_dir=$(ls -1 $dir | wc -l)
+            if [ "$total_in_dir" -gt 1 ]; then
+                rm -f "$f"
+                echo -e "   ${YELLOW}🗑️ Purged expired:${NC} $(basename "$f")"
+            else
+                echo -e "   ${GREEN}🛡️ Protected:${NC} $(basename "$f") (Last available copy)"
             fi
-        fi
-    done < <(find "$dir" -type f 2>/dev/null)
-    
-    # Delete expired files (keep latest per pattern)
-    local deleted=0
-    for file in "$dir"/*; do
-        [ ! -f "$file" ] && continue
-        mtime=$(stat -c %Y "$file")
-        age=$((( $(date +%s) - mtime ) / 86400))
-        
-        if [ "$age" -gt "$days" ]; then
-            # Check if this is the latest for its pattern
-            is_latest=0
-            for p in "${!latest[@]}"; do
-                [[ "$p" =~ _path$ ]] && continue
-                if [ "$file" = "${latest[${p}_path]}" ]; then
-                    is_latest=1; break
-                fi
-            done
-            
-            if [ "$is_latest" -eq 0 ]; then
-                rm -f "$file"
-                ((deleted++))
-            fi
-        fi
-    done
-    
-    echo -e "   🗑️  Deleted: $deleted files"
+        done
+    fi
 }
 
-case "${1:-list}" in
-    "list")
-        echo "📊 BACKUP REPOSITORY OVERVIEW:"
-        for dir in "${BACKUP_DIRS[@]}"; do
-            [ -d "$dir" ] && echo "   📂 $(basename "$dir"): $(find "$dir" -type f | wc -l) files ($(du -sh "$dir" 2>/dev/null | cut -f1))"
-        done
-        ;;
-    "apply")
-        echo -e "${YELLOW}🔄 Applying retention policies...${NC}"
-        for dir in "${BACKUP_DIRS[@]}"; do apply_retention "$dir"; done
-        echo -e "${GREEN}✅ Retention completed${NC}"
-        ;;
-esac
+apply_policy "$HOME/backups-lite" "$RET_LITE"
+apply_policy "$HOME/backups-full" "$RET_FULL"
+apply_policy "$HOME/mysql-backups" "$RET_MYSQL"
+
+echo -e "${GREEN}✅ RETENTION CYCLE COMPLETED.${NC}"

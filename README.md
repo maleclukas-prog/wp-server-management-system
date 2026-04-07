@@ -1,102 +1,125 @@
-# 🚀 WSMS - WordPress Server Management System
+# 🚀 WSMS PRO - WordPress Server Management System
 
 **Version:** 4.0 | **Status:** Production Ready | **License:** MIT
 
-[![Bash](https://img.shields.io/badge/Shell-Bash-4EAA25?logo=gnubash)](https://www.gnu.org/software/bash/)
-[![WordPress](https://img.shields.io/badge/WordPress-6.0+-21759B?logo=wordpress)](https://wordpress.org)
-[![Ubuntu](https://img.shields.io/badge/Ubuntu-22.04LTS+-E95420?logo=ubuntu)](https://ubuntu.com)
-[![ClamAV](https://img.shields.io/badge/ClamAV-Integrated-00D4AA?logo=clamav)](https://clamav.net)
-
-> **The ultimate automation ecosystem for managing professional WordPress multi-tenant fleets on Ubuntu Server.**  
-> Optimized for Security, Observability, and Automated Disaster Recovery.
+> **The ultimate automation suite for professional WordPress multi-site fleet management on Ubuntu Server.**  
+> Built for High Availability, Security Compliance, and Automated Disaster Recovery.
 
 ---
 
 ## 📖 Overview
-
-**WSMS** is a production-grade suite of 17 specialized automation modules designed to bridge the gap between server-side administration and WordPress application maintenance. It replaces manual technical debt with a modular, scalable automation layer.
+**WSMS PRO** is a production-grade automation ecosystem designed to solve the complexities of managing multi-tenant WordPress infrastructures. It uses a **Modular Architecture** with a **Single Source of Truth** (centralized configuration), replacing manual technical debt with a scalable automation layer.
 
 ### 🌟 Core Pillars
-
-- 🔍 **Unified Observability** - Real-time hardware diagnostics and fleet-wide health audits.
-- 🛡️ **Infrastructure Hardening** - Multi-tenant isolation using system-user orchestration and granular ACLs.
-- 💾 **Disaster Recovery** - Multi-tier backup architecture (Lite/Full/MySQL) with Hybrid Cloud synchronization (Synology NAS).
-- 🔄 **Lifecycle Automation** - Unattended patching for WordPress Core, Plugins, and Themes with pre-update safety checks.
-- 🧹 **Self-Healing Logic** - Heuristic retention engine that prevents disk exhaustion using "Last-Copy-Safe" policies.
+- 🔍 **Fleet Observability** - Real-time hardware diagnostics and application health audits.
+- 🛡️ **Infrastructure Hardening** - Security isolation using isolated system-user contexts and ACLs.
+- 💾 **Disaster Recovery** - Multi-tier backup strategy (Lite/Full/MySQL) with Hybrid Cloud sync (NAS).
+- 🧹 **Self-Healing Storage** - Heuristic retention engine with "Last-Copy-Safe" data preservation.
 
 ---
 
-## 🚀 Quick Deployment (One-Command Installer)
-
-Deploy the entire management environment, including all 17 modules and automated cron schedules, using the Master Installer:
+## 🚀 Quick Deployment
+Deploy the entire environment (17 modules + Cron + Aliases) using the Master Installer:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/maleclukas-prog/wp-server-management-system/main/install-wsms.sh | bash
-Note: After deployment, run source ~/.bashrc to activate the command center.
+# 1. Download the installer
+wget https://raw.githubusercontent.com/maleclukas-prog/wp-server-management-system/main/install_wsms.sh
 
-📦 System Architecture
-WSMS uses a Modular Architecture where all 17 scripts communicate through a centralized configuration file (wsms-config.sh), ensuring a "Single Source of Truth."
+# 2. Edit your site details inside the installer
+nano install_wsms.sh
 
-Directory Structure
-code
-Text
-/home/ubuntu/
-├── scripts/                    # Core Automation Engine (17 Modules)
-│   ├── wsms-config.sh         # ⚙️ CENTRAL REGISTRY (Manage sites here)
-│   ├── server-health-audit.sh  # Executive hardware dashboard
-│   ├── wp-fleet-monitor.sh    # Multi-site version inventory
-│   ├── wp-automated-patch.sh  # Patching engine
-│   ├── infrastructure-perms.sh # Security & ACL enforcement
-│   └── [12 more modules...]   # (See Technical Reference)
-├── backups-lite/              # Daily assets cycle
-├── backups-full/              # Monthly bare-metal snapshots
-├── mysql-backups/             # Compressed SQL repositories
-└── logs/                      # Execution & Sync audit trails
+# 3. Run deployment
+chmod +x install_wsms.sh
+./install_wsms.sh
 🛠️ Operational Dashboard (Aliases)
-WSMS provisions high-velocity aliases to your shell environment for rapid infrastructure management.
-
-🔍 Diagnostics & Monitoring
 Command	Description
 wp-status	Executive Overview: Hardware metrics + fleet health in one view.
-system-diag	Root-level hardware audit (CPU, RAM, Disk I/O).
-wp-fleet	Fleet inventory audit (Versions, technical debt, updates).
-wp-audit	Deep-dive application diagnostics and security vitals.
-🔄 Maintenance & Security
-Command	Description
-wp-update-safe	Production Path: Backup -> Fleet-wide Update -> Optimization.
-wp-fix-perms	Re-enforce tenant isolation and security ACLs.
-clamav-scan	Initiate recursive daily malware signature audit.
-💾 Backup & Data Durability
-Command	Description
+wp-fleet	Fleet inventory audit (Versions, plugin updates).
+wp-update-safe	Production Path: Backup -> Patch -> Verify -> Optimize.
+wp-fix-perms	Re-enforce security isolation and ACL policies.
 nas-sync	Manual trigger for off-site SFTP synchronization to NAS.
-wp-backup-ui	Interactive CLI menu for on-demand recovery tasks.
-red-robin	Critical OS state and configuration backup.
-backup-clean	Manually trigger the heuristic smart retention engine.
-⏰ Automation Orchestration
-The system automates the boring stuff so you can focus on scale. Default Cron schedule:
-
-01:00 - Malware signature updates (freshclam).
-
-02:00 - Off-site sync to remote NAS vault.
-
-03:00 - Proactive malware audit.
-
-04:00 - Heuristic storage cleanup.
-
-06:00 (Sun) - Fleet-wide security patching window.
-
-🔧 Incident Response (SOP)
-Scenario	Recovery Action
-Storage >80%	System triggers backup-clean (Emergency Purge Mode).
-Permission Drift	Run wp-fix-perms to standardize isolated ownership.
-Sync Failure	Inspect ~/logs/nas-sync.log and verify NAS SSH keys.
-Site Integrity	Run wp-fleet to identify specific service anomalies.
+clamav-scan	Initiate recursive daily malware signature audit.
 📄 Technical Documentation
-Detailed information for each module can be found in the accompanying guides:
+Deployment Guide - Step-by-step Standard Operating Procedure.
 
-Deployment Guide - Step-by-step installation SOP.
+Technical Reference - Deep dive into script logic.
 
-Technical Module Reference - Deep dive into script logic.
+👤 Maintainer: Lukasz Malec
+
+code
+Code
+---
+
+### 2. DEPLOYMENT_GUIDE.md (Instrukcja wdrożenia)
+*Zaktualizowany o proces edycji pliku `wsms-config.sh`.*
+
+```markdown
+# 🚀 WSMS Deployment & Operations Guide (v4.0)
+
+This document provides the Standard Operating Procedure (SOP) for deploying the WSMS PRO environment.
+
+## 📋 Deployment Workflow
+
+### 1. Centralized Configuration
+WSMS PRO uses a centralized registry model. Before running the installer, define your sites and NAS parameters in the `MANAGED_SITES` array:
+- **Format:** `Identifier:Path:SystemUser`
+- **Location:** Inside `install_wsms.sh` (or `~/scripts/wsms-config.sh` after install).
+
+### 2. Automated Installation
+The `install_wsms.sh` script performs the following:
+1. Initializes the directory structure.
+2. Installs dependencies (`WP-CLI`, `ClamAV`, `ACL`, `bc`).
+3. Deploys 17 specialized modules to `~/scripts/`.
+4. Provisions shell aliases in `~/.bashrc`.
+5. Schedules automated maintenance in `crontab`.
+
+### 3. Verification
+After installation, run:
+```bash
+source ~/.bashrc
+wp-status
+🔧 Incident Response (Troubleshooting)
+Scenario	Action
+Disk >80%	Run backup-clean. System triggers "Emergency Purge".
+Permission Errors	Run wp-fix-perms.
+Sync Failure	Inspect ~/logs/nas_sync.log.
+code
+Code
+---
+
+### 3. TECHNICAL_REFERENCE.md (Opis techniczny)
+*Zaktualizowany o listę wszystkich 17 modułów.*
+
+```markdown
+# 📜 WSMS Technical Module Reference
+
+### 🛠 The Engine: `wsms-config.sh`
+The "Brain" of the system. All 17 scripts source this file to retrieve site paths, usernames, and NAS credentials.
+
+### 🔍 Diagnostics & Monitoring
+1. `server-health-audit.sh` - Deep hardware & services diagnostics.
+2. `wp-fleet-status-monitor.sh` - Version tracking & update auditing.
+3. `wp-multi-instance-audit.sh` - Deep site-health and DB integrity check.
+4. `wp-cli-infrastructure-validator.sh` - Pre-flight connectivity test.
+
+### 🛡️ Security & Hardening
+5. `infrastructure-permission-orchestrator.sh` - Enforces isolation and ACLs.
+6. `clamav-auto-scan.sh` - Daily targeted malware detection.
+7. `clamav-full-scan.sh` - Weekly root-level system audit.
+
+### 💾 Backup & Recovery
+8. `wp-full-recovery-backup.sh` - Full bare-metal site snapshots.
+9. `wp-essential-assets-backup.sh` - Lean high-frequency asset backups.
+10. `mysql-backup-manager.sh` - Dynamic DB snapshot engine (Regex based).
+11. `standalone-mysql-backup-engine.sh` - Low-level mysqldump fallback.
+12. `red-robin-system-backup.sh` - Bare-metal OS config recovery.
+
+### 🔄 Automation & Interface
+13. `nas-sftp-sync.sh` - Off-site synchronization with Synology NAS.
+14. `wp-automated-maintenance-engine.sh` - Fleet-wide patching & optimization.
+15. `wp-smart-retention-manager.sh` - Heuristic disk cleanup engine.
+16. `wp-interactive-backup-tool.sh` - CLI menu for manual tasks.
+17. `wp-help.sh` - Central command reference.
 
 🤝 Maintainer & License
 👤 Maintainer: Lukasz Malec

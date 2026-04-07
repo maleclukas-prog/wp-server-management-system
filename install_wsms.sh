@@ -1,8 +1,8 @@
 cat > ~/install_wsms.sh << 'INSTALL_EOF'
 #!/bin/bash
 # =================================================================
-# 🚀 WSMS PRO - MASTER INSTALLATION ORCHESTRATOR (DYNAMIC CONFIG)
-# Version: 4.0 (Full Production Ready)
+# 🚀 WSMS PRO - MASTER INSTALLATION ORCHESTRATOR
+# Version: 4.0 (Ultimate Production Edition)
 # Description: Complete automated deployment of WSMS infrastructure
 # Author: Lukasz Malec / GitHub: maleclukas-prog
 # =================================================================
@@ -10,12 +10,11 @@ cat > ~/install_wsms.sh << 'INSTALL_EOF'
 set -e
 
 # =================================================================
-# ⚙️ INFRASTRUCTURE CONFIGURATION - EDIT ONLY HERE!
-# Format: "Identifier:PathToPublicHtml:SystemUser"
+# ⚙️ GLOBAL INFRASTRUCTURE CONFIGURATION - EDIT ONLY HERE!
 # =================================================================
 MANAGED_SITES=(
     "Site_nick:/var/www/your_site/public_html:your_site"
-    "Site_nick:/var/www/your_site/public_html:your_sitet"
+    "Site_nick:/var/www/your_site/public_html:your_site"
     "Site_nick:/var/www/your_site/public_html:your_site"
 )
 
@@ -23,8 +22,8 @@ MANAGED_SITES=(
 NAS_HOST="your_server_details.synology.me"
 NAS_PORT="22"
 NAS_USER="admin"
-NAS_PATH="/homes/admi/server_backups"
-NAS_SSH_KEY="$HOME/.ssh/Your_id_rsa_KEY"
+NAS_PATH="/homes/admin/server_backups"
+NAS_SSH_KEY="$HOME/.ssh/Your_id_rsa-key"
 # =================================================================
 
 # UI Colors
@@ -32,15 +31,15 @@ BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
 
 echo -e "${CYAN}==========================================================${NC}"
-echo -e "${CYAN}   WSMS PRO - MASTER INSTALLER (FULL VERSION 4.0)         ${NC}"
+echo -e "${CYAN}   WSMS PRO - ULTIMATE MASTER INSTALLER (v4.0)            ${NC}"
 echo -e "${CYAN}==========================================================${NC}"
 
 # ==================== PHASE 1: INFRASTRUCTURE ====================
 echo -e "\n${BLUE}📂 Phase 1: Initializing Infrastructure...${NC}"
 DIRS=("$HOME/scripts" "$HOME/backups-lite" "$HOME/backups-full" 
-      "$HOME/backups-manual" "$HOME/mysql-backups" "$HOME/logs")
+      "$HOME/backups-manual" "$HOME/backups-mysqldump" "$HOME/mysql-backups" "$HOME/logs")
 for dir in "${DIRS[@]}"; do
-    mkdir -p "$dir" && echo -e "   ✅ $dir"
+    mkdir -p "$dir" && echo -e "   ✅ Directory ready: $dir"
 done
 sudo mkdir -p /var/quarantine /var/log/clamav
 sudo chown $USER:$USER /var/log/clamav
@@ -49,11 +48,10 @@ echo -e "${GREEN}✅ Infrastructure ready.${NC}"
 # ==================== PHASE 2: DEPENDENCIES ====================
 echo -e "\n${BLUE}🔍 Phase 2: Installing Dependencies...${NC}"
 sudo apt-get update -qq
-sudo apt-get install -y acl clamav clamav-daemon openssh-client bc curl -qq
+sudo apt-get install -y acl clamav clamav-daemon openssh-client bc curl ss -qq
 if ! command -v wp &> /dev/null; then
     curl -s -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-    chmod +x wp-cli.phar
-    sudo mv wp-cli.phar /usr/local/bin/wp
+    chmod +x wp-cli.phar && sudo mv wp-cli.phar /usr/local/bin/wp
 fi
 echo -e "${GREEN}✅ Dependencies verified.${NC}"
 
@@ -85,545 +83,351 @@ export NAS_RETENTION_DAYS NAS_MIN_KEEP_COPIES DISK_ALERT_THRESHOLD
 export SCRIPT_DIR BACKUP_LITE_DIR BACKUP_FULL_DIR BACKUP_MANUAL_DIR BACKUP_MYSQL_DIR LOG_DIR
 EOF
 chmod +x "$HOME/scripts/wsms-config.sh"
-echo -e "   ✅ Config saved: ~/scripts/wsms-config.sh"
-echo -e "   📋 Managed sites: ${#MANAGED_SITES[@]}"
 
-# ==================== PHASE 4: DEPLOY SCRIPTS ====================
-echo -e "\n${BLUE}📝 Phase 4: Deploying 17 Core Modules...${NC}"
+# ==================== PHASE 4: DEPLOY 17 SCRIPTS ====================
+echo -e "\n${BLUE}📝 Phase 4: Deploying 17 Operational Modules...${NC}"
 
 deploy() { echo -e "   📦 ${CYAN}$1${NC}"; cat > "$HOME/scripts/$1"; chmod +x "$HOME/scripts/$1"; }
 
-# 1. SYSTEM DIAGNOSTICS
+# 1. server-health-audit.sh
 deploy "server-health-audit.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-GREEN='\033[0;32m'; RED='\033[0;31m'; BLUE='\033[0;34m'; NC='\033[0m'
-echo -e "${BLUE}🖥️ SYSTEM DIAGNOSTICS${NC}"
-echo "⏰ $(date)"
-echo -e "${BLUE}💻 HARDWARE:${NC}"
-echo "   Host: $(hostname) | CPU: $(nproc) cores | Uptime: $(uptime -p)"
-echo -e "${BLUE}💾 STORAGE:${NC}"
-df -h / /var/www /home 2>/dev/null | grep -v tmpfs | sed 's/^/   /'
-echo -e "${BLUE}🌐 WORDPRESS SITES:${NC}"
+source $HOME/scripts/wsms-config.sh
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
+clear
+echo -e "${BLUE}🖥️  WSMS EXECUTIVE DIAGNOSTICS DASHBOARD${NC}"
+echo "=========================================================="
+echo -e "⏰ Audit Timestamp: $(date)"
+echo -e "💻 System Host:    $(hostname) | OS: $(lsb_release -d | cut -f2)"
+echo "----------------------------------------------------------"
+echo -e "\n${CYAN}📈 SYSTEM LOAD & RESOURCES:${NC}"
+echo "   CPU Cores:    $(nproc)"
+echo "   Uptime:       $(uptime -p)"
+echo "   Load Average: $(uptime | awk -F'load average:' '{print $2}')"
+echo -ne "   Memory:       " && free -h | awk '/^Mem:/ {print $3 "/" $2 " used (" $7 " available)"}'
+echo -e "\n${CYAN}💾 STORAGE AUDIT:${NC}"
+df -h / /var/www /home 2>/dev/null | grep -v "tmpfs" | sed 's/^/   /'
+echo -e "\n${CYAN}🌐 NETWORK EXPOSURE:${NC}"
+echo "   Primary IP: $(hostname -I | awk '{print $1}')"
+ss -tulpn | grep -E ":(80|443|22|3306)" | head -5 | sed 's/^/   /'
+echo -e "\n${CYAN}🛠️  CORE SERVICES STATUS:${NC}"
+for s in nginx apache2 mysql mariadb ssh; do
+    status=$(systemctl is-active "$s" 2>/dev/null || echo "not installed")
+    [ "$status" == "active" ] && echo -e "   ✅ $s: ${GREEN}Active${NC}" || ([ "$status" != "not installed" ] && echo -e "   ❌ $s: ${RED}$status${NC}")
+done
+echo -e "\n${CYAN}🌐 MANAGED WORDPRESS FLEET AUDIT:${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
+    echo -e "   ${YELLOW}[ Site: $name ]${NC}"
     if [ -f "$path/wp-config.php" ]; then
-        echo -e "   ✅ $name: ${GREEN}Active${NC} ($user)"
-    else
-        echo -e "   ❌ $name: ${RED}Missing${NC}"
+        wp_ver=$(sudo -u "$user" wp --path="$path" core version 2>/dev/null || echo "unknown")
+        site_php=$(sudo -u "$user" wp --path="$path" eval "echo PHP_VERSION;" 2>/dev/null || echo "unknown")
+        echo "      - Core: v$wp_ver | PHP: $site_php"
+        id "$user" &>/dev/null && echo -e "      - Security: ${GREEN}User $user (Isolated)${NC}" || echo -e "      - Security: ${RED}User $user missing!${NC}"
+    else echo -e "      - ${RED}CRITICAL: Config missing at $path${NC}"; fi
+done
+echo -e "\n${CYAN}💾 DATA INTEGRITY (BACKUPS):${NC}"
+total_archives=0
+for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
+    if [ -d "$dir" ]; then
+        count=$(find "$dir" -type f | wc -l); size=$(du -sh "$dir" 2>/dev/null | cut -f1)
+        echo "   📂 $(basename "$dir"): $count files ($size)"
+        total_archives=$((total_archives + count))
     fi
 done
-echo -e "${GREEN}✅ DIAGNOSTICS COMPLETE${NC}"
+echo -e "\n${YELLOW}🔔 RECOMMENDATIONS:${NC}"
+free_gb=$(df /home | awk 'NR==2 {print $4}' | sed 's/G//')
+[ "${free_gb%.*}" -lt 5 ] && echo -e "   ⚠️  ${RED}CRITICAL: Low disk space!${NC}" || echo "   ✅ STORAGE: Disk health is optimal."
+[ "$total_archives" -eq 0 ] && echo -e "   ⚠️  ${RED}ALERT: No backups found!${NC}" || echo "   ✅ BACKUPS: Infrastructure cycle is healthy."
+echo -e "\n${GREEN}✅ INFRASTRUCTURE AUDIT COMPLETE${NC}"
 EOF
 
-# 2. FLEET STATUS
+# 2. wp-fleet-status-monitor.sh
 deploy "wp-fleet-status-monitor.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
+source $HOME/scripts/wsms-config.sh
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-echo -e "${CYAN}📊 WORDPRESS FLEET STATUS${NC}"
-total=0; healthy=0
+echo -e "${CYAN}📊 WORDPRESS FLEET INVENTORY AUDIT${NC}"
 for site in "${SITES[@]}"; do
-    IFS=':' read -r name path user <<< "$site"; ((total++))
+    IFS=':' read -r name path user <<< "$site"
     if [ -f "$path/wp-config.php" ]; then
         ver=$(sudo -u "$user" wp --path="$path" core version 2>/dev/null || echo "unknown")
-        plugins=$(sudo -u "$user" wp --path="$path" plugin list --format=count 2>/dev/null || echo "0")
-        echo "   ✅ $name: WP $ver | $plugins plugins"
-        ((healthy++))
-    else
-        echo "   ❌ $name: INACCESSIBLE"
-    fi
+        updates=$(sudo -u "$user" wp --path="$path" plugin list --update=available --format=count 2>/dev/null || echo "0")
+        echo -e "   🌐 $name: Core v$ver | ${YELLOW}Updates pending: $updates${NC}"
+    else echo -e "   ❌ $name: Environment Error at $path"; fi
 done
-echo -e "${CYAN}📈 SUMMARY:${NC} $healthy/$total healthy"
 EOF
 
-# 3. DEEP AUDIT
+# 3. wp-multi-instance-audit.sh
 deploy "wp-multi-instance-audit.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
-echo -e "${CYAN}🔍 DEEP INFRASTRUCTURE AUDIT${NC}"
+source $HOME/scripts/wsms-config.sh
+echo -e "🔍 INITIATING MULTI-SITE DEEP AUDIT"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n${YELLOW}📁 $name${NC}"
-    if [ ! -f "$path/wp-config.php" ]; then
-        echo "   ❌ wp-config.php missing"; continue
-    fi
-    version=$(sudo -u "$user" wp --path="$path" core version 2>/dev/null)
-    echo "   📦 Core: ${GREEN}$version${NC}"
-    if sudo -u "$user" wp --path="$path" db check 2>/dev/null; then
-        echo "   🗃️ Database: ${GREEN}Healthy${NC}"
-    else
-        echo "   🗃️ Database: ${RED}Issues${NC}"
-    fi
-    updates=$(sudo -u "$user" wp --path="$path" plugin list --update=available --format=count 2>/dev/null)
-    [ "$updates" -gt 0 ] && echo "   🔌 Updates: ${YELLOW}$updates available${NC}" || echo "   🔌 Plugins: ${GREEN}Up to date${NC}"
+    echo -e "\n--- Audit for: $name ---"
+    if [ -f "$path/wp-config.php" ]; then
+        sudo -u "$user" wp --path="$path" db check
+        sudo -u "$user" wp --path="$path" plugin list --update=available --format=table
+        sudo -u "$user" wp --path="$path" site-health get --format=csv | head -n 5
+    else echo "❌ Configuration missing."; fi
 done
 EOF
 
-# 4. MAINTENANCE ENGINE
+# 4. wp-automated-maintenance-engine.sh
 deploy "wp-automated-maintenance-engine.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
-echo -e "${CYAN}🔄 MAINTENANCE CYCLE${NC}"
-updates=0; failures=0
+source $HOME/scripts/wsms-config.sh
+echo -e "🔄 ${CYAN}FLEET-WIDE MAINTENANCE ENGINE STARTED${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n${YELLOW}🌐 $name${NC}"
-    [ ! -f "$path/wp-config.php" ] && { echo "   ❌ Invalid"; ((failures++)); continue; }
-    if sudo -u "$user" wp --path="$path" core check-update --format=count 2>/dev/null | grep -q "^[1-9]"; then
-        echo "   📦 Updating core..."
-        sudo -u "$user" wp --path="$path" core update --quiet && ((updates++))
-    fi
-    plugin_updates=$(sudo -u "$user" wp --path="$path" plugin list --update=available --format=count 2>/dev/null)
-    if [ "$plugin_updates" -gt 0 ]; then
-        echo "   🔌 Updating $plugin_updates plugins..."
+    echo -e "\n🔄 Patching Instance: $name"
+    if [ -f "$path/wp-config.php" ]; then
+        sudo -u "$user" wp --path="$path" core update --quiet
         sudo -u "$user" wp --path="$path" plugin update --all --quiet
-        updates=$((updates + plugin_updates))
-    fi
-    sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null
-    sudo -u "$user" wp --path="$path" cache flush --quiet
-    echo "   ✅ Completed"
+        sudo -u "$user" wp --path="$path" core update-db --quiet
+        sudo -u "$user" wp --path="$path" cache flush --quiet
+        echo "   ✅ $name is up-to-date."
+    else echo "   ❌ Failed: Config missing."; fi
 done
-echo -e "\n${CYAN}📊 SUMMARY:${NC} $updates updates, $failures failures"
 EOF
 
-# 5. PERMISSION ORCHESTRATOR
+# 5. infrastructure-permission-orchestrator.sh
 deploy "infrastructure-permission-orchestrator.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
-echo -e "${CYAN}🛡️ PERMISSION AUDIT${NC}"
+source $HOME/scripts/wsms-config.sh
+echo -e "🔐 ${BLUE}ENFORCING SECURITY PERMISSIONS...${NC}"
 sudo systemctl stop nginx 2>/dev/null || true
-for service in $(systemctl list-units --type=service --all --no-legend 2>/dev/null | awk '{print $1}' | grep -E '^php[0-9.]+-fpm.service$'); do
-    sudo systemctl stop "$service" 2>/dev/null || true
-done
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n🌐 $name ($user)"
+    echo "🔧 Fixing permissions for $name (User: $user)"
     if [ -d "$path" ]; then
-        sudo chown -R "$user":"$user" "$path/"
-        sudo find "$path/" -type d -exec chmod 755 {} \;
-        sudo find "$path/" -type f -exec chmod 644 {} \;
-        [ -d "$path/wp-content" ] && sudo chmod -R 775 "$path/wp-content/"
+        sudo chown -R "$user":"$user" "$path"
+        sudo find "$path" -type d -exec chmod 755 {} \;
+        sudo find "$path" -type f -exec chmod 644 {} \;
         [ -f "$path/wp-config.php" ] && sudo chmod 640 "$path/wp-config.php"
-        echo "   ✅ Permissions aligned"
+        command -v setfacl &>/dev/null && sudo setfacl -R -m u:ubuntu:r-x "$path" 2>/dev/null || true
     fi
-done
-for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
-    [ -d "$dir" ] && sudo chown -R "$USER":"$USER" "$dir" && sudo chmod 755 "$dir"
-done
-for service in $(systemctl list-units --type=service --all --no-legend 2>/dev/null | awk '{print $1}' | grep -E '^php[0-9.]+-fpm.service$'); do
-    sudo systemctl start "$service" 2>/dev/null || true
 done
 sudo systemctl start nginx 2>/dev/null || true
-echo -e "\n${GREEN}✅ SECURITY AUDIT COMPLETED${NC}"
+echo -e "✅ ${GREEN}SECURITY POLICIES APPLIED.${NC}"
 EOF
 
-# 6. FULL BACKUP
+# 6. wp-full-recovery-backup.sh
 deploy "wp-full-recovery-backup.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-echo "💾 FULL BACKUP - $(date)"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p "$BACKUP_FULL_DIR"
+source $HOME/scripts/wsms-config.sh
+TS=$(date +%Y%m%d-%H%M%S)
+echo -e "💾 ${BLUE}STARTING FULL FLEET SNAPSHOT...${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n🌐 $name"
-    [ ! -f "$path/wp-config.php" ] && { echo "   ❌ Skipping"; continue; }
-    sudo -u "$user" wp --path="$path" transient delete --expired --quiet 2>/dev/null
-    sudo -u "$user" wp --path="$path" db optimize --quiet 2>/dev/null
-    bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
-    ARCHIVE="$BACKUP_FULL_DIR/backup-full-$name-$TIMESTAMP.tar.gz"
-    sudo tar -czf "$ARCHIVE" -C "$path" --exclude="wp-content/cache" --exclude="*.log" . 2>/dev/null
-    [ -f "$ARCHIVE" ] && echo "   ✅ $(du -h "$ARCHIVE" | cut -f1)"
+    echo "   📦 Snapshotting $name..."
+    bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name"
+    tar -czf "$BACKUP_FULL_DIR/full-$name-$TS.tar.gz" -C "$path" . 2>/dev/null
 done
-find "$BACKUP_FULL_DIR" -name "backup-full-*" -type f -mtime +$RETENTION_FULL -delete
-echo -e "\n✅ FULL BACKUP COMPLETED"
+find "$BACKUP_FULL_DIR" -name "*.tar.gz" -mtime +$RETENTION_FULL -delete
+echo "✅ Full backup cycle completed."
 EOF
 
-# 7. LITE BACKUP
+# 7. wp-essential-assets-backup.sh
 deploy "wp-essential-assets-backup.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-echo "⚡ LITE BACKUP - $(date)"
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p "$BACKUP_LITE_DIR"
+source $HOME/scripts/wsms-config.sh
+TS=$(date +%Y%m%d-%H%M%S)
+echo -e "⚡ ${BLUE}STARTING LEAN ASSETS BACKUP...${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n🌐 $name"
-    [ ! -f "$path/wp-config.php" ] && { echo "   ❌ Skipping"; continue; }
-    bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
-    ARCHIVE="$BACKUP_LITE_DIR/backup-lite-$name-$TIMESTAMP.tar.gz"
-    sudo tar -czf "$ARCHIVE" -C "$path" wp-content/uploads wp-content/themes wp-content/plugins wp-config.php 2>/dev/null
-    [ -f "$ARCHIVE" ] && echo "   ✅ $(du -h "$ARCHIVE" | cut -f1)"
+    echo "   📁 Archiving $name assets..."
+    bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name"
+    tar -czf "$BACKUP_LITE_DIR/lite-$name-$TS.tar.gz" -C "$path" wp-content/uploads wp-content/themes wp-content/plugins wp-config.php 2>/dev/null
 done
-find "$BACKUP_LITE_DIR" -name "backup-lite-*" -type f -mtime +$RETENTION_LITE -delete
-echo -e "\n✅ LITE BACKUP COMPLETED"
+find "$BACKUP_LITE_DIR" -name "*.tar.gz" -mtime +$RETENTION_LITE -delete
+echo "✅ Lite backup cycle completed."
 EOF
 
-# 8. MYSQL MANAGER
+# 8. mysql-backup-manager.sh
 deploy "mysql-backup-manager.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-BACKUP_DIR="$BACKUP_MYSQL_DIR"; TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p "$BACKUP_DIR"
-get_mysql_creds() {
-    local config="$1/wp-config.php"; [ ! -f "$config" ] && return 1
-    DB_NAME=$(grep -E "define.*DB_NAME" "$config" | grep -vE "^[[:space:]]*\/\/" | sed -n "s/.*'DB_NAME'.*'\(.*\)'.*/\1/p" | head -1)
-    DB_USER=$(grep -E "define.*DB_USER" "$config" | grep -vE "^[[:space:]]*\/\/" | sed -n "s/.*'DB_USER'.*'\(.*\)'.*/\1/p" | head -1)
-    DB_PASS=$(grep -E "define.*DB_PASSWORD" "$config" | grep -vE "^[[:space:]]*\/\/" | sed -n "s/.*'DB_PASSWORD'.*'\(.*\)'.*/\1/p" | head -1)
-    DB_HOST=$(grep -E "define.*DB_HOST" "$config" | grep -vE "^[[:space:]]*\/\/" | sed -n "s/.*'DB_HOST'.*'\(.*\)'.*/\1/p" | head -1)
-    DB_HOST=${DB_HOST:-localhost}; [ -z "$DB_NAME" ] && return 1; return 0
-}
-backup_site() {
-    local name="$1" path="$2"
-    if ! get_mysql_creds "$path"; then echo "   ❌ Failed"; return 1; fi
-    local backup_file="$BACKUP_DIR/mysql-$name-$DB_NAME-$TIMESTAMP.sql.gz"
-    if mysqldump --single-transaction --quick --no-tablespaces -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" 2>/dev/null | gzip > "$backup_file"; then
-        echo "   ✅ $DB_NAME"; return 0
-    else rm -f "$backup_file"; return 1; fi
-}
-case "${1:-all}" in
-    "all") for site in "${SITES[@]}"; do IFS=':' read -r name path user <<< "$site"; echo -e "\n🌐 $name"; backup_site "$name" "$path"; done ;;
-    "list") for site in "${SITES[@]}"; do IFS=':' read -r name path user <<< "$site"; echo "  - $name"; done; exit 0 ;;
-    *) for site in "${SITES[@]}"; do IFS=':' read -r name path user <<< "$site"; [ "$name" = "$1" ] && { backup_site "$name" "$path"; exit $?; }; done; echo "❌ Site '$1' not found"; exit 1 ;;
-esac
-find "$BACKUP_DIR" -name "mysql-*.sql.gz" -type f -mtime +$RETENTION_MYSQL -delete
-echo -e "\n✅ MYSQL BACKUP COMPLETED"
-EOF
-
-# 9. NAS SYNC
-deploy "nas-sftp-sync.sh" << 'EOF'
-#!/bin/bash
-source ~/scripts/wsms-config.sh
-LOG_FILE="$LOG_DIR/nas_sync.log"
-BACKUP_MODULES=("backups-full" "backups-lite" "backups-manual" "mysql-backups")
-log() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
-get_age() { [[ "$1" =~ ([0-9]{4})([0-9]{2})([0-9]{2}) ]] && echo $((( $(date +%s) - $(date -d "${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}" +%s 2>/dev/null) / 86400 ))) || echo 0; }
-sync_module() {
-    local module="$1" local_path="$HOME/$module" remote_path="$NAS_PATH/$module"
-    [ ! -d "$local_path" ] && { log "⚠️ Skipping: $module"; return 1; }
-    echo "mkdir -p $remote_path" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
-    local copied=0
-    for file in "$local_path"/*; do
-        [ ! -f "$file" ] && continue; filename=$(basename "$file")
-        if ! echo "ls $remote_path/$filename" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -q "$filename"; then
-            echo "put \"$file\" \"$remote_path/\"" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1 && ((copied++))
+source $HOME/scripts/wsms-config.sh
+TS=$(date +%Y%m%d-%H%M%S); target=${1:-all}
+for site in "${SITES[@]}"; do
+    IFS=':' read -r name path user <<< "$site"
+    if [[ "$target" == "all" || "$target" == "$name" ]]; then
+        if [ -f "$path/wp-config.php" ]; then
+            DB_NAME=$(grep -E "DB_NAME" "$path/wp-config.php" | awk -F"['\"]" '{print $4}')
+            DB_USER=$(grep -E "DB_USER" "$path/wp-config.php" | awk -F"['\"]" '{print $4}')
+            DB_PASS=$(grep -E "DB_PASSWORD" "$path/wp-config.php" | awk -F"['\"]" '{print $4}')
+            DB_HOST=$(grep -E "DB_HOST" "$path/wp-config.php" | awk -F"['\"]" '{print $4}')
+            mysqldump --single-transaction --quick -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASS" "$DB_NAME" | gzip > "$BACKUP_MYSQL_DIR/db-$name-$TS.sql.gz"
+            echo "      ✅ Database snapshot ready for $name"
         fi
-    done
-    local remote_files=$(echo "ls -1 $remote_path" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -v "sftp>" | tr -d '\r')
-    local keep=0; deleted=0
-    for file in $remote_files; do
-        [ -z "$file" ] && continue; age=$(get_age "$file")
-        if [ $keep -lt $NAS_MIN_KEEP_COPIES ]; then ((keep++))
-        elif [ $age -gt $NAS_RETENTION_DAYS ]; then
-            echo "rm \"$remote_path/$file\"" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1 && ((deleted++))
-        else ((keep++)); fi
-    done
-    log "   📊 $module: +$copied, -$deleted, $keep on NAS"
-}
-mkdir -p "$LOG_DIR"; log "🚀 NAS sync started"
-for module in "${BACKUP_MODULES[@]}"; do sync_module "$module"; done
-log "✅ NAS sync completed"
-EOF
-
-# 10. SMART RETENTION
-deploy "wp-smart-retention-manager.sh" << 'EOF'
-#!/bin/bash
-source ~/scripts/wsms-config.sh
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-BACKUP_DIRS=("$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MANUAL_DIR" "$BACKUP_MYSQL_DIR")
-declare -A RETENTION=([$BACKUP_LITE_DIR]=$RETENTION_LITE [$BACKUP_FULL_DIR]=$RETENTION_FULL [$BACKUP_MANUAL_DIR]=$RETENTION_LITE [$BACKUP_MYSQL_DIR]=$RETENTION_MYSQL)
-apply_retention() {
-    local dir="$1" days="${RETENTION[$dir]}"; [ ! -d "$dir" ] && return
-    echo -e "${CYAN}📂 $(basename "$dir") (${days}d)${NC}"
-    declare -A latest
-    while IFS= read -r file; do
-        [[ -z "$file" ]] && continue
-        if [[ "$file" =~ (backup-[a-z0-9-]+|mysql-[a-z0-9-]+) ]]; then
-            pattern="${BASH_REMATCH[1]}"; mtime=$(stat -c %Y "$file")
-            if [ -z "${latest[$pattern]}" ] || [ "$mtime" -gt "${latest[$pattern]}" ]; then
-                latest[$pattern]="$mtime"; latest["${pattern}_path"]="$file"
-            fi
-        fi
-    done < <(find "$dir" -type f 2>/dev/null)
-    local deleted=0
-    for file in "$dir"/*; do
-        [ ! -f "$file" ] && continue; mtime=$(stat -c %Y "$file"); age=$((( $(date +%s) - mtime ) / 86400))
-        if [ "$age" -gt "$days" ]; then
-            is_latest=0
-            for p in "${!latest[@]}"; do [[ "$p" =~ _path$ ]] && continue; [ "$file" = "${latest[${p}_path]}" ] && { is_latest=1; break; }; done
-            [ "$is_latest" -eq 0 ] && { rm -f "$file"; ((deleted++)); }
-        fi
-    done
-    echo -e "   🗑️ Deleted: $deleted files"
-}
-case "${1:-list}" in
-    "list") for dir in "${BACKUP_DIRS[@]}"; do [ -d "$dir" ] && echo "   📂 $(basename "$dir"): $(find "$dir" -type f | wc -l) files ($(du -sh "$dir" 2>/dev/null | cut -f1))"; done ;;
-    "apply") echo -e "${YELLOW}🔄 Applying retention...${NC}"; for dir in "${BACKUP_DIRS[@]}"; do apply_retention "$dir"; done; echo -e "${GREEN}✅ Completed${NC}" ;;
-esac
-EOF
-
-# 11. HELP SYSTEM (FULL VERSION)
-deploy "wp-help.sh" << 'EOF'
-#!/bin/bash
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; CYAN='\033[0;36m'; WHITE='\033[1;37m'; NC='\033[0m'
-clear
-echo -e "${WHITE}🆘 WORDPRESS MANAGEMENT SYSTEM - HELP & REFERENCE${NC}"
-echo -e "${WHITE}=================================================${NC}"
-echo -e "${BLUE}⏰ $(date)${NC}\n"
-show_section() { echo -e "${CYAN}$1${NC}"; echo -e "${CYAN}$(printf '%.0s-' {1..55})${NC}"; }
-show_command() { printf "  ${GREEN}%-26s${NC} %s\n" "$1" "$2"; }
-show_section "⚡ QUICK START"
-show_command "wp-status" "# Executive overview"
-show_command "system-diag" "# Server health"
-show_command "wp-fleet" "# All sites status"
-show_command "wp-update-safe" "# Backup then update"
-show_command "wp-backup-lite" "# Fast backup"
-show_command "nas-sync" "# Sync to NAS"
-echo ""
-show_section "💾 BACKUP SYSTEM"
-show_command "wp-backup-lite" "# Lite (14 days)"
-show_command "wp-backup-full" "# Full (35 days)"
-show_command "wp-backup-ui" "# Interactive menu"
-show_command "red-robin" "# Emergency backup"
-show_command "backup-size" "# Storage usage"
-show_command "backup-clean" "# Smart cleanup"
-echo ""
-show_section "🗄️ DATABASE"
-show_command "db-backup all" "# All databases"
-show_command "db-backup list" "# List sites"
-show_command "db-backup [site]" "# Specific site"
-echo ""
-show_section "🔄 NAS SYNC"
-show_command "nas-sync" "# Sync to NAS"
-show_command "nas-sync-status" "# Last sync"
-show_command "nas-sync-logs" "# Real-time logs"
-echo -e "  ${YELLOW}📋 Target: $NAS_HOST:$NAS_PORT${NC}"
-echo -e "  ${YELLOW}📋 Path: $NAS_PATH${NC}\n"
-show_section "🦠 ANTIVIRUS"
-show_command "clamav-scan" "# Daily scan"
-show_command "clamav-deep-scan" "# Full scan"
-show_command "clamav-status" "# Service status"
-show_command "clamav-update" "# Update definitions"
-show_command "clamav-logs" "# View logs"
-show_command "clamav-quarantine" "# Check quarantine"
-echo ""
-show_section "📋 RETENTION"
-echo -e "  ${YELLOW}⚡ Lite:${NC} 14d | ${YELLOW}💾 Full:${NC} 35d | ${YELLOW}🗄️ MySQL:${NC} 7d"
-echo -e "  ${YELLOW}🔄 NAS:${NC} 120d (min 2 copies)\n"
-show_section "🔖 QUICK REFERENCE"
-echo -e "  ${GREEN}wp-status${NC} | ${GREEN}wp-help${NC} | ${GREEN}wp-backup-lite${NC} | ${GREEN}nas-sync${NC}"
-echo -e "\n${GREEN}✅ SYSTEM READY${NC}"
-EOF
-
-# 12. INTERACTIVE BACKUP
-deploy "wp-interactive-backup-tool.sh" << 'EOF'
-#!/bin/bash
-source ~/scripts/wsms-config.sh
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-backup_site() {
-    local name="$1" path="$2" user="$3" type="$4"
-    echo -e "\n${YELLOW}🌐 $name ($type)${NC}"
-    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-    bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
-    if [ "$type" = "full" ]; then
-        ARCHIVE="$BACKUP_FULL_DIR/backup-full-$name-$TIMESTAMP.tar.gz"
-        sudo tar -czf "$ARCHIVE" -C "$path" --exclude="wp-content/cache" . 2>/dev/null
-    else
-        ARCHIVE="$BACKUP_MANUAL_DIR/backup-lite-$name-$TIMESTAMP.tar.gz"
-        sudo tar -czf "$ARCHIVE" -C "$path" wp-content/uploads wp-content/themes wp-content/plugins wp-config.php 2>/dev/null
     fi
-    [ -f "$ARCHIVE" ] && echo -e "   ✅ ${GREEN}Success${NC}" || echo -e "   ❌ ${RED}Failed${NC}"
-}
-while true; do
-    echo -e "\n${CYAN}🎯 SELECT SITE:${NC}"
-    for i in "${!SITES[@]}"; do IFS=':' read -r name path user <<< "${SITES[$i]}"; echo "  $((i+1))) $name"; done
-    echo "  a) All sites"; echo "  q) Exit"; read -p "Choice: " choice
-    case $choice in q|Q) echo -e "${GREEN}Goodbye!${NC}"; break ;;
-        a|A) read -p "Backup type (lite/full): " btype
-            for site in "${SITES[@]}"; do IFS=':' read -r name path user <<< "$site"; backup_site "$name" "$path" "$user" "$btype"; done ;;
-        [0-9]*) idx=$((choice-1)); [ -z "${SITES[$idx]}" ] && continue
-            IFS=':' read -r name path user <<< "${SITES[$idx]}"; read -p "Backup type (lite/full): " btype; backup_site "$name" "$path" "$user" "$btype" ;;
-    esac
 done
 EOF
 
-# 13. STANDALONE MYSQL
+# 9. nas-sftp-sync.sh
+deploy "nas-sftp-sync.sh" << 'EOF'
+#!/bin/bash
+source $HOME/scripts/wsms-config.sh
+LOG="$LOG_DIR/nas_sync.log"
+exec >> "$LOG" 2>&1
+echo "--- NAS Sync Cycle Started: $(date) ---"
+for module in backups-lite backups-full mysql-backups; do
+    echo "Processing $module..."
+    sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no "$NAS_USER@$NAS_HOST" << SFTP_EOF
+    mkdir -p $NAS_PATH/$module
+    put $HOME/$module/* $NAS_PATH/$module/
+SFTP_EOF
+done
+echo "--- Sync Finished ---"
+EOF
+
+# 10. wp-smart-retention-manager.sh
+deploy "wp-smart-retention-manager.sh" << 'EOF'
+#!/bin/bash
+source $HOME/scripts/wsms-config.sh
+GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
+usage=$(df / | awk 'NR==2 {print $5}' | sed 's/%//')
+apply_policy() {
+    local dir=$1; local days=$2
+    if [ "$usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
+        echo -e "${RED}⚠️  Critical Storage ($usage%). Purging all but latest 2 archives.${NC}"
+        ls -t $dir/* 2>/dev/null | tail -n +3 | xargs rm -f 2>/dev/null
+    else
+        find $dir -type f -mtime +$days -delete
+    fi
+}
+echo "🧹 Cleaning Lite archives..."; apply_policy "$BACKUP_LITE_DIR" "$RETENTION_LITE"
+echo "🧹 Cleaning Full archives..."; apply_policy "$BACKUP_FULL_DIR" "$RETENTION_FULL"
+echo -e "${GREEN}✅ Retention task finished.${NC}"
+EOF
+
+# 11. wp-help.sh
+deploy "wp-help.sh" << 'EOF'
+#!/bin/bash
+clear
+echo -e "\033[0;36mWSMS PRO 4.0 - COMMAND REFERENCE\033[0m"
+echo "---------------------------------------------------------"
+echo -e "\033[0;32mwp-status\033[0m      : Executive Health Dashboard"
+echo -e "\033[0;32mwp-fleet\033[0m       : Version & Technical Debt Audit"
+echo -e "\033[0;32mwp-update-safe\033[0m : Production-Safe Update Path (Backup -> Patch)"
+echo -e "\033[0;32mnas-sync\033[0m       : Manually trigger Off-site Sync"
+echo -e "\033[0;32mwp-backup-ui\033[0m   : Interactive CLI Menu for manual recovery"
+echo -e "\033[0;32mred-robin\033[0m      : Bare-metal OS Configuration Backup"
+echo -e "\033[0;32mclamav-scan\033[0m    : Daily Malware recursive scan"
+echo "---------------------------------------------------------"
+EOF
+
+# 12. wp-interactive-backup-tool.sh
+deploy "wp-interactive-backup-tool.sh" << 'EOF'
+#!/bin/bash
+source $HOME/scripts/wsms-config.sh
+echo -e "\033[0;34m🎯 WSMS INTERACTIVE BACKUP ENGINE\033[0m"
+select site_info in "${SITES[@]}" "Exit"; do
+    [[ "$site_info" == "Exit" ]] && exit
+    IFS=':' read -r name path user <<< "$site_info"
+    echo "Running Asset Backup for $name..."
+    bash "$SCRIPT_DIR/wp-essential-assets-backup.sh" "$name"
+    break
+done
+EOF
+
+# 13. standalone-mysql-backup-engine.sh
 deploy "standalone-mysql-backup-engine.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-echo "Standalone MySQL - use 'db-backup' instead"
+source $HOME/scripts/wsms-config.sh
+echo "⚙️  Standalone MySQL Engine: Executing global dump."
 bash "$SCRIPT_DIR/mysql-backup-manager.sh" "all"
 EOF
 
-# 14. RED ROBIN
+# 14. red-robin-system-backup.sh
 deploy "red-robin-system-backup.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-echo "🔴 RED ROBIN - Emergency system backup"
-BACKUP_NAME="red-robin-$(hostname)-$(date +%Y%m%d-%H%M%S).tar.gz"
-sudo tar -czf "/tmp/$BACKUP_NAME" --exclude="$HOME/backups-*" --exclude="*/wp-content/uploads" --exclude="/proc" --exclude="/sys" --exclude="/dev" / 2>/dev/null
-echo "✅ Created: /tmp/$BACKUP_NAME ($(du -h /tmp/$BACKUP_NAME | cut -f1))"
+source $HOME/scripts/wsms-config.sh
+TS=$(date +%Y%m%d); OUT="$BACKUP_MANUAL_DIR/red-robin-sys-$TS.tar.gz"
+echo "🔴 EMERGENCY SYSTEM STATE CAPTURE STARTING..."
+sudo tar -cpzf "$OUT" --exclude="/proc" --exclude="/sys" --exclude="/dev" --exclude="$HOME/backups-*" / 2>/dev/null
+echo -e "✅ \033[0;32mSystem configuration captured: $OUT\033[0m"
 EOF
 
-# 15. CLAMAV AUTO
+# 15. clamav-auto-scan.sh
 deploy "clamav-auto-scan.sh" << 'EOF'
 #!/bin/bash
-LOG_FILE="/var/log/clamav/auto_scan.log"
-sudo mkdir -p /var/log/clamav
-echo "=== ClamAV Scan - $(date) ===" | sudo tee -a $LOG_FILE
-sudo clamscan -r --infected --no-summary /home /var/www 2>/dev/null | sudo tee -a $LOG_FILE
-echo "=== Completed ===" | sudo tee -a $LOG_FILE
+LOG="/var/log/clamav/auto_scan.log"
+echo "--- Malware Scan: $(date) ---" | sudo tee -a $LOG
+sudo clamscan -r --infected --no-summary /var/www /home | sudo tee -a $LOG
 EOF
 
-# 16. CLAMAV FULL
+# 16. clamav-full-scan.sh
 deploy "clamav-full-scan.sh" << 'EOF'
 #!/bin/bash
-TIMESTAMP=$(date +%Y%m%d)
-LOG_FILE="/var/log/clamav/full_audit_$TIMESTAMP.log"
-sudo mkdir -p /var/quarantine
-echo "=== Full System Scan - $(date) ===" | sudo tee -a $LOG_FILE
-sudo clamscan -r --infected --move=/var/quarantine --exclude-dir="^/sys" --exclude-dir="^/proc" / 2>&1 | sudo tee -a $LOG_FILE
-echo "=== Completed ===" | sudo tee -a $LOG_FILE
+TS=$(date +%Y%m%d); LOG="/var/log/clamav/full_audit_$TS.log"
+echo "--- Deep System Audit: $(date) ---" | sudo tee -a $LOG
+sudo clamscan -r --infected --move=/var/quarantine --exclude-dir="^/sys" --exclude-dir="^/proc" / 2>&1 | sudo tee -a $LOG
 EOF
 
-# 17. WP-CLI VALIDATOR
+# 17. wp-cli-infrastructure-validator.sh
 deploy "wp-cli-infrastructure-validator.sh" << 'EOF'
 #!/bin/bash
-source ~/scripts/wsms-config.sh
-echo "🧪 WP-CLI VALIDATOR"
+source $HOME/scripts/wsms-config.sh
+echo "🧪 VALIDATING WP-CLI INTEGRATION..."
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
     if sudo -u "$user" wp --path="$path" core version &>/dev/null; then
-        echo " ✅ $name: $(sudo -u "$user" wp --path="$path" core version)"
+        echo -e "   ✅ $name: \033[0;32mConnected\033[0m"
     else
-        echo " ❌ $name: Connection failed"
+        echo -e "   ❌ $name: \033[0;31mConnection Failed\033[0m"
     fi
 done
 EOF
 
-echo -e "${GREEN}✅ All 17 scripts deployed.${NC}"
+echo -e "${GREEN}✅ All 17 operational modules deployed.${NC}"
 
 # ==================== PHASE 5: ALIASES ====================
-echo -e "\n${BLUE}🔧 Phase 5: Configuring Aliases...${NC}"
-sed -i '/# WSMS/d' ~/.bashrc 2>/dev/null
-cat >> ~/.bashrc << 'EOF'
-
+echo -e "\n${BLUE}🔧 Phase 5: Provisioning Shell Aliases...${NC}"
+RC_FILE="$HOME/.bashrc"
+sed -i '/# WSMS/d' "$RC_FILE" 2>/dev/null
+cat >> "$RC_FILE" << 'EOF'
 # ==================== WSMS PRO ALIASES ==================== # WSMS
 export SCRIPTS_DIR="$HOME/scripts"
-
-# Help
-alias wp-help="bash $SCRIPTS_DIR/wp-help.sh"
-alias help-wp="wp-help"
-
-# Status
-alias wp-status="system-diag && echo '' && wp-fleet && echo '' && backup-size"
-
-# Diagnostics
-alias system-diag="bash $SCRIPTS_DIR/server-health-audit.sh"
-alias wp-fleet="bash $SCRIPTS_DIR/wp-fleet-status-monitor.sh"
-alias wp-audit="bash $SCRIPTS_DIR/wp-multi-instance-audit.sh"
-alias wp-cli-validator="bash $SCRIPTS_DIR/wp-cli-infrastructure-validator.sh"
-alias scripts-dir="ls -la $SCRIPTS_DIR"
-
-# Maintenance
-alias wp-update-all="bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh"
-alias wp-update-safe="wp-backup-lite && sleep 5 && wp-update-all"
-alias wp-fix-perms="bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh"
-
-# Backups
-alias wp-backup-lite="bash $SCRIPTS_DIR/wp-essential-assets-backup.sh"
-alias wp-backup-full="bash $SCRIPTS_DIR/wp-full-recovery-backup.sh"
-alias wp-backup-ui="bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh"
-alias red-robin="bash $SCRIPTS_DIR/red-robin-system-backup.sh"
-
-# Database
-alias db-backup="bash $SCRIPTS_DIR/mysql-backup-manager.sh"
-alias db-backup-all="db-backup all"
-alias db-backup-list="db-backup list"
-
-# Retention
-alias backup-clean="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh apply"
-alias backup-size="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh list"
-
-# NAS Sync
-alias nas-sync="bash $SCRIPTS_DIR/nas-sftp-sync.sh"
-alias nas-sync-logs="tail -f $HOME/logs/nas_sync.log"
-alias nas-sync-status="echo '📊 Last NAS sync:'; tail -10 $HOME/logs/nas_sync.log 2>/dev/null || echo 'No logs'"
-
-# ClamAV
-alias clamav-scan="bash $SCRIPTS_DIR/clamav-auto-scan.sh"
-alias clamav-deep-scan="bash $SCRIPTS_DIR/clamav-full-scan.sh"
-alias clamav-status="sudo systemctl status clamav-daemon --no-pager | head -15"
-alias clamav-update="sudo freshclam"
-alias clamav-logs="sudo tail -f /var/log/clamav/auto_scan.log"
-alias clamav-quarantine="sudo ls -la /var/quarantine/"
-alias clamav-clean-quarantine="sudo rm -rf /var/quarantine/* && echo '✅ Quarantine cleaned'"
-
-# Backward compatibility
-alias wp-list="wp-fleet"
-alias wp-diagnoza="wp-audit"
-alias wp-test-cli="wp-cli-validator"
-alias wp-update="wp-update-all"
-alias wp-fix-permissions="wp-fix-perms"
-alias mysql-backup="db-backup"
-alias mysql-backup-all="db-backup all"
-alias mysql-backup-list="db-backup list"
-alias backup-list="backup-size"
-alias backup-dirs="scripts-dir"
-alias backup-smart-clean="backup-clean"
-alias sync-backup="nas-sync"
-alias sync-backup-logs="nas-sync-logs"
-alias sync-backup-status="nas-sync-status"
-alias clamav-auto-scan="clamav-scan"
-alias clamav-full-scan="clamav-deep-scan"
-
-# Per-site WP-CLI (generated from config)
+alias wp-help="bash $SCRIPTS_DIR/wp-help.sh" # WSMS
+alias wp-status="bash $SCRIPTS_DIR/server-health-audit.sh" # WSMS
+alias wp-fleet="bash $SCRIPTS_DIR/wp-fleet-status-monitor.sh" # WSMS
+alias wp-update-all="bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh" # WSMS
+alias wp-update-safe="wp-backup-lite && sleep 5 && wp-update-all" # WSMS
+alias wp-fix-perms="bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh" # WSMS
+alias wp-backup-lite="bash $SCRIPTS_DIR/wp-essential-assets-backup.sh" # WSMS
+alias wp-backup-full="bash $SCRIPTS_DIR/wp-full-recovery-backup.sh" # WSMS
+alias wp-backup-ui="bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh" # WSMS
+alias red-robin="bash $SCRIPTS_DIR/red-robin-system-backup.sh" # WSMS
+alias db-backup="bash $SCRIPTS_DIR/mysql-backup-manager.sh" # WSMS
+alias backup-clean="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh" # WSMS
+alias nas-sync="bash $SCRIPTS_DIR/nas-sftp-sync.sh" # WSMS
+alias clamav-scan="bash $SCRIPTS_DIR/clamav-auto-scan.sh" # WSMS
 EOF
 
-# Generate per-site aliases dynamically
+# Dynamic per-site aliases
 for site in "${MANAGED_SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    cat >> ~/.bashrc << EOF
-alias wp-$name="sudo -u $user /usr/local/bin/wp --path=$path"
-alias wp-backup-$name="db-backup $name && wp-backup-lite"
-EOF
+    echo "alias wp-$name=\"sudo -u $user wp --path=$path\"" >> "$RC_FILE" # WSMS
 done
-
-echo -e "${GREEN}✅ Aliases configured.${NC}"
+echo -e "${GREEN}✅ Aliases successfully configured.${NC}"
 
 # ==================== PHASE 6: CRONTAB ====================
-echo -e "\n${BLUE}🗓️ Phase 6: Scheduling Crontab...${NC}"
+echo -e "\n${BLUE}🗓️ Phase 6: Scheduling Crontab Automation...${NC}"
 (crontab -l 2>/dev/null | grep -v "WSMS"; echo "
-# --- WSMS AUTOMATION --- # WSMS
 0 1 * * * sudo freshclam >> $HOME/logs/clamav-update.log 2>&1 # WSMS
 0 2 * * * $HOME/scripts/nas-sftp-sync.sh >> $HOME/logs/nas-sync.log 2>&1 # WSMS
-0 3 * * * $HOME/scripts/clamav-auto-scan.sh >> $HOME/logs/security-scan.log 2>&1 # WSMS
-0 4 * * * $HOME/scripts/wp-smart-retention-manager.sh apply >> $HOME/logs/retention.log 2>&1 # WSMS
+0 4 * * * $HOME/scripts/wp-smart-retention-manager.sh >> $HOME/logs/retention.log 2>&1 # WSMS
 0 6 * * 0 $HOME/scripts/wp-automated-maintenance-engine.sh >> $HOME/logs/updates.log 2>&1 # WSMS
-0 2 * * 0,3 $HOME/scripts/wp-essential-assets-backup.sh >> $HOME/logs/backup-lite.log 2>&1 # WSMS
-0 3 1 * * $HOME/scripts/wp-full-recovery-backup.sh >> $HOME/logs/backup-full.log 2>&1 # WSMS
 ") | crontab -
-echo -e "${GREEN}✅ Crontab configured.${NC}"
+echo -e "${GREEN}✅ Crontab successfully scheduled.${NC}"
 
-# ==================== FINAL SUMMARY ====================
 echo -e "\n${GREEN}===========================================${NC}"
 echo -e "${GREEN}✅ WSMS PRO 4.0 DEPLOYMENT COMPLETED!${NC}"
 echo -e "${GREEN}===========================================${NC}"
-echo -e "   📋 Managed sites: ${#MANAGED_SITES[@]}"
-echo -e "   🔧 Config file:   ~/scripts/wsms-config.sh"
-echo -e "   📜 Scripts:        $(ls -1 ~/scripts/*.sh 2>/dev/null | wc -l) files"
-echo ""
-echo -e "${YELLOW}🚀 NEXT STEPS:${NC}"
-echo -e "   1. ${CYAN}source ~/.bashrc${NC}"
-echo -e "   2. ${CYAN}wp-status${NC} - Verify all sites"
-echo -e "   3. ${CYAN}wp-help${NC}   - Command reference"
-echo -e "   4. ${CYAN}wp-backup-lite${NC} - Test backup"
-echo ""
-echo -e "${BLUE}💡 To add/modify sites, edit MANAGED_SITES at the top of this installer and re-run.${NC}"
+echo -e "1. Run: ${YELLOW}source ~/.bashrc${NC} to activate commands."
+echo -e "2. Run: ${YELLOW}wp-status${NC} to start your first audit."
 INSTALL_EOF
 
 # Make executable and run
