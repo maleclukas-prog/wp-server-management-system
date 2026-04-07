@@ -9,7 +9,7 @@
 
 # --- CONFIGURATION ---
 REMOTE_HOST="nas.your-domain.me"        # Placeholder for Synology/Remote Server
-REMOTE_PORT="58365"
+REMOTE_PORT="22"
 REMOTE_USER="backup_operator"           # Generic user for documentation
 REMOTE_DIR="/remote_backups/entire_server"
 SSH_KEY="$HOME/.ssh/id_rsa_backup"      # Path to your private key
