@@ -4,6 +4,7 @@
 # Version: 3.5 (English Production Ready)
 # Description: Centralized help utility and command reference 
 #              for the WSMS infrastructure.
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # Colors

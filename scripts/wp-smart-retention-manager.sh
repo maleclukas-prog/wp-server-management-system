@@ -3,7 +3,7 @@
 # 🧠 SMART RETENTION & DISK SPACE MANAGER
 # Description: Automated backup rotation engine with proactive disk 
 #              monitoring and "Last-Copy-Safe" preservation logic.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 echo -e "\033[0;36m🧹 BACKUP INFRASTRUCTURE: SMART RETENTION ENGINE\033[0m"

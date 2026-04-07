@@ -4,7 +4,7 @@
 # Description: A comprehensive diagnostic tool that monitors system 
 #              resources, service uptime, PHP-FPM orchestration, 
 #              and backup integrity with automated recommendations.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors

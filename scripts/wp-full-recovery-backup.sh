@@ -3,7 +3,7 @@
 # 💾 WORDPRESS FULL RECOVERY BACKUP SYSTEM
 # Description: Performs high-integrity backups including database 
 #              optimization and full filesystem snapshots.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 echo "💾 INITIATING FULL SYSTEM BACKUP"

@@ -3,7 +3,7 @@
 # ⏰ WSMS AUTOMATION SCHEDULER
 # Description: Configures the system crontab for fully automated 
 #              maintenance, security, and recovery cycles.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 echo "⏰ Initializing Automation Scheduler..."

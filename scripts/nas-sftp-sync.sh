@@ -4,7 +4,7 @@
 # Description: Automated off-site backup synchronization. 
 #              Features intelligent file-age detection and 
 #              a "Minimum Copy" safety retention policy.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # --- CONFIGURATION ---

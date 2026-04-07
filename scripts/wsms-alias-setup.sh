@@ -3,7 +3,7 @@
 # 🐚 WSMS ALIAS ORCHESTRATOR
 # Description: Automatically configures the shell environment by 
 #              injecting professional aliases into .bashrc.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 RC_FILE="$HOME/.bashrc"

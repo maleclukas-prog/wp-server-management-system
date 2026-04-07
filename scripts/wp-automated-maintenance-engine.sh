@@ -4,7 +4,7 @@
 # Description: Orchestrates secure, isolated updates for WordPress 
 #              Core, Plugins, and Themes across multiple instances. 
 #              Includes database migration and cache orchestration.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors

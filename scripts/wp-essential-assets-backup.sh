@@ -4,7 +4,7 @@
 # Description: High-frequency backup targeting only unique site 
 #              assets (uploads, themes, plugins) to minimize 
 #              storage footprint and execution time.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 echo "⚡ INITIATING LEAN ASSETS BACKUP"

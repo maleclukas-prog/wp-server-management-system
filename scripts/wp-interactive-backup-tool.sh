@@ -4,7 +4,7 @@
 # Description: A menu-driven utility for manual on-demand backups. 
 #              Supports Lite (Assets) and Full (Snapshots) modes 
 #              with integrated database optimization.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors

@@ -4,7 +4,7 @@
 # Description: Automated bare-metal configuration backup. Focuses 
 #              on OS settings/configs while excluding heavy media 
 #              already handled by separate sync tasks.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # --- CONFIGURATION ---

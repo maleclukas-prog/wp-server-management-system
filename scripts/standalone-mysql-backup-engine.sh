@@ -5,7 +5,7 @@
 #              independently of CMS-specific tools. It extracts 
 #              metadata directly from source configs to perform 
 #              consistent, compressed SQL dumps.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 echo "🗄️  INITIATING STANDALONE MYSQL SNAPSHOT"

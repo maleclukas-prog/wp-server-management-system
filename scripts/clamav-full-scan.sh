@@ -4,7 +4,7 @@
 # 🛡️ ClamAV Full System Deep Audit
 # Description: Performs a comprehensive root filesystem scan and 
 #              automatically moves infected files to quarantine.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # Configuration

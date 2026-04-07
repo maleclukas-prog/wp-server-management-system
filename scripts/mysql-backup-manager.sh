@@ -3,7 +3,7 @@
 # 🗄️  MYSQL DATABASE BACKUP MANAGER (WordPress-Optimized)
 # Description: Automatically discovers MySQL credentials from 
 #              wp-config.php and performs secure backups.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 echo "🗄️  MYSQL DATABASE BACKUP ENGINE"

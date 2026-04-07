@@ -4,7 +4,7 @@
 # Description: Automated monitoring tool to assess the health, 
 #              versioning, and update status of multiple WP 
 #              environments in a multi-tenant infrastructure.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors for professional reporting

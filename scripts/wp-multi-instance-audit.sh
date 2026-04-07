@@ -4,7 +4,7 @@
 # Description: Performs deep-dive diagnostics across multiple 
 #              isolated WordPress environments. Audits core integrity, 
 #              database health, security permissions, and site vitals.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors for professional output

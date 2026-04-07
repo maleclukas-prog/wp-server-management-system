@@ -4,7 +4,7 @@
 # Description: Verifies global WP-CLI installation and tests 
 #              secure connectivity to individual WordPress instances 
 #              within their specific system-user contexts.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors

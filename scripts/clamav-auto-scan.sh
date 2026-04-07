@@ -4,7 +4,7 @@
 # 🦠 ClamAV Automated Malware Scanner
 # Description: Performs daily recursive scanning of high-risk 
 #              directories (/home and /var/www).
-# Author: [Your Name / GitHub Username]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # Configuration

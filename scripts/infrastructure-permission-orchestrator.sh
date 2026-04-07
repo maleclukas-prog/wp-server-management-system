@@ -4,7 +4,7 @@
 # Description: A comprehensive security tool designed to audit and 
 #              standardize filesystem permissions across multi-tenant 
 #              WordPress environments and backup repositories.
-# Author: [Your Name]
+# Author: [Lukasz Malec / GitHub maleclukas-prog]
 # =================================================================
 
 # UI Colors
