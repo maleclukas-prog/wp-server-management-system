@@ -1,217 +1,133 @@
-# 🚀 WSMS Deployment & Operations Guide
+🚀 WSMS Deployment & Operations Guide
+This document provides a comprehensive, step-by-step Standard Operating Procedure (SOP) for deploying the WordPress Management System (WSMS) PRO on an Ubuntu Server.
 
-This document provides a comprehensive, step-by-step Standard Operating Procedure (SOP) for deploying the WordPress Management System (WSMS) on a production-ready Ubuntu Server environment.
+📋 Table of Contents
+Infrastructure Initialization
 
-## 📋 Table of Contents
-1. Infrastructure Initialization
-2. Modular Script Deployment
-3. Shell Environment Provisioning
-4. Automated Task Scheduling (Crontab)
-5. System Verification
-6. Incident Response & SOP (Troubleshooting)
+Centralized Configuration (wsms-config.sh)
 
----
+Automated Deployment (The Master Installer)
 
-### 1. DIRECTORY INFRASTRUCTURE
+Shell Environment Provisioning (Aliases)
 
-Initialize the environment by creating a dedicated structure for scripts, security, and multi-tier backups.
+Automated Task Scheduling (Crontab)
 
+System Verification & SOP
 
-expand_less
-# Create operational directories
-mkdir -p ~/scripts
-mkdir -p ~/backups-lite
-mkdir -p ~/backups-full
-mkdir -p ~/backups-manual
-mkdir -p ~/mysql-backups
+1. DIRECTORY INFRASTRUCTURE
+The system requires a specific folder hierarchy for backups, logs, and security.
 
-# Create security and quarantine zones
-sudo mkdir -p /var/quarantine
-sudo mkdir -p /var/log/clamav
+code
+Bash
+# Core operational directories
+mkdir -p ~/scripts ~/backups-lite ~/backups-full ~/backups-manual ~/backups-mysqldump ~/mysql-backups ~/logs
+
+# Security zones
+sudo mkdir -p /var/quarantine /var/log/clamav
 sudo chown $USER:$USER /var/log/clamav
+2. CENTRALIZED CONFIGURATION
+WSMS PRO uses a "Single Source of Truth" model. You only need to define your infrastructure parameters in one place.
 
-### 2. SCRIPT DEPLOYMENT
-Deploy the core modules of the system. Replace the placeholders with the English versions of the scripts provided in our previous steps.
+File: ~/scripts/wsms-config.sh
 
+code
+Bash
+# Edit this file to manage your sites and NAS settings
+SITES=(
+    "site-name:/var/www/path/to/public_html:system_user"
+)
 
-expand_less
-# --- CORE RETENTION ENGINE ---
-cat > ~/scripts/wp-smart-retention-manager.sh << 'EOF'
-[PASTE CONTENT OF wp-smart-retention-manager.sh]
-EOF
+NAS_HOST="your-nas.synology.me"
+NAS_PORT="58365"
+NAS_USER="your_user"
+NAS_PATH="/remote/path"
+NAS_SSH_KEY="$HOME/.ssh/id_rsa"
+3. MODULAR SCRIPT DEPLOYMENT
+The system consists of 17 specialized modules. It is highly recommended to use the install-wsms.sh script to deploy them automatically.
 
-# --- HEALTH & OBSERVABILITY ---
-cat > ~/scripts/server-health-audit.sh << 'EOF'
-[PASTE CONTENT OF server-health-audit.sh]
-EOF
+Managed Modules:
 
-cat > ~/scripts/wp-fleet-status-monitor.sh << 'EOF'
-[PASTE CONTENT OF wp-fleet-status-monitor.sh]
-EOF
+server-health-audit.sh - Core hardware diagnostics.
 
-# --- MAINTENANCE & SECURITY ---
-cat > ~/scripts/wp-automated-maintenance-engine.sh << 'EOF'
-[PASTE CONTENT OF wp-automated-maintenance-engine.sh]
-EOF
+wp-fleet-status-monitor.sh - Fleet inventory & updates audit.
 
-cat > ~/scripts/infrastructure-permission-orchestrator.sh << 'EOF'
-[PASTE CONTENT OF infrastructure-permission-orchestrator.sh]
-EOF
+wp-multi-instance-audit.sh - Deep-dive site health scores.
 
-# --- BACKUP & DISASTER RECOVERY ---
-cat > ~/scripts/wp-full-recovery-backup.sh << 'EOF'
-[PASTE CONTENT OF wp-full-recovery-backup.sh]
-EOF
+wp-automated-maintenance-engine.sh - Unattended patching orchestration.
 
-cat > ~/scripts/wp-essential-assets-backup.sh << 'EOF'
-[PASTE CONTENT OF wp-essential-assets-backup.sh]
-EOF
+infrastructure-permission-orchestrator.sh - Security isolation & ACLs.
 
-cat > ~/scripts/mysql-backup-manager.sh << 'EOF'
-[PASTE CONTENT OF mysql-backup-manager.sh]
-EOF
+wp-full-recovery-backup.sh - Full bare-metal snapshots.
 
-cat > ~/scripts/nas-sftp-sync.sh << 'EOF'
-[PASTE CONTENT OF nas-sftp-sync.sh]
-EOF
+wp-essential-assets-backup.sh - Lean high-frequency backups.
 
-cat > ~/scripts/red-robin-system-backup.sh << 'EOF'
-[PASTE CONTENT OF red-robin-system-backup.sh]
-EOF
+mysql-backup-manager.sh - Dynamic SQL snapshot engine.
 
-# --- INTERACTIVE TOOLS ---
-cat > ~/scripts/wp-interactive-backup-tool.sh << 'EOF'
-[PASTE CONTENT OF wp-interactive-backup-tool.sh]
-EOF
+standalone-mysql-backup-engine.sh - Low-level mysqldump fallback.
 
-cat > ~/scripts/wp-help.sh << 'EOF'
-[PASTE CONTENT OF wp-help.sh]
-EOF
+nas-sftp-sync.sh - Hybrid Cloud NAS synchronization.
 
-# Set global execution permissions
-chmod +x ~/scripts/*.sh
+red-robin-system-backup.sh - Emergency OS config recovery.
 
-### 3. ENVIRONMENT ALIASES
-Add these aliases to your ~/.bashrc to increase operational velocity.
+wp-interactive-backup-tool.sh - CLI menu for manual tasks.
 
+wp-smart-retention-manager.sh - Heuristic disk space cleanup.
 
-expand_less
-cat >> ~/.bashrc << 'EOF'
-# ============================================
-# WORDPRESS MANAGEMENT SYSTEM - ALIASES
-# ============================================
-export SCRIPTS_DIR="$HOME/scripts"
+clamav-auto-scan.sh - Daily malware audit.
 
-# Diagnostics & Observability
-alias system-diag="bash $SCRIPTS_DIR/server-health-audit.sh"
-alias wp-fleet="bash $SCRIPTS_DIR/wp-fleet-status-monitor.sh"
-alias wp-audit="bash $SCRIPTS_DIR/wp-multi-instance-audit.sh"
-alias scripts-dir="ls -la $SCRIPTS_DIR/"
+clamav-full-scan.sh - Weekly deep system audit.
+
+wp-cli-infrastructure-validator.sh - Connectivity & Dependency test.
+
+wp-help.sh - Centralized command reference.
+
+4. ENVIRONMENT ALIASES
+Add these to your ~/.bashrc to enable the "Executive Command Center".
+
+code
+Bash
+# Diagnostics
+alias wp-status="system-diag && wp-fleet"
+alias system-diag="bash ~/scripts/server-health-audit.sh"
+alias wp-fleet="bash ~/scripts/wp-fleet-status-monitor.sh"
+alias wp-audit="bash ~/scripts/wp-multi-instance-audit.sh"
 
 # Maintenance & Security
-alias wp-update-all="bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh"
-alias wp-update-safe="wp-backup-lite && sleep 5 && wp-update-all"
-alias wp-fix-perms="bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh"
+alias wp-update-safe="wp-backup-lite && wp-automated-maintenance-engine.sh"
+alias wp-fix-perms="bash ~/scripts/infrastructure-permission-orchestrator.sh"
+alias clamav-scan="bash ~/scripts/clamav-auto-scan.sh"
 
-# Backup Operations
-alias wp-backup-lite="bash $SCRIPTS_DIR/wp-essential-assets-backup.sh"
-alias wp-backup-full="bash $SCRIPTS_DIR/wp-full-recovery-backup.sh"
-alias wp-backup-ui="bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh"
-alias red-robin="bash $SCRIPTS_DIR/red-robin-system-backup.sh"
+# Backup & Recovery
+alias wp-backup-ui="bash ~/scripts/wp-interactive-backup-tool.sh"
+alias nas-sync="bash ~/scripts/nas-sftp-sync.sh"
+alias backup-clean="bash ~/scripts/wp-smart-retention-manager.sh apply"
+alias wp-help="bash ~/scripts/wp-help.sh"
+5. AUTOMATION (CRONTAB)
+Automate the lifecycle of your server using the following production-standard schedule:
 
-# MySQL Operations
-alias db-backup="bash $SCRIPTS_DIR/mysql-backup-manager.sh"
-alias db-backup-all="db-backup all"
-alias db-backup-list="db-backup list"
+code
+Text
+# 01:00 - ClamAV Update
+0 1 * * * sudo freshclam
 
-# Retention & Disk Management
-alias backup-clean="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh apply"
-alias backup-size="bash $SCRIPTS_DIR/wp-smart-retention-manager.sh list"
+# 02:00 - Off-site NAS Sync
+0 2 * * * ~/scripts/nas-sftp-sync.sh
 
-# Hybrid Cloud Sync (NAS)
-alias nas-sync="bash $SCRIPTS_DIR/nas-sftp-sync.sh"
-alias nas-sync-logs="tail -f ~/logs/nas_sync.log"
+# 03:00 - Daily Malware Scan
+0 3 * * * ~/scripts/clamav-auto-scan.sh
 
-# Antivirus Management (ClamAV)
-alias clamav-scan="bash $SCRIPTS_DIR/clamav-auto-scan.sh"
-alias clamav-deep-scan="bash $SCRIPTS_DIR/clamav-full-scan.sh"
-alias clamav-status="sudo systemctl status clamav-daemon"
+# 04:00 - Smart Retention Cleanup
+0 4 * * * ~/scripts/wp-smart-retention-manager.sh apply
 
-# System Help
-alias wp-help="bash $SCRIPTS_DIR/wp-help.sh"
-alias wp-status="system-diag && wp-fleet"
-EOF
-
-source ~/.bashrc
-
-### 4. AUTOMATION (CRONTAB)
-Schedule the following tasks for fully unattended infrastructure management.
-
-
-expand_less
-crontab -e
-Add the following schedule:
-
-
-expand_less
-# --- WSMS AUTOMATED SCHEDULE ---
-
-# 01:00 - Update Antivirus Definitions
-0 1 * * * sudo freshclam >> ~/logs/clamav-update.log 2>&1
-
-# 02:00 - Off-site Hybrid Cloud Sync (NAS)
-0 2 * * * /home/ubuntu/scripts/nas-sftp-sync.sh >> ~/logs/nas-sync.log 2>&1
-
-# 03:00 - Daily Security Audit (ClamAV)
-0 3 * * * /home/ubuntu/scripts/clamav-auto-scan.sh >> ~/logs/security-scan.log 2>&1
-
-# 04:00 - Proactive Disk Space & Retention Management
-0 4 * * * /home/ubuntu/scripts/wp-smart-retention-manager.sh apply >> ~/logs/retention.log 2>&1
-
-# 06:00 - Sunday Automated Maintenance (Updates)
-0 6 * * 0 /home/ubuntu/scripts/wp-automated-maintenance-engine.sh >> ~/logs/updates.log 2>&1
-
-# 02:00 - Lite Backups (Sunday & Wednesday)
-0 2 * * 0,3 /home/ubuntu/scripts/wp-essential-assets-backup.sh
-
-# 03:00 - Full System Snapshot (1st of Month)
-0 3 1 * * /home/ubuntu/scripts/wp-full-recovery-backup.sh
-
-### 5. SYSTEM VALIDATION
-Verify the deployment using the following diagnostic commands:
-
-
-expand_less
-# Check if all scripts are accessible
-scripts-dir
-
-# Run full server health audit
-system-diag
-
-# Check WordPress fleet status
-wp-fleet
-
-# Test interactive backup menu
-wp-backup-ui
-
-# Verify help system
-wp-help
-
-### 6. TROUBLESHOOTING & SOP
-Issue	Standard Operating Procedure (SOP)
-Low Disk Space	Run backup-clean to trigger the smart retention engine.
-Permission Errors	Execute wp-fix-perms to realign ownership and security isolation.
-Site Offline	Run wp-fleet to check instance health and system-diag for service status.
-Security Threat	Inspect /var/quarantine and review logs with clamav-logs.
-Sync Failure	Check connectivity with nas-sync and monitor real-time logs via nas-sync-logs.
-✅ SYSTEM STATUS: READY
-Your WordPress Management System is now fully operational. It provides high availability, automated security auditing, and a multi-tier disaster recovery strategy.
-
-Core Command Reference:
-
-wp-status : Get an instant overview of your entire infrastructure.
-
-wp-update-safe : The safest way to patch your sites (Backup + Update).
-
-wp-help : Access the internal documentation.
+# 06:00 - Sunday Maintenance (Fleet Patching)
+0 6 * * 0 ~/scripts/wp-automated-maintenance-engine.sh
+6. INCIDENT RESPONSE & SOP (Troubleshooting)
+Scenario	Standard Operating Procedure (SOP)
+Low Disk Space (<20% free)	Run backup-clean. If still low, inspect logs/ size.
+Site Permission Errors	Execute wp-fix-perms to re-enforce isolated user ownership.
+Integrity Failure	Run wp-cli-validator. If fails, check wsms-config.sh credentials.
+Security Threat Detected	Check clamav-logs, inspect /var/quarantine/, and run wp-fix-perms.
+Backup Cycle Failed	Check df -h. Run wp-interactive-backup-tool for a manual test.
+✅ SYSTEM STATUS: PRODUCTION READY
+You can now manage your entire fleet using wp-status and wp-help.
 

@@ -28,7 +28,7 @@ sync_module() {
     [ ! -d "$local_path" ] && { log "⚠️  Skipping: $module (not found)"; return 1; }
     
     # Ensure remote dir exists
-    echo "mkdir -p $remote_path" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
+    echo "mkdir -p $remote_path" | openssh-client -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
     
     # Upload new files
     local copied=0
@@ -36,14 +36,14 @@ sync_module() {
         [ ! -f "$file" ] && continue
         local filename=$(basename "$file")
         
-        if ! echo "ls $remote_path/$filename" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -q "$filename"; then
-            echo "put \"$file\" \"$remote_path/\"" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
+        if ! echo "ls $remote_path/$filename" | openssh-client -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -q "$filename"; then
+            echo "put \"$file\" \"$remote_path/\"" | openssh-client -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
             ((copied++))
         fi
     done
     
     # Retention on NAS
-    local remote_files=$(echo "ls -1 $remote_path" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -v "sftp>" | tr -d '\r')
+    local remote_files=$(echo "ls -1 $remote_path" | openssh-client -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -v "openssh-client>" | tr -d '\r')
     local keep=0; local deleted=0
     
     for file in $remote_files; do
@@ -53,7 +53,7 @@ sync_module() {
         if [ $keep -lt $NAS_MIN_KEEP_COPIES ]; then
             ((keep++))
         elif [ $age -gt $NAS_RETENTION_DAYS ]; then
-            echo "rm \"$remote_path/$file\"" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
+            echo "rm \"$remote_path/$file\"" | openssh-client -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
             ((deleted++))
         else
             ((keep++))
