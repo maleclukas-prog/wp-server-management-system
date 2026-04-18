@@ -1,5 +1,10 @@
 #!/bin/bash
 # =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
+# =================================================================
 # 🛡️ INFRASTRUCTURE SECURITY ENFORCEMENT
 # Description: Hardens isolation between tenants and grants secure 
 #              access to the backup operator using ACLs.

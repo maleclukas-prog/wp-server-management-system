@@ -1,5 +1,10 @@
 #!/bin/bash
 # =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
+# =================================================================
 # 🖥️  ULTIMATE INFRASTRUCTURE HEALTH AUDIT & DIAGNOSTICS (PRO)
 # Description: Professional-grade diagnostic tool auditing hardware, 
 #              service orchestration, and per-site application vitals.

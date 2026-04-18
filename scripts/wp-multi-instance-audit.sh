@@ -1,5 +1,10 @@
 #!/bin/bash
 # =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
+# =================================================================
 # 🔍 MULTI-INSTANCE DEEP AUDIT - DYNAMIC VERSION
 # =================================================================
 source ~/scripts/wsms-config.sh

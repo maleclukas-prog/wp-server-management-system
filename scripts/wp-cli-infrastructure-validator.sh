@@ -1,4 +1,9 @@
 #!/bin/bash
+# =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
 source ~/scripts/wsms-config.sh
 echo "🧪 WP-CLI VALIDATOR"
 for site in "${SITES[@]}"; do

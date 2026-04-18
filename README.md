@@ -1,6 +1,9 @@
+## 📄 PLIK: `README.md` (POPRAWIONA WERSJA)
+
+```markdown
 # 🚀 WSMS PRO - WordPress Server Management System
 
-**Version:** 4.0 | **Status:** Production Ready | **License:** MIT
+**Version:** 4.1 | **Status:** Production Ready | **License:** MIT
 
 > **The ultimate automation suite for professional WordPress multi-site fleet management on Ubuntu Server.**  
 > Built for High Availability, Security Compliance, and Automated Disaster Recovery.
@@ -8,122 +11,144 @@
 ---
 
 ## 📖 Overview
+
 **WSMS PRO** is a production-grade automation ecosystem designed to solve the complexities of managing multi-tenant WordPress infrastructures. It uses a **Modular Architecture** with a **Single Source of Truth** (centralized configuration), replacing manual technical debt with a scalable automation layer.
 
 ### 🌟 Core Pillars
-- 🔍 **Fleet Observability** - Real-time hardware diagnostics and application health audits.
-- 🛡️ **Infrastructure Hardening** - Security isolation using isolated system-user contexts and ACLs.
-- 💾 **Disaster Recovery** - Multi-tier backup strategy (Lite/Full/MySQL) with Hybrid Cloud sync (NAS).
-- 🧹 **Self-Healing Storage** - Heuristic retention engine with "Last-Copy-Safe" data preservation.
+
+| Pillar | Description |
+|--------|-------------|
+| 🔍 **Fleet Observability** | Real-time hardware diagnostics and application health audits |
+| 🛡️ **Infrastructure Hardening** | Security isolation using isolated system-user contexts and ACLs |
+| 💾 **Disaster Recovery** | Multi-tier backup strategy (Lite/Full/MySQL) with Hybrid Cloud sync |
+| 🧹 **Self-Healing Storage** | Heuristic retention engine with "Last-Copy-Safe" data preservation |
 
 ---
 
 ## 🚀 Quick Deployment
-Deploy the entire environment (17 modules + Cron + Aliases) using the Master Installer:
+
+### Prerequisites
+- Ubuntu 20.04+ / 22.04+
+- Root/sudo access
+- WordPress sites with wp-config.php
+
+### One-Command Installation
 
 ```bash
-# 1. Download the installer
-wget https://raw.githubusercontent.com/maleclukas-prog/wp-server-management-system/main/install_wsms.sh
+# Clone the repository
+git clone https://github.com/maleclukas-prog/wp-server-management-system.git
+cd wp-server-management-system
 
-# 2. Edit your site details inside the installer
-nano install_wsms.sh
+# Edit configuration (REQUIRED!)
+nano scripts/wsms-config.sh
 
-# 3. Run deployment
-chmod +x install_wsms.sh
-./install_wsms.sh
-🛠️ Operational Dashboard (Aliases)
-Command	Description
-wp-status	Executive Overview: Hardware metrics + fleet health in one view.
-wp-fleet	Fleet inventory audit (Versions, plugin updates).
-wp-update-safe	Production Path: Backup -> Patch -> Verify -> Optimize.
-wp-fix-perms	Re-enforce security isolation and ACL policies.
-nas-sync	Manual trigger for off-site SFTP synchronization to NAS.
-clamav-scan	Initiate recursive daily malware signature audit.
-📄 Technical Documentation
-Deployment Guide - Step-by-step Standard Operating Procedure.
+# Run installer for your shell
+# For Bash users:
+./installers/install_wsms.sh
 
-Technical Reference - Deep dive into script logic.
+# For Fish users:
+fish installers/install_wsms.fish
+```
 
-👤 Maintainer: Lukasz Malec
+### Post-Installation
 
-code
-Code
----
-
-### 2. DEPLOYMENT_GUIDE.md (Instrukcja wdrożenia)
-*Zaktualizowany o proces edycji pliku `wsms-config.sh`.*
-
-```markdown
-# 🚀 WSMS Deployment & Operations Guide (v4.0)
-
-This document provides the Standard Operating Procedure (SOP) for deploying the WSMS PRO environment.
-
-## 📋 Deployment Workflow
-
-### 1. Centralized Configuration
-WSMS PRO uses a centralized registry model. Before running the installer, define your sites and NAS parameters in the `MANAGED_SITES` array:
-- **Format:** `Identifier:Path:SystemUser`
-- **Location:** Inside `install_wsms.sh` (or `~/scripts/wsms-config.sh` after install).
-
-### 2. Automated Installation
-The `install_wsms.sh` script performs the following:
-1. Initializes the directory structure.
-2. Installs dependencies (`WP-CLI`, `ClamAV`, `ACL`, `bc`).
-3. Deploys 17 specialized modules to `~/scripts/`.
-4. Provisions shell aliases in `~/.bashrc`.
-5. Schedules automated maintenance in `crontab`.
-
-### 3. Verification
-After installation, run:
 ```bash
-source ~/.bashrc
+# Reload shell configuration
+source ~/.bashrc        # For Bash
+# OR
+source ~/.config/fish/config.fish   # For Fish
+
+# Verify installation
 wp-status
-🔧 Incident Response (Troubleshooting)
-Scenario	Action
-Disk >80%	Run backup-clean. System triggers "Emergency Purge".
-Permission Errors	Run wp-fix-perms.
-Sync Failure	Inspect ~/logs/nas_sync.log.
-code
-Code
+```
+
 ---
 
-### 3. TECHNICAL_REFERENCE.md (Opis techniczny)
-*Zaktualizowany o listę wszystkich 17 modułów.*
+## 🛠️ Operational Dashboard (Aliases)
 
-```markdown
-# 📜 WSMS Technical Module Reference
+| Command | Description |
+|---------|-------------|
+| `wp-status` | Executive Overview: Hardware metrics + fleet health |
+| `wp-fleet` | Fleet inventory audit (Versions, plugin updates) |
+| `wp-update-safe` | Production Path: Backup → Patch → Verify → Optimize |
+| `wp-fix-perms` | Re-enforce security isolation and ACL policies |
+| `nas-sync` | Manual trigger for off-site SFTP synchronization |
+| `clamav-scan` | Initiate recursive daily malware signature audit |
+| `backup-list` | List all backups with size, date, and age |
+| `backup-clean` | Interactive cleanup with confirmation |
+| `backup-emergency` | Emergency: Keep only 2 latest copies per site |
+| `mysql-backup-all` | Backup all WordPress databases |
+| `wp-help` | Complete command reference |
 
-### 🛠 The Engine: `wsms-config.sh`
-The "Brain" of the system. All 17 scripts source this file to retrieve site paths, usernames, and NAS credentials.
+---
 
-### 🔍 Diagnostics & Monitoring
-1. `server-health-audit.sh` - Deep hardware & services diagnostics.
-2. `wp-fleet-status-monitor.sh` - Version tracking & update auditing.
-3. `wp-multi-instance-audit.sh` - Deep site-health and DB integrity check.
-4. `wp-cli-infrastructure-validator.sh` - Pre-flight connectivity test.
+## 📚 Documentation
 
-### 🛡️ Security & Hardening
-5. `infrastructure-permission-orchestrator.sh` - Enforces isolation and ACLs.
-6. `clamav-auto-scan.sh` - Daily targeted malware detection.
-7. `clamav-full-scan.sh` - Weekly root-level system audit.
+| Document | Description |
+|----------|-------------|
+| [Deployment Guide](docs/DEPLOYMENT_GUIDE.md) | Step-by-step Standard Operating Procedure |
+| [Technical Reference](docs/TECHNICAL_REFERENCE.md) | Deep dive into 17 script modules |
 
-### 💾 Backup & Recovery
-8. `wp-full-recovery-backup.sh` - Full bare-metal site snapshots.
-9. `wp-essential-assets-backup.sh` - Lean high-frequency asset backups.
-10. `mysql-backup-manager.sh` - Dynamic DB snapshot engine (Regex based).
-11. `standalone-mysql-backup-engine.sh` - Low-level mysqldump fallback.
-12. `red-robin-system-backup.sh` - Bare-metal OS config recovery.
+---
 
-### 🔄 Automation & Interface
-13. `nas-sftp-sync.sh` - Off-site synchronization with Synology NAS.
-14. `wp-automated-maintenance-engine.sh` - Fleet-wide patching & optimization.
-15. `wp-smart-retention-manager.sh` - Heuristic disk cleanup engine.
-16. `wp-interactive-backup-tool.sh` - CLI menu for manual tasks.
-17. `wp-help.sh` - Central command reference.
+## 🔧 Incident Response (SOP)
 
-🤝 Maintainer & License
-👤 Maintainer: Lukasz Malec
+| Scenario | Action |
+|----------|--------|
+| Low Disk Space (<20%) | Run `backup-clean` or `backup-emergency` |
+| Site Permission Errors | Execute `wp-fix-perms` |
+| Update Failure | Run `wp-fix-perms` then `wp-update-safe` |
+| Backup Cycle Failed | Check `df -h`, run `wp-interactive-backup-tool` |
+| Security Threat Detected | Check `clamav-logs`, inspect `/var/quarantine/` |
+| NAS Sync Failed | Check `~/.ssh/` keys, run `nas-sync-logs` |
 
-📜 License: MIT License
+---
 
-📅 Last Update: April 2026
+## 📁 Repository Structure
+
+```
+wp-server-management-system/
+├── .github/              # GitHub templates (issues, PRs)
+├── docs/                 # Documentation
+│   ├── DEPLOYMENT_GUIDE.md
+│   └── TECHNICAL_REFERENCE.md
+├── scripts/              # 17 WSMS operational modules
+│   └── wsms-config.sh    # Central configuration (EDIT THIS!)
+├── installers/           # Installation scripts
+│   ├── install_wsms.sh   # Bash installer
+│   └── install_wsms.fish # Fish installer
+├── LICENSE
+└── README.md
+```
+
+---
+
+## 🤝 Contributing
+
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+---
+
+## 📜 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👤 Maintainer
+
+**Lukasz Malec** | [GitHub: maleclukas-prog](https://github.com/maleclukas-prog)
+
+---
+
+## 🙏 Acknowledgments
+
+- WP-CLI team for the excellent WordPress management tool
+- ClamAV for open-source antivirus
+- The open-source community for inspiration
+
+---
+
+**✅ SYSTEM READY FOR PRODUCTION DEPLOYMENT**
+```
+

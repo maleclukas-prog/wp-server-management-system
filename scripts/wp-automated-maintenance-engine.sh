@@ -1,5 +1,10 @@
 #!/bin/bash
 # =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
+# =================================================================
 # 🔄 FLEET-WIDE MAINTENANCE ENGINE
 # Description: Orchestrates core/plugin updates across all tenants 
 #              with post-patch optimization and schema migration.

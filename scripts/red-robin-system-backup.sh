@@ -1,4 +1,9 @@
 #!/bin/bash
+# =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
 source ~/scripts/wsms-config.sh
 echo "🔴 RED ROBIN - System backup"
 BACKUP_NAME="red-robin-$(hostname)-$(date +%Y%m%d-%H%M%S).tar.gz"

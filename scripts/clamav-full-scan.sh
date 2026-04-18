@@ -1,4 +1,9 @@
 #!/bin/bash
+# =================================================================
+# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
+# Description: Centralized command reference, SOP, and system logic.
+# Author: Lukasz Malec / GitHub: maleclukas-prog
+# =================================================================
 TIMESTAMP=$(date +%Y%m%d)
 LOG_FILE="/var/log/clamav/full_audit_$TIMESTAMP.log"
 sudo mkdir -p /var/quarantine
