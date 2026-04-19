@@ -14,9 +14,7 @@
 SITES=(
     # "site1:/var/www/site1/public_html:user1"
     # "site2:/var/www/site2/public_html:user2"
-	"uszatek:/var/www/ubuntu_uszatek/public_html:wordpress_uszatek"
-    "test:/var/www/test_fotografzbalkonikiem/public_html:wordpress_test"
-    "photo:/var/www/photographerwithawalker/public_html:wordpress_photo"
+
 )
 
 # ==================== NAS/SFTP SETTINGS ====================
@@ -25,11 +23,7 @@ SITES=(
 # NAS_USER="admin"
 # NAS_PATH="/remote/backup/path"
 # NAS_SSH_KEY="$HOME/.ssh/id_rsa"
-NAS_HOST="lukas-nas-server-2.synology.me"
-NAS_PORT="58365"
-NAS_USER="Lukas_Malec"
-NAS_PATH="/homes/Lukas_Malec/server_backups"
-NAS_SSH_KEY="/home/ubuntu/.ssh/synology_fix"
+
 
 # ==================== RETENTION POLICIES ====================
 RETENTION_LITE=14        # Days to keep lite backups
