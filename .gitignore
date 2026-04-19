@@ -1,0 +1,40 @@
+
+---
+
+## 📄 PLIK 10/12: `.gitignore`
+
+```gitignore
+# WSMS Configuration (contains sensitive data)
+scripts/wsms-config.sh
+
+# Backup directories
+backups-*/
+mysql-backups/
+backups-rollback/
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+*_BACKUP_*
+*_backup_*
+
+# SSH keys
+*.pem
+*.key
+id_rsa*
