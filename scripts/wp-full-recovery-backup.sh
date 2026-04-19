@@ -1,47 +1,40 @@
 #!/bin/bash
 # =================================================================
-# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
-# Description: Centralized command reference, SOP, and system logic.
-# Author: Lukasz Malec / GitHub: maleclukas-prog
+# WSMS PRO v4.2 - FULL RECOVERY BACKUP
 # =================================================================
-# =================================================================
-# 💾 FULL RECOVERY BACKUP - DYNAMIC VERSION
-# =================================================================
-source ~/scripts/wsms-config.sh
 
-echo "💾 INITIATING FULL SYSTEM BACKUP"
-echo "================================"
-echo "⏰ Timestamp: $(date)"
+source "$HOME/scripts/wsms-config.sh"
+TS=$(date +%Y%m%d-%H%M%S)
+BLUE='\033[0;34m'; GREEN='\033[0;32m'; NC='\033[0m'
 
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p "$BACKUP_FULL_DIR"
+LOG_FILE="$LOG_FULL_BACKUP"
+exec >> "$LOG_FILE" 2>&1
+
+echo "=========================================================="
+echo "💾 FULL BACKUP v4.2 - $(date)"
+echo "=========================================================="
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n🌐 Backing up: $name"
+    echo -e "\n📦 Snapshotting $name..."
     
-    if [ ! -f "$path/wp-config.php" ]; then
-        echo "   ❌ Skipping - Invalid installation"
-        continue
-    fi
-    
-    # Pre-backup optimization
-    sudo -u "$user" wp --path="$path" transient delete --expired --quiet 2>/dev/null
-    sudo -u "$user" wp --path="$path" db optimize --quiet 2>/dev/null
-    
-    # Database backup
+    # Database backup first
     bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
     
-    # Filesystem backup
-    ARCHIVE="$BACKUP_FULL_DIR/backup-full-$name-files-$TIMESTAMP.tar.gz"
-    sudo tar -czf "$ARCHIVE" -C "$path" --exclude="wp-content/cache" --exclude="*.log" . 2>/dev/null
+    # Full files backup
+    tar -czf "$BACKUP_FULL_DIR/full-$name-$TS.tar.gz" -C "$path" . 2>/dev/null
     
-    if [ -f "$ARCHIVE" ]; then
-        SIZE=$(du -h "$ARCHIVE" | cut -f1)
-        echo "   ✅ Filesystem: $SIZE"
+    if [ -f "$BACKUP_FULL_DIR/full-$name-$TS.tar.gz" ]; then
+        size=$(du -h "$BACKUP_FULL_DIR/full-$name-$TS.tar.gz" | cut -f1)
+        echo "   ${GREEN}✅ Full backup created: $size${NC}"
+    else
+        echo "   ❌ Failed to create full backup"
     fi
 done
 
-# Cleanup old backups
-find "$BACKUP_FULL_DIR" -name "backup-full-*" -type f -mtime +$RETENTION_FULL -delete
-echo -e "\n✅ FULL BACKUP COMPLETED"
+# Clean old backups
+echo -e "\n🧹 Cleaning old backups (older than $RETENTION_FULL days)..."
+find "$BACKUP_FULL_DIR" -name "*.tar.gz" -mtime "+$RETENTION_FULL" -delete 2>/dev/null
+
+echo -e "\n⏰ Completed: $(date)"
+echo -e "${GREEN}✅ FULL BACKUP CYCLE COMPLETED${NC}"

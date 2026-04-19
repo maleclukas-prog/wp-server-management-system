@@ -1,11 +1,30 @@
 #!/bin/bash
 # =================================================================
-# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
-# Description: Centralized command reference, SOP, and system logic.
-# Author: Lukasz Malec / GitHub: maleclukas-prog
+# WSMS PRO v4.2 - RED ROBIN SYSTEM BACKUP
 # =================================================================
-source ~/scripts/wsms-config.sh
-echo "🔴 RED ROBIN - System backup"
-BACKUP_NAME="red-robin-$(hostname)-$(date +%Y%m%d-%H%M%S).tar.gz"
-sudo tar -czf "/tmp/$BACKUP_NAME" --exclude="$HOME/backups-*" --exclude="*/wp-content/uploads" / 2>/dev/null
-echo "System backup created: /tmp/$BACKUP_NAME"
+
+source "$HOME/scripts/wsms-config.sh"
+TS=$(date +%Y%m%d-%H%M%S)
+OUT="$BACKUP_MANUAL_DIR/red-robin-sys-$TS.tar.gz"
+GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
+
+echo "🔴 EMERGENCY SYSTEM STATE CAPTURE STARTING v4.2..."
+echo "=========================================================="
+
+sudo tar -cpzf "$OUT" \
+    --exclude="/proc" \
+    --exclude="/sys" \
+    --exclude="/dev" \
+    --exclude="/tmp" \
+    --exclude="/run" \
+    --exclude="/mnt" \
+    --exclude="/media" \
+    --exclude="$HOME/backups-"* \
+    /etc /var/log /home 2>/dev/null
+
+if [ -f "$OUT" ]; then
+    size=$(du -h "$OUT" | cut -f1)
+    echo -e "✅ ${GREEN}System configuration captured: $OUT ($size)${NC}"
+else
+    echo -e "❌ ${RED}Failed to create system backup${NC}"
+fi

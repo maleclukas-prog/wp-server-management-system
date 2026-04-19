@@ -1,69 +1,83 @@
 #!/bin/bash
 # =================================================================
-# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
-# Description: Centralized command reference, SOP, and system logic.
-# Author: Lukasz Malec / GitHub: maleclukas-prog
+# WSMS PRO v4.2 - INTERACTIVE BACKUP TOOL
 # =================================================================
-# =================================================================
-# 🎯 INTERACTIVE BACKUP TOOL - DYNAMIC VERSION
-# =================================================================
-source ~/scripts/wsms-config.sh
 
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
+source "$HOME/scripts/wsms-config.sh"
+BLUE='\033[0;34m'; GREEN='\033[0;32m'; CYAN='\033[0;36m'; NC='\033[0m'
 
-echo -e "${CYAN}🛠️  ON-DEMAND BACKUP ENGINE${NC}"
-echo "=========================================="
+echo -e "${BLUE}🎯 WSMS INTERACTIVE BACKUP ENGINE v4.2${NC}"
+echo "=========================================================="
 
-backup_site() {
-    local name="$1"
-    local path="$2"
-    local user="$3"
-    local type="$4"
-    
-    echo -e "\n${YELLOW}🌐 Backing up: $name ($type)${NC}"
-    
-    TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-    
-    # Database
-    bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
-    
-    # Filesystem
-    if [ "$type" = "full" ]; then
-        ARCHIVE="$BACKUP_FULL_DIR/backup-full-$name-$TIMESTAMP.tar.gz"
-        sudo tar -czf "$ARCHIVE" -C "$path" --exclude="wp-content/cache" . 2>/dev/null
-    else
-        ARCHIVE="$BACKUP_MANUAL_DIR/backup-lite-$name-$TIMESTAMP.tar.gz"
-        sudo tar -czf "$ARCHIVE" -C "$path" wp-content/uploads wp-content/themes wp-content/plugins wp-config.php 2>/dev/null
-    fi
-    
-    [ -f "$ARCHIVE" ] && echo -e "   ✅ ${GREEN}Success${NC}" || echo -e "   ❌ ${RED}Failed${NC}"
-}
-
-while true; do
-    echo -e "\n${CYAN}🎯 SELECT SITE:${NC}"
-    for i in "${!SITES[@]}"; do
-        IFS=':' read -r name path user <<< "${SITES[$i]}"
-        echo "  $((i+1))) $name"
-    done
-    echo "  a) All sites"
-    echo "  q) Exit"
-    read -p "Choice: " choice
-    
-    case $choice in
-        q|Q) echo -e "${GREEN}Goodbye!${NC}"; break ;;
-        a|A)
-            read -p "Backup type (lite/full): " btype
-            for site in "${SITES[@]}"; do
-                IFS=':' read -r name path user <<< "$site"
-                backup_site "$name" "$path" "$user" "$btype"
-            done
-            ;;
-        [0-9]*)
-            idx=$((choice-1))
-            [ -z "${SITES[$idx]}" ] && continue
-            IFS=':' read -r name path user <<< "${SITES[$idx]}"
-            read -p "Backup type (lite/full): " btype
-            backup_site "$name" "$path" "$user" "$btype"
-            ;;
-    esac
+echo -e "\n${CYAN}Select a site to backup:${NC}"
+echo "   0) All sites"
+i=1
+declare -A site_map
+for site in "${SITES[@]}"; do
+    IFS=':' read -r name path user <<< "$site"
+    echo "   $i) $name"
+    site_map[$i]="$site"
+    ((i++))
 done
+echo "   q) Quit"
+
+echo ""
+read -p "Enter choice: " choice
+
+if [ "$choice" = "q" ] || [ "$choice" = "Q" ]; then
+    echo "Goodbye!"
+    exit 0
+fi
+
+echo -e "\n${CYAN}Select backup type:${NC}"
+echo "   1) Lite backup (themes, plugins, uploads, config)"
+echo "   2) Full backup (complete site)"
+echo "   3) Database only"
+echo "   4) Rollback snapshot"
+echo "   q) Quit"
+
+echo ""
+read -p "Enter choice: " backup_type
+
+case $backup_type in
+    1)
+        if [ "$choice" = "0" ]; then
+            bash "$SCRIPT_DIR/wp-essential-assets-backup.sh"
+        else
+            IFS=':' read -r name path user <<< "${site_map[$choice]}"
+            echo "Running Lite Backup for $name..."
+            bash "$SCRIPT_DIR/wp-essential-assets-backup.sh" "$name"
+        fi
+        ;;
+    2)
+        if [ "$choice" = "0" ]; then
+            bash "$SCRIPT_DIR/wp-full-recovery-backup.sh"
+        else
+            IFS=':' read -r name path user <<< "${site_map[$choice]}"
+            echo "Running Full Backup for $name..."
+            bash "$SCRIPT_DIR/wp-full-recovery-backup.sh" "$name"
+        fi
+        ;;
+    3)
+        if [ "$choice" = "0" ]; then
+            bash "$SCRIPT_DIR/mysql-backup-manager.sh" all
+        else
+            IFS=':' read -r name path user <<< "${site_map[$choice]}"
+            echo "Running Database Backup for $name..."
+            bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name"
+        fi
+        ;;
+    4)
+        if [ "$choice" = "0" ]; then
+            bash "$SCRIPT_DIR/wp-rollback.sh" snapshot all
+        else
+            IFS=':' read -r name path user <<< "${site_map[$choice]}"
+            echo "Creating rollback snapshot for $name..."
+            bash "$SCRIPT_DIR/wp-rollback.sh" snapshot "$name"
+        fi
+        ;;
+    q|Q) echo "Goodbye!"; exit 0 ;;
+    *) echo "Invalid choice" ;;
+esac
+
+echo -e "\n${GREEN}✅ Backup operation completed!${NC}"

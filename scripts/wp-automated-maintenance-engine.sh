@@ -1,40 +1,68 @@
 #!/bin/bash
 # =================================================================
-# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
-# Description: Centralized command reference, SOP, and system logic.
-# Author: Lukasz Malec / GitHub: maleclukas-prog
+# WSMS PRO v4.2 - FLEET-WIDE MAINTENANCE ENGINE
 # =================================================================
-# =================================================================
-# 🔄 FLEET-WIDE MAINTENANCE ENGINE
-# Description: Orchestrates core/plugin updates across all tenants 
-#              with post-patch optimization and schema migration.
-# =================================================================
-source $HOME/scripts/wsms-config.sh
 
-echo -e "🔄 ${CYAN}STARTING AUTOMATED FLEET MAINTENANCE...${NC}"
+source "$HOME/scripts/wsms-config.sh"
+CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; NC='\033[0m'
+
+LOG_FILE="$LOG_UPDATES"
+exec >> "$LOG_FILE" 2>&1
+
+echo "=========================================================="
+echo "🔄 MAINTENANCE ENGINE v4.2 - $(date)"
+echo "=========================================================="
+
+success_count=0
+fail_count=0
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n🌐 Updating: $name"
-
-    if sudo -u "$user" wp --path="$path" core version &>/dev/null; then
-        # 1. Core Update
-        sudo -u "$user" wp --path="$path" core update --quiet
+    echo -e "\n🔄 Processing: $name"
+    
+    if [ -f "$path/wp-config.php" ]; then
+        # Create rollback snapshot before update
+        echo "   📸 Creating pre-update snapshot..."
+        bash "$SCRIPT_DIR/wp-rollback.sh" snapshot "$name" 2>/dev/null
         
-        # 2. Plugin & Theme Update
-        sudo -u "$user" wp --path="$path" plugin update --all --quiet
-        sudo -u "$user" wp --path="$path" theme update --all --quiet
+        # Perform updates
+        echo "   ⚙️ Updating core..."
+        sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null
         
-        # 3. Database Migration (Crucial for Zepz reliability!)
-        sudo -u "$user" wp --path="$path" core update-db --quiet
+        echo "   ⚙️ Updating plugins..."
+        sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null
         
-        # 4. Optimization
-        sudo -u "$user" wp --path="$path" cache flush --quiet
-        sudo -u "$user" wp --path="$path" transient delete --expired --quiet
+        echo "   ⚙️ Updating themes..."
+        sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null
         
-        echo -e "   ${GREEN}✅ Maintenance for $name successful.${NC}"
+        echo "   ⚙️ Updating database..."
+        sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null
+        
+        echo "   ⚙️ Flushing cache..."
+        sudo -u "$user" wp --path="$path" cache flush --quiet 2>/dev/null
+        
+        # Verify site is still working
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+        if [ "$http_code" = "000" ]; then
+            http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+        fi
+        
+        if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ]; then
+            echo -e "   ${GREEN}✅ $name updated successfully (HTTP $http_code)${NC}"
+            ((success_count++))
+        else
+            echo -e "   ${RED}❌ $name may have issues (HTTP $http_code) - rolling back...${NC}"
+            bash "$SCRIPT_DIR/wp-rollback.sh" rollback "$name" 2>/dev/null
+            ((fail_count++))
+        fi
     else
-        echo -e "   ${RED}❌ Error: WP-CLI cannot access $name. Check permissions.${NC}"
+        echo -e "   ${RED}❌ Failed: Config missing at $path${NC}"
+        ((fail_count++))
     fi
 done
-echo -e "\n🎉 ${GREEN}ALL INSTANCES ARE PATCHED AND OPTIMIZED.${NC}"
+
+echo -e "\n${CYAN}📊 MAINTENANCE SUMMARY:${NC}"
+echo "   ✅ Successful: $success_count site(s)"
+echo "   ❌ Failed: $fail_count site(s)"
+echo "   ⏰ Completed: $(date)"
+echo -e "${GREEN}✅ MAINTENANCE CYCLE COMPLETE${NC}"

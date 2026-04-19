@@ -1,8 +1,8 @@
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.2 - PEŁNY SPIS KOMEND
-# Kompletny przewodnik z systemem rollback
-# Wersja rozszerzona o Health Check, Logi i Pomoc Interaktywną
+# WSMS PRO v4.2 - MASTER REFERENCE GUIDE
+# Complete command reference with rollback system documentation
+# Enhanced with Health Check, Log Management, and Interactive Help
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -10,175 +10,175 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; WHITE='\033[1;37m'; NC='\033[0m'
 
 clear
-echo -e "${WHITE}🆘 WSMS PRO v4.2 - PEŁNY SPIS KOMEND${NC}"
+echo -e "${WHITE}🆘 WSMS PRO v4.2 - MASTER REFERENCE GUIDE${NC}"
 echo -e "${BLUE}=========================================================${NC}"
-echo -e "⏰ Czas systemowy: $(date)"
-echo -e "📦 Wersja: 4.2 (Rozszerzona o Rollback Engine)"
-echo -e "📂 Konfiguracja: $(basename "$HOME")/scripts/wsms-config.sh"
+echo -e "⏰ System Time: $(date)"
+echo -e "📦 Version: 4.2 (Enhanced with Rollback Engine)"
+echo -e "📂 Config: $(basename "$HOME")/scripts/wsms-config.sh"
 echo ""
 
 # ============================================
-# SZYBKI START
+# QUICK START
 # ============================================
-echo -e "${CYAN}▶ SZYBKI START - Najważniejsze komendy${NC}"
+echo -e "${CYAN}▶ QUICK START - Most Important Commands${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-status" "Pełny przegląd: sprzęt + WordPress + backupy"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-fleet" "Wersje WordPress i dostępne aktualizacje"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-safe" "Bezpieczna aktualizacja (Backup → Migawka → Update)"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-snapshot all" "Utwórz migawki rollback dla wszystkich stron"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-rollback [strona]" "Przywróć stronę do ostatniej migawki"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-health" "Szybkie sprawdzenie stanu systemu"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-help" "Ten dokument"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-status" "Full overview: hardware + WordPress + backups"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-fleet" "WordPress versions and available updates"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-safe" "Safe update (Backup → Snapshot → Update)"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-snapshot all" "Create rollback snapshots for all sites"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-rollback [site]" "Restore site to latest snapshot"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-health" "Quick health check of system"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-help" "This document"
 echo ""
 
 # ============================================
-# SYSTEM ROLLBACK (NOWOŚĆ!)
+# ROLLBACK SYSTEM (NEW!)
 # ============================================
-echo -e "${CYAN}▶ 🔄 SYSTEM ROLLBACK - NOWOŚĆ w v4.2${NC}"
+echo -e "${CYAN}▶ 🔄 ROLLBACK SYSTEM - NEW in v4.2${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Automatyczne migawki przed aktualizacją umożliwiają"
-echo -e "       natychmiastowe przywrócenie strony w razie problemów."
+echo -e "${YELLOW}Description:${NC} Automatic pre-update snapshots enable instant"
+echo -e "            site recovery in case of update failures."
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-snapshot all" "Utwórz migawki dla WSZYSTKICH stron"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-snapshot [strona]" "Utwórz migawkę dla konkretnej strony"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-snapshots" "Lista wszystkich dostępnych migawek"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-snapshots [strona]" "Lista migawek dla konkretnej strony"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-rollback [strona]" "Przywróć do NAJNOWSZEJ migawki"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-rollback [strona] [data]" "Przywróć do konkretnej migawki"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-rollback-safe [strona]" "Przywracanie z potwierdzeniem"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-rollback-clean [dni]" "Wyczyść stare migawki (domyślnie: $RETENTION_ROLLBACK dni)"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-snapshot all" "Create snapshots for ALL sites"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-snapshot [site]" "Create snapshot for specific site"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-snapshots" "List all available snapshots"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-snapshots [site]" "List snapshots for specific site"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-rollback [site]" "Restore to LATEST snapshot"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-rollback [site] [date]" "Restore to specific snapshot"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-rollback-safe [site]" "Rollback with confirmation"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-rollback-clean [days]" "Clean old snapshots (default: $RETENTION_ROLLBACK days)"
 echo ""
-echo -e "${YELLOW}Przykłady:${NC}"
-echo "   wp-snapshot mojastrona"
-echo "   wp-snapshots mojastrona"
-echo "   wp-rollback mojastrona"
-echo "   wp-rollback mojastrona 20260419_143022"
+echo -e "${YELLOW}Examples:${NC}"
+echo "   wp-snapshot mysite"
+echo "   wp-snapshots mysite"
+echo "   wp-rollback mysite"
+echo "   wp-rollback mysite 20260419_143022"
 echo ""
 
 # ============================================
-# ZARZĄDZANIE BACKUPAMI
+# BACKUP MANAGEMENT
 # ============================================
-echo -e "${CYAN}▶ 💾 ZARZĄDZANIE BACKUPAMI${NC}"
+echo -e "${CYAN}▶ 💾 BACKUP MANAGEMENT${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Trójwarstwowy system backupów (Lite/Full/MySQL)"
-echo "       z automatycznym zarządzaniem retencją."
+echo -e "${YELLOW}Description:${NC} Three-tier backup system (Lite/Full/MySQL)"
+echo "            with automatic retention management."
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-backup-lite" "Szybki backup (themes, plugins, uploads, config)"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-backup-full" "Pełny backup całej strony"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-backup-ui" "Interaktywne narzędzie do backupów"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-backup-site" "Alias do wp-backup-ui"
-printf "  ${GREEN}%-30s${NC} %s\n" "red-robin" "Awaryjny backup konfiguracji systemu"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-backup-lite" "Fast backup (themes, plugins, uploads, config)"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-backup-full" "Complete site snapshot"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-backup-ui" "Interactive backup tool"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-backup-site" "Alias for wp-backup-ui"
+printf "  ${GREEN}%-26s${NC} %s\n" "red-robin" "Emergency system configuration backup"
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "backup-list" "Lista wszystkich backupów ze szczegółami"
-printf "  ${GREEN}%-30s${NC} %s\n" "backup-size" "Wykorzystanie miejsca na backupy"
-printf "  ${GREEN}%-30s${NC} %s\n" "backup-dirs" "Struktura katalogów backupów"
-printf "  ${GREEN}%-30s${NC} %s\n" "backup-clean" "Interaktywne czyszczenie (z potwierdzeniem)"
-printf "  ${GREEN}%-30s${NC} %s\n" "backup-force-clean" "Automatyczne czyszczenie wg retencji"
-printf "  ${GREEN}%-30s${NC} %s\n" "backup-emergency" "AWARYJNE: zachowaj tylko 2 najnowsze kopie"
+printf "  ${GREEN}%-26s${NC} %s\n" "backup-list" "List all backups with details"
+printf "  ${GREEN}%-26s${NC} %s\n" "backup-size" "Show backup storage usage"
+printf "  ${GREEN}%-26s${NC} %s\n" "backup-dirs" "Show backup directory structure"
+printf "  ${GREEN}%-26s${NC} %s\n" "backup-clean" "Interactive cleanup (with confirmation)"
+printf "  ${GREEN}%-26s${NC} %s\n" "backup-force-clean" "Automatic cleanup based on retention"
+printf "  ${GREEN}%-26s${NC} %s\n" "backup-emergency" "EMERGENCY: keep only 2 latest copies"
 echo ""
 
 # ============================================
-# BAZY DANYCH
+# DATABASE MANAGEMENT
 # ============================================
-echo -e "${CYAN}▶ 🗄️ BAZY DANYCH${NC}"
+echo -e "${CYAN}▶ 🗄️ DATABASE MANAGEMENT${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Automatyczne backupy baz danych z odczytem konfiguracji"
-echo "       bezpośrednio z plików wp-config.php."
+echo -e "${YELLOW}Description:${NC} Automatic database backups reading credentials"
+echo "            directly from wp-config.php files."
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "mysql-backup-all" "Backup wszystkich baz WordPress"
-printf "  ${GREEN}%-30s${NC} %s\n" "mysql-backup-list" "Lista dostępnych backupów baz"
-printf "  ${GREEN}%-30s${NC} %s\n" "mysql-backup [strona]" "Backup konkretnej bazy"
-printf "  ${GREEN}%-30s${NC} %s\n" "db-backup" "Alias do mysql-backup"
+printf "  ${GREEN}%-26s${NC} %s\n" "mysql-backup-all" "Backup all WordPress databases"
+printf "  ${GREEN}%-26s${NC} %s\n" "mysql-backup-list" "List available database backups"
+printf "  ${GREEN}%-26s${NC} %s\n" "mysql-backup [site]" "Backup specific database"
+printf "  ${GREEN}%-26s${NC} %s\n" "db-backup" "Alias for mysql-backup"
 echo ""
 
 # ============================================
-# UTRZYMANIE I BEZPIECZEŃSTWO
+# MAINTENANCE & SECURITY
 # ============================================
-echo -e "${CYAN}▶ 🔧 UTRZYMANIE I BEZPIECZEŃSTWO${NC}"
+echo -e "${CYAN}▶ 🔧 MAINTENANCE & SECURITY${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Narzędzia do utrzymania i zabezpieczania infrastruktury."
+echo -e "${YELLOW}Description:${NC} Tools for maintaining and securing infrastructure."
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-update-all" "Aktualizacja wszystkich stron (bez backupu)"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-update" "Alias do wp-update-all"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-fix-perms" "Napraw uprawnienia plików i ACL"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-fix-permissions" "Alias do wp-fix-perms"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-audit" "Głęboki audyt bezpieczeństwa i wydajności"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-diagnoza" "Alias do wp-audit"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-cli-validator" "Test połączenia WP-CLI dla wszystkich stron"
-printf "  ${GREEN}%-30s${NC} %s\n" "system-diag" "Diagnostyka systemu operacyjnego"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-update-all" "Update all sites (without backup)"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-update" "Alias for wp-update-all"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-fix-perms" "Fix file permissions and ACLs"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-fix-permissions" "Alias for wp-fix-perms"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-audit" "Deep security and performance audit"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-diagnoza" "Alias for wp-audit"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-cli-validator" "Test WP-CLI connectivity for all sites"
+printf "  ${GREEN}%-26s${NC} %s\n" "system-diag" "Operating system diagnostics"
 echo ""
 
 # ============================================
-# SYNCHRONIZACJA Z NAS
+# NAS SYNC
 # ============================================
-echo -e "${CYAN}▶ ☁️ SYNCHRONIZACJA Z NAS${NC}"
+echo -e "${CYAN}▶ ☁️ NAS SYNCHRONIZATION${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Automatyczna replikacja backupów na zdalny serwer NAS/SFTP."
+echo -e "${YELLOW}Description:${NC} Automatic backup replication to remote NAS/SFTP server."
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "nas-sync" "Ręczne uruchomienie synchronizacji"
-printf "  ${GREEN}%-30s${NC} %s\n" "nas-sync-status" "Status ostatniej synchronizacji"
-printf "  ${GREEN}%-30s${NC} %s\n" "nas-sync-logs" "Podgląd logów synchronizacji (na żywo)"
-printf "  ${GREEN}%-30s${NC} %s\n" "nas-sync-errors" "Podgląd błędów synchronizacji (na żywo)"
+printf "  ${GREEN}%-26s${NC} %s\n" "nas-sync" "Manual trigger for synchronization"
+printf "  ${GREEN}%-26s${NC} %s\n" "nas-sync-status" "Show last synchronization status"
+printf "  ${GREEN}%-26s${NC} %s\n" "nas-sync-logs" "View sync logs (live)"
+printf "  ${GREEN}%-26s${NC} %s\n" "nas-sync-errors" "View sync errors (live)"
 echo ""
 
 # ============================================
-# CLAMAV - ANTYWIRUS
+# CLAMAV ANTIVIRUS
 # ============================================
-echo -e "${CYAN}▶ 🛡️ CLAMAV - ANTYWIRUS${NC}"
+echo -e "${CYAN}▶ 🛡️ CLAMAV - ANTIVIRUS${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Skanowanie malware i automatyczna kwarantanna."
+echo -e "${YELLOW}Description:${NC} Malware scanning with automatic quarantine."
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-scan" "Codzienny szybki skan (/var/www, /home)"
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-deep-scan" "Pełny skan systemu (wszystko)"
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-status" "Status usługi ClamAV"
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-update" "Aktualizacja definicji wirusów"
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-logs" "Podgląd logów skanowania (na żywo)"
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-quarantine" "Lista plików w kwarantannie"
-printf "  ${GREEN}%-30s${NC} %s\n" "clamav-clean-quarantine" "Wyczyść kwarantannę"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-scan" "Daily quick scan (/var/www, /home)"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-deep-scan" "Full system scan (everything)"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-status" "ClamAV service status"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-update" "Update virus definitions"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-logs" "View scan logs (live)"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-quarantine" "List quarantined files"
+printf "  ${GREEN}%-26s${NC} %s\n" "clamav-clean-quarantine" "Empty quarantine"
 echo ""
 
 # ============================================
-# SYSTEM SPRAWDZANIA STANU (NOWOŚĆ!)
+# 🆕 HEALTH CHECK SYSTEM (NEW!)
 # ============================================
-echo -e "${CYAN}▶ 🏥 SYSTEM SPRAWDZANIA STANU - NOWOŚĆ w v4.2${NC}"
+echo -e "${CYAN}▶ 🏥 HEALTH CHECK SYSTEM - NEW in v4.2${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Szybka diagnostyka stanu systemu"
+echo -e "${YELLOW}Description:${NC} Quick system health diagnostics"
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-health" "Pełne sprawdzenie stanu"
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-quick-status" "Alias do wp-status"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-health" "Complete health check"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-quick-status" "Alias for wp-status"
 echo ""
 
 # ============================================
-# ZARZĄDZANIE LOGAMI (NOWOŚĆ!)
+# 🆕 LOG MANAGEMENT (NEW!)
 # ============================================
-echo -e "${CYAN}▶ 📝 ZARZĄDZANIE LOGAMI - NOWOŚĆ w v4.2${NC}"
+echo -e "${CYAN}▶ 📝 LOG MANAGEMENT - NEW in v4.2${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Szybki dostęp do plików logów"
+echo -e "${YELLOW}Description:${NC} Quick access to log files"
 echo ""
-printf "  ${GREEN}%-30s${NC} %s\n" "wp-logs" "Pokaż status wszystkich logów"
-printf "  ${GREEN}%-30s${NC} %s\n" "logs-backup" "Podgląd logów backupów (na żywo)"
-printf "  ${GREEN}%-30s${NC} %s\n" "logs-update" "Podgląd logów aktualizacji (na żywo)"
-printf "  ${GREEN}%-30s${NC} %s\n" "logs-sync" "Podgląd logów synchronizacji NAS (na żywo)"
-printf "  ${GREEN}%-30s${NC} %s\n" "logs-scan" "Podgląd logów skanowania malware (na żywo)"
-printf "  ${GREEN}%-30s${NC} %s\n" "logs-all" "Lista wszystkich katalogów logów"
+printf "  ${GREEN}%-26s${NC} %s\n" "wp-logs" "Show all log files status"
+printf "  ${GREEN}%-26s${NC} %s\n" "logs-backup" "View backup logs (live)"
+printf "  ${GREEN}%-26s${NC} %s\n" "logs-update" "View update logs (live)"
+printf "  ${GREEN}%-26s${NC} %s\n" "logs-sync" "View NAS sync logs (live)"
+printf "  ${GREEN}%-26s${NC} %s\n" "logs-scan" "View malware scan logs (live)"
+printf "  ${GREEN}%-26s${NC} %s\n" "logs-all" "List all log directories"
 echo ""
 
 # ============================================
-# WP-CLI DLA POSZCZEGÓLNYCH STRON
+# PER-SITE WP-CLI
 # ============================================
-echo -e "${CYAN}▶ 🎯 WP-CLI DLA POSZCZEGÓLNYCH STRON${NC}"
+echo -e "${CYAN}▶ 🎯 PER-SITE WP-CLI ACCESS${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Opis:${NC} Bezpośredni dostęp do WP-CLI dla każdej strony"
-echo "       z odpowiednim użytkownikiem systemowym."
+echo -e "${YELLOW}Description:${NC} Direct WP-CLI access for each site"
+echo "            with the correct system user."
 echo ""
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    printf "  ${GREEN}%-30s${NC} %s\n" "wp-$name" "WP-CLI dla $name (użytkownik: $user)"
+    printf "  ${GREEN}%-26s${NC} %s\n" "wp-$name" "WP-CLI for $name (user: $user)"
 done
 
 echo ""
-echo -e "${YELLOW}Przykłady użycia:${NC}"
+echo -e "${YELLOW}Usage examples:${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
     echo "   wp-$name plugin list"
@@ -189,134 +189,134 @@ done
 echo ""
 
 # ============================================
-# SZYBKIE KOMENDY DLA STRON
+# PER-SITE QUICK COMMANDS
 # ============================================
-echo -e "${CYAN}▶ ⚡ SZYBKIE KOMENDY DLA STRON${NC}"
+echo -e "${CYAN}▶ ⚡ PER-SITE QUICK COMMANDS${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    printf "  ${GREEN}%-30s${NC} %s\n" "wp-backup-$name" "Szybki backup dla $name"
-    printf "  ${GREEN}%-30s${NC} %s\n" "wp-snapshot-$name" "Migawka rollback dla $name"
-    printf "  ${GREEN}%-30s${NC} %s\n" "wp-rollback-$name" "Rollback dla $name"
+    printf "  ${GREEN}%-26s${NC} %s\n" "wp-backup-$name" "Lite backup for $name"
+    printf "  ${GREEN}%-26s${NC} %s\n" "wp-snapshot-$name" "Rollback snapshot for $name"
+    printf "  ${GREEN}%-26s${NC} %s\n" "wp-rollback-$name" "Rollback for $name"
     echo ""
 done
 
 # ============================================
-# POLITYKI RETENCJI DANYCH
+# RETENTION POLICIES
 # ============================================
-echo -e "${CYAN}▶ 📊 POLITYKI RETENCJI DANYCH${NC}"
+echo -e "${CYAN}▶ 📊 DATA RETENTION POLICIES${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Katalogi i okresy przechowywania:${NC}"
+echo -e "${YELLOW}Directories and retention periods:${NC}"
 echo ""
-printf "  ${GREEN}%-22s${NC} %-18s %s\n" "Typ backupu" "Katalog" "Retencja"
+printf "  ${GREEN}%-22s${NC} %-18s %s\n" "Backup Type" "Directory" "Retention"
 echo "  ------------------------------------------------------------------"
-printf "  %-22s %-18s %s\n" "⚡ Lite Assets" "~/backups-lite/" "$RETENTION_LITE dni"
-printf "  %-22s %-18s %s\n" "💾 Full Snapshots" "~/backups-full/" "$RETENTION_FULL dni"
-printf "  %-22s %-18s %s\n" "🗄️ MySQL Dumps" "~/mysql-backups/" "$RETENTION_MYSQL dni"
-printf "  %-22s %-18s %s\n" "📸 Rollback Snapshots" "~/backups-rollback/" "$RETENTION_ROLLBACK dni"
-printf "  %-22s %-18s %s\n" "☁️ NAS Vault" "Zdalny NAS" "$NAS_RETENTION_DAYS dni"
+printf "  %-22s %-18s %s\n" "⚡ Lite Assets" "~/backups-lite/" "$RETENTION_LITE days"
+printf "  %-22s %-18s %s\n" "💾 Full Snapshots" "~/backups-full/" "$RETENTION_FULL days"
+printf "  %-22s %-18s %s\n" "🗄️ MySQL Dumps" "~/mysql-backups/" "$RETENTION_MYSQL days"
+printf "  %-22s %-18s %s\n" "📸 Rollback Snapshots" "~/backups-rollback/" "$RETENTION_ROLLBACK days"
+printf "  %-22s %-18s %s\n" "☁️ NAS Vault" "Remote NAS" "$NAS_RETENTION_DAYS days"
 echo ""
-echo -e "${RED}⚠️ TRYB AWARYJNY:${NC} Gdy wykorzystanie dysku > ${DISK_ALERT_THRESHOLD}%,"
-echo "   system automatycznie zachowuje tylko 2 najnowsze kopie."
+echo -e "${RED}⚠️ EMERGENCY MODE:${NC} When disk usage > ${DISK_ALERT_THRESHOLD}%,"
+echo "   system automatically keeps only 2 latest copies."
 echo ""
 
 # ============================================
-# PROCEDURY AWARYJNE (SOP)
+# INCIDENT RESPONSE - QUICK REFERENCE
 # ============================================
-echo -e "${CYAN}▶ 🚨 PROCEDURY AWARYJNE (SOP)${NC}"
+echo -e "${CYAN}▶ 🚨 INCIDENT RESPONSE (SOP)${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Szybka reakcja na problemy:${NC}"
+echo -e "${YELLOW}Quick reaction to problems:${NC}"
 echo ""
 
-printf "  ${RED}%-35s${NC} %s\n" "Strona nie działa po aktualizacji:" "wp-rollback [nazwa-strony]"
-printf "  ${RED}%-35s${NC} %s\n" "Mało miejsca na dysku:" "backup-emergency"
-printf "  ${RED}%-35s${NC} %s\n" "Błędy uprawnień (403/500):" "wp-fix-perms"
-printf "  ${RED}%-35s${NC} %s\n" "Podejrzenie malware:" "clamav-deep-scan"
-printf "  ${RED}%-35s${NC} %s\n" "Backup się nie wykonał:" "df -h && wp-backup-ui"
-printf "  ${RED}%-35s${NC} %s\n" "NAS sync nie działa:" "nas-sync-status && nas-sync-errors"
-printf "  ${RED}%-35s${NC} %s\n" "WP-CLI nie łączy się:" "wp-cli-validator"
-printf "  ${RED}%-35s${NC} %s\n" "Biały ekran śmierci (WSOD):" "wp-rollback [nazwa-strony]"
+printf "  ${RED}%-32s${NC} %s\n" "Site down after update:" "wp-rollback [site-name]"
+printf "  ${RED}%-32s${NC} %s\n" "Low disk space:" "backup-emergency"
+printf "  ${RED}%-32s${NC} %s\n" "Permission errors (403/500):" "wp-fix-perms"
+printf "  ${RED}%-32s${NC} %s\n" "Suspected malware:" "clamav-deep-scan"
+printf "  ${RED}%-32s${NC} %s\n" "Backup cycle failed:" "df -h && wp-backup-ui"
+printf "  ${RED}%-32s${NC} %s\n" "NAS sync failed:" "nas-sync-status && nas-sync-errors"
+printf "  ${RED}%-32s${NC} %s\n" "WP-CLI connection failed:" "wp-cli-validator"
+printf "  ${RED}%-32s${NC} %s\n" "White Screen of Death (WSOD):" "wp-rollback [site-name]"
 echo ""
 
 # ============================================
-# LOKALIZACJE PLIKÓW LOGÓW
+# LOG FILES LOCATION
 # ============================================
-echo -e "${CYAN}▶ 📝 LOKALIZACJE PLIKÓW LOGÓW${NC}"
+echo -e "${CYAN}▶ 📝 LOG FILES LOCATION${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Logi zorganizowane w ~/logs/wsms/:${NC}"
+echo -e "${YELLOW}Log file locations (organized in ~/logs/wsms/):${NC}"
 echo ""
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/backups/lite.log" "Szybkie backupy"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/backups/full.log" "Pełne backupy"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/backups/mysql.log" "Backupy baz danych"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/maintenance/updates.log" "Aktualizacje WordPress"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/maintenance/permissions.log" "Naprawy uprawnień"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/retention/retention.log" "Zarządzanie retencją"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/sync/nas-sync.log" "Synchronizacja NAS"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/sync/nas-errors.log" "Błędy synchronizacji NAS"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/security/clamav-scan.log" "Skanowanie ClamAV (dzienne)"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/security/clamav-full.log" "Skanowanie ClamAV (pełne)"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/rollback/snapshots.log" "Tworzenie migawek"
-printf "  ${GREEN}%-40s${NC} %s\n" "~/logs/wsms/rollback/rollback-clean.log" "Czyszczenie migawek"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/backups/lite.log" "Lite backups"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/backups/full.log" "Full backups"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/backups/mysql.log" "Database backups"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/maintenance/updates.log" "WordPress updates"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/maintenance/permissions.log" "Permission fixes"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/retention/retention.log" "Retention management"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/sync/nas-sync.log" "NAS synchronization"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/sync/nas-errors.log" "NAS sync errors"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/security/clamav-scan.log" "ClamAV scan (daily)"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/security/clamav-full.log" "ClamAV scan (full)"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/rollback/snapshots.log" "Snapshot creation"
+printf "  ${GREEN}%-35s${NC} %s\n" "~/logs/wsms/rollback/rollback-clean.log" "Snapshot cleanup"
 echo ""
 
 # ============================================
-# HARMONOGRAM CRON
+# CRONTAB SCHEDULE
 # ============================================
-echo -e "${CYAN}▶ ⏰ HARMONOGRAM CRON${NC}"
+echo -e "${CYAN}▶ ⏰ CRONTAB SCHEDULE${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo -e "${YELLOW}Zaplanowane zadania (9 zautomatyzowanych zadań):${NC}"
+echo -e "${YELLOW}Scheduled tasks (9 automated jobs):${NC}"
 echo ""
-echo "   Codziennie:"
-echo "   • 01:00 - Aktualizacja definicji ClamAV"
-echo "   • 02:00 - Synchronizacja z NAS"
-echo "   • 03:00 - Szybki skan malware"
-echo "   • 04:00 - Zarządzanie retencją backupów"
+echo "   Daily:"
+echo "   • 01:00 - Update ClamAV definitions"
+echo "   • 02:00 - NAS synchronization"
+echo "   • 03:00 - Quick malware scan"
+echo "   • 04:00 - Backup retention management"
 echo ""
-echo "   Co tydzień:"
-echo "   • Niedziela 02:00 - Szybki backup"
-echo "   • Środa 02:00 - Szybki backup"
-echo "   • Niedziela 04:00 - Pełny skan malware"
-echo "   • Niedziela 06:00 - Aktualizacje WordPress (z migawką!)"
-echo "   • Poniedziałek 05:00 - Czyszczenie starych migawek"
+echo "   Weekly:"
+echo "   • Sunday 02:00 - Lite backup"
+echo "   • Wednesday 02:00 - Lite backup"
+echo "   • Sunday 04:00 - Full malware scan"
+echo "   • Sunday 06:00 - WordPress updates (with snapshot!)"
+echo "   • Monday 05:00 - Clean old snapshots"
 echo ""
-echo "   Co miesiąc:"
-echo "   • 1. dnia miesiąca 03:00 - Pełny backup"
+echo "   Monthly:"
+echo "   • 1st day of month 03:00 - Full backup"
 echo ""
 
 # ============================================
-# ŚCIEŻKI SYSTEMOWE
+# SYSTEM PATHS
 # ============================================
-echo -e "${CYAN}▶ 📂 ŚCIEŻKI SYSTEMOWE${NC}"
+echo -e "${CYAN}▶ 📂 SYSTEM PATHS${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo "   📁 Skrypty:        $SCRIPT_DIR"
-echo "   💾 Szybkie backupy: $BACKUP_LITE_DIR"
-echo "   💾 Pełne backupy:   $BACKUP_FULL_DIR"
-echo "   🗄️ Backupy MySQL:   $BACKUP_MYSQL_DIR"
-echo "   📸 Rollback:        $BACKUP_ROLLBACK_DIR"
-echo "   📋 Logi:            $LOG_BASE_DIR"
-echo "   🛡️ Kwarantanna:     $QUARANTINE_DIR"
+echo "   📁 Scripts:        $SCRIPT_DIR"
+echo "   💾 Lite backups:   $BACKUP_LITE_DIR"
+echo "   💾 Full backups:   $BACKUP_FULL_DIR"
+echo "   🗄️ MySQL backups:  $BACKUP_MYSQL_DIR"
+echo "   📸 Rollback:       $BACKUP_ROLLBACK_DIR"
+echo "   📋 Logs:           $LOG_BASE_DIR"
+echo "   🛡️ Quarantine:     $QUARANTINE_DIR"
 echo ""
 
 # ============================================
-# PORADY EKSPERTA
+# PRO TIPS
 # ============================================
-echo -e "${CYAN}▶ 💡 PORADY EKSPERTA${NC}"
+echo -e "${CYAN}▶ 💡 PRO TIPS${NC}"
 echo -e "${CYAN}------------------------------------------------------------${NC}"
-echo "   🔹 Używaj 'wp-update-safe' zamiast 'wp-update-all' - tworzy migawkę"
-echo "   🔹 Przed większymi zmianami: 'wp-snapshot all'"
-echo "   🔹 Monitoruj miejsce: 'backup-size' raz w tygodniu"
-echo "   🔹 Po awarii: 'wp-rollback [strona]' przywraca w 30 sekund"
-echo "   🔹 Sprawdzaj stan: 'wp-health' dla szybkiej diagnostyki"
-echo "   🔹 Podgląd logów: 'logs-backup' lub 'logs-update' na żywo"
-echo "   🔹 Testuj WP-CLI po zmianach uprawnień: 'wp-cli-validator'"
+echo "   🔹 Use 'wp-update-safe' instead of 'wp-update-all' - creates snapshot"
+echo "   🔹 Before major changes: 'wp-snapshot all'"
+echo "   🔹 Monitor disk space: 'backup-size' weekly"
+echo "   🔹 After failure: 'wp-rollback [site]' recovers in 30 seconds"
+echo "   🔹 Check health: 'wp-health' for quick diagnostics"
+echo "   🔹 View logs: 'logs-backup' or 'logs-update' for live monitoring"
+echo "   🔹 Test WP-CLI after permission changes: 'wp-cli-validator'"
 echo ""
 
 # ============================================
-# STOPKA
+# FOOTER
 # ============================================
-echo -e "${GREEN}✅ WSMS PRO v4.2 - GOTOWY DO PRACY${NC}"
+echo -e "${GREEN}✅ WSMS PRO v4.2 - READY FOR OPERATIONS${NC}"
 echo -e "${BLUE}=========================================================${NC}"
-echo -e "${WHITE}📚 Pełna dokumentacja:${NC} ~/scripts/, docs/ w repozytorium"
-echo -e "${WHITE}🐛 Zgłoś problem:${NC} https://github.com/maleclukas-prog/wp-server-management-system/issues"
-echo -e "${WHITE}👤 Autor:${NC} Lukasz Malec"
+echo -e "${WHITE}📚 Full documentation:${NC} ~/scripts/, docs/ in repository"
+echo -e "${WHITE}🐛 Report issues:${NC} https://github.com/maleclukas-prog/wp-server-management-system/issues"
+echo -e "${WHITE}👤 Maintainer:${NC} Lukasz Malec"
 echo ""

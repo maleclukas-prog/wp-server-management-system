@@ -1,74 +1,60 @@
 #!/bin/bash
 # =================================================================
-# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
-# Description: Centralized command reference, SOP, and system logic.
-# Author: Lukasz Malec / GitHub: maleclukas-prog
+# WSMS PRO v4.2 - NAS SFTP SYNC
 # =================================================================
-# =================================================================
-# 🔄 NAS SFTP SYNC - DYNAMIC VERSION
-# =================================================================
-source ~/scripts/wsms-config.sh
 
-LOG_FILE="$LOG_DIR/nas_sync.log"
-BACKUP_MODULES=("backups-full" "backups-lite" "backups-manual" "mysql-backups")
+source "$HOME/scripts/wsms-config.sh"
+LOG_FILE="$LOG_NAS_SYNC"
+ERROR_LOG="$LOG_NAS_ERRORS"
+exec >> "$LOG_FILE" 2>&1
 
-log() { echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"; }
+echo "=========================================================="
+echo "☁️ NAS SYNC - $(date)"
+echo "=========================================================="
 
-get_file_age_days() {
-    local filename="$1"
-    if [[ "$filename" =~ ([0-9]{4})([0-9]{2})([0-9]{2}) ]]; then
-        local file_date="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}"
-        local file_ts=$(date -d "$file_date" +%s 2>/dev/null)
-        echo $((( $(date +%s) - file_ts ) / 86400))
-    else
-        echo 0
+# Check if SSH key exists
+if [ ! -f "$NAS_SSH_KEY" ]; then
+    echo "❌ ERROR: SSH key not found at $NAS_SSH_KEY"
+    echo "$(date): SSH key missing" >> "$ERROR_LOG"
+    exit 1
+fi
+
+# Check if NAS_HOST is configured
+if [ "$NAS_HOST" = "your-nas.synology.me" ]; then
+    echo "⚠️ WARNING: NAS_HOST not configured - sync skipped"
+    exit 0
+fi
+
+sync_success=0
+sync_fail=0
+
+for module in backups-lite backups-full mysql-backups; do
+    echo -e "\n📤 Processing $module..."
+    
+    if [ ! -d "$HOME/$module" ] || [ -z "$(ls -A "$HOME/$module" 2>/dev/null)" ]; then
+        echo "   ⚠️ No files in $module - skipping"
+        continue
     fi
-}
+    
+    if sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$NAS_USER@$NAS_HOST" << SFTP_EOF 2>/dev/null
+mkdir -p $NAS_PATH/$module
+put $HOME/$module/* $NAS_PATH/$module/
+bye
+SFTP_EOF
+    then
+        echo "   ✅ $module synced successfully"
+        ((sync_success++))
+    else
+        echo "   ❌ $module sync FAILED"
+        echo "$(date): Failed to sync $module" >> "$ERROR_LOG"
+        ((sync_fail++))
+    fi
+done
 
-sync_module() {
-    local module="$1"
-    local local_path="$HOME/$module"
-    local remote_path="$NAS_PATH/$module"
-    
-    [ ! -d "$local_path" ] && { log "⚠️  Skipping: $module (not found)"; return 1; }
-    
-    # Ensure remote dir exists
-    echo "mkdir -p $remote_path" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
-    
-    # Upload new files
-    local copied=0
-    for file in "$local_path"/*; do
-        [ ! -f "$file" ] && continue
-        local filename=$(basename "$file")
-        
-        if ! echo "ls $remote_path/$filename" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -q "$filename"; then
-            echo "put \"$file\" \"$remote_path/\"" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
-            ((copied++))
-        fi
-    done
-    
-    # Retention on NAS
-    local remote_files=$(echo "ls -1 $remote_path" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" 2>/dev/null | grep -v "sftp>" | tr -d '\r')
-    local keep=0; local deleted=0
-    
-    for file in $remote_files; do
-        [ -z "$file" ] && continue
-        local age=$(get_file_age_days "$file")
-        
-        if [ $keep -lt $NAS_MIN_KEEP_COPIES ]; then
-            ((keep++))
-        elif [ $age -gt $NAS_RETENTION_DAYS ]; then
-            echo "rm \"$remote_path/$file\"" | sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" "$NAS_USER@$NAS_HOST" >/dev/null 2>&1
-            ((deleted++))
-        else
-            ((keep++))
-        fi
-    done
-    
-    log "   📊 $module: +$copied uploaded, -$deleted removed, $keep total on NAS"
-}
+echo -e "\n📊 SYNC SUMMARY:"
+echo "   ✅ Successful: $sync_success module(s)"
+echo "   ❌ Failed: $sync_fail module(s)"
 
-mkdir -p "$LOG_DIR"
-log "🚀 Starting NAS sync cycle"
-for module in "${BACKUP_MODULES[@]}"; do sync_module "$module"; done
-log "✅ NAS sync completed"
+echo "=========================================================="
+echo "--- NAS Sync Finished: $(date) ---"
+echo "=========================================================="

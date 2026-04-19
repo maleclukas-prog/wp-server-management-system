@@ -1,43 +1,45 @@
 #!/bin/bash
 # =================================================================
-# 🆘 WSMS PRO v4.1 - ULTIMATE OPERATIONAL HANDBOOK
-# Description: Centralized command reference, SOP, and system logic.
-# Author: Lukasz Malec / GitHub: maleclukas-prog
+# WSMS PRO v4.2 - ESSENTIAL ASSETS BACKUP (LITE)
 # =================================================================
-# =================================================================
-# ⚡ ESSENTIAL ASSETS BACKUP (LITE) - DYNAMIC VERSION
-# =================================================================
-source ~/scripts/wsms-config.sh
 
-echo "⚡ INITIATING LITE ASSETS BACKUP"
-echo "================================"
-echo "⏰ Timestamp: $(date)"
+source "$HOME/scripts/wsms-config.sh"
+TS=$(date +%Y%m%d-%H%M%S)
+BLUE='\033[0;34m'; GREEN='\033[0;32m'; NC='\033[0m'
 
-TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-mkdir -p "$BACKUP_LITE_DIR"
+LOG_FILE="$LOG_LITE_BACKUP"
+exec >> "$LOG_FILE" 2>&1
+
+echo "=========================================================="
+echo "⚡ LITE BACKUP v4.2 - $(date)"
+echo "=========================================================="
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    echo -e "\n🌐 Processing: $name"
+    echo -e "\n📁 Archiving $name assets..."
     
-    if [ ! -f "$path/wp-config.php" ]; then
-        echo "   ❌ Skipping"
-        continue
-    fi
-    
-    # Database backup
+    # Database backup first
     bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
     
-    # Asset backup (uploads, themes, plugins, config)
-    ARCHIVE="$BACKUP_LITE_DIR/backup-lite-$name-assets-$TIMESTAMP.tar.gz"
-    sudo tar -czf "$ARCHIVE" -C "$path" \
-        wp-content/uploads wp-content/themes wp-content/plugins wp-config.php 2>/dev/null
+    # Essential assets only
+    tar -czf "$BACKUP_LITE_DIR/lite-$name-$TS.tar.gz" \
+        -C "$path" \
+        wp-content/uploads \
+        wp-content/themes \
+        wp-content/plugins \
+        wp-config.php \
+        .htaccess \
+        2>/dev/null
     
-    if [ -f "$ARCHIVE" ]; then
-        SIZE=$(du -h "$ARCHIVE" | cut -f1)
-        echo "   ✅ Assets: $SIZE"
+    if [ -f "$BACKUP_LITE_DIR/lite-$name-$TS.tar.gz" ]; then
+        size=$(du -h "$BACKUP_LITE_DIR/lite-$name-$TS.tar.gz" | cut -f1)
+        echo "   ${GREEN}✅ Lite backup created: $size${NC}"
     fi
 done
 
-find "$BACKUP_LITE_DIR" -name "backup-lite-*" -type f -mtime +$RETENTION_LITE -delete
-echo -e "\n✅ LITE BACKUP COMPLETED"
+# Clean old backups
+echo -e "\n🧹 Cleaning old lite backups (older than $RETENTION_LITE days)..."
+find "$BACKUP_LITE_DIR" -name "*.tar.gz" -mtime "+$RETENTION_LITE" -delete 2>/dev/null
+
+echo -e "\n⏰ Completed: $(date)"
+echo -e "${GREEN}✅ LITE BACKUP CYCLE COMPLETED${NC}"
