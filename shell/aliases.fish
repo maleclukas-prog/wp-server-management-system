@@ -64,6 +64,8 @@ alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergenc
 alias backup-clean-emergency='backup-emergency'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
+alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'
+alias wsms-clean-force='bash $HOME/scripts/wsms-clean.sh --force'
 
 # ============================================
 # DATABASE MANAGEMENT
