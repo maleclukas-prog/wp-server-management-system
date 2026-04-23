@@ -901,62 +901,202 @@ EOFMYSQL
 deploy "nas-sftp-sync.sh" << 'EOFNAS'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.2 - SYNCHRONIZACJA NAS SFTP
+# WSMS PRO - SYNCHRONIZACJA NAS (SFTP)
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
-LOG_FILE="$LOG_NAS_SYNC"
-ERROR_LOG="$LOG_NAS_ERRORS"
-exec >> "$LOG_FILE" 2>&1
 
-echo "=========================================================="
-echo "☁️ SYNCHRONIZACJA NAS - $(date)"
-echo "=========================================================="
+REMOTE_SERVER="${NAS_HOST:-}"
+REMOTE_PORT="${NAS_PORT:-22}"
+REMOTE_USER="${NAS_USER:-}"
+REMOTE_BASE_DIR="${NAS_PATH:-}"
+SSH_KEY="${NAS_SSH_KEY:-}"
 
-if [ ! -f "$NAS_SSH_KEY" ]; then
-    echo "❌ BŁĄD: Nie znaleziono klucza SSH w $NAS_SSH_KEY"
-    echo "$(date): Brak klucza SSH" >> "$ERROR_LOG"
+if [ -z "$REMOTE_SERVER" ] || [ -z "$REMOTE_USER" ] || [ ! -f "$SSH_KEY" ]; then
+    echo "❌ BŁĄD: Brak konfiguracji NAS"
     exit 1
 fi
 
-if [ "$NAS_HOST" = "your-nas.synology.me" ]; then
-    echo "⚠️ OSTRZEŻENIE: NAS_HOST nie skonfigurowany - synchronizacja pominięta"
-    exit 0
-fi
+LOCAL_BASE_DIR="$HOME"
+BACKUP_DIRS=("backups-full" "backups-lite" "backups-manual" "mysql-backups")
+DAYS_TO_KEEP="${NAS_RETENTION_DAYS:-120}"
+MIN_KEEP_COPIES="${NAS_MIN_KEEP_COPIES:-2}"
 
-sync_success=0
-sync_fail=0
+TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+LOG_DIR="${LOG_DIR:-$HOME/logs}"
+LOG_FILE="$LOG_DIR/nas_sync.log"
+mkdir -p "$LOG_DIR"
 
-for module in backups-lite backups-full mysql-backups; do
-    echo -e "\n📤 Przetwarzanie $module..."
-    
-    if [ ! -d "$HOME/$module" ] || [ -z "$(ls -A "$HOME/$module" 2>/dev/null)" ]; then
-        echo "   ⚠️ Brak plików w $module - pomijanie"
-        continue
-    fi
-    
-    if sftp -i "$NAS_SSH_KEY" -P "$NAS_PORT" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$NAS_USER@$NAS_HOST" << SFTP_EOF 2>/dev/null
-mkdir -p $NAS_PATH/$module
-put $HOME/$module/* $NAS_PATH/$module/
-bye
-SFTP_EOF
-    then
-        echo "   ✅ $module zsynchronizowany pomyślnie"
-        ((sync_success++))
+GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
+
+TOTAL_UPLOADED=0; TOTAL_EXISTING=0; TOTAL_FAILED=0; TOTAL_DELETED=0
+
+log_info() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${CYAN}[$ts]${NC} $1"; echo "[$ts] INFO: $1" >> "$LOG_FILE"; }
+log_success() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${GREEN}[$ts] ✅ $1${NC}"; echo "[$ts] SUKCES: $1" >> "$LOG_FILE"; }
+log_warning() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${YELLOW}[$ts] ⚠️ $1${NC}"; echo "[$ts] OSTRZEŻENIE: $1" >> "$LOG_FILE"; }
+log_error() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${RED}[$ts] ❌ $1${NC}"; echo "[$ts] BŁĄD: $1" >> "$LOG_FILE"; }
+
+pobierz_wiek_pliku() {
+    local nazwa_pliku="$1"
+    if [[ "$nazwa_pliku" =~ ([0-9]{4})([0-9]{2})([0-9]{2}) ]]; then
+        local data_pliku="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}"
+        local timestamp_pliku=$(date -d "$data_pliku" +%s 2>/dev/null || echo 0)
+        echo $(( ( $(date +%s) - timestamp_pliku ) / 86400 ))
     else
-        echo "   ❌ Synchronizacja $module NIEUDANA"
-        echo "$(date): Nie udało się zsynchronizować $module" >> "$ERROR_LOG"
-        ((sync_fail++))
+        echo 0
     fi
-done
+}
 
-echo -e "\n📊 PODSUMOWANIE SYNCHRONIZACJI:"
-echo "   ✅ Sukces: $sync_success modułów"
-echo "   ❌ Niepowodzenie: $sync_fail modułów"
+# Funkcja do tworzenia folderu na NAS
+utworz_folder_zdalny() {
+    local zdalny_folder="$1"
+    
+    # Sprawdź czy folder istnieje
+    if echo "ls \"$zdalny_folder\"" 2>/dev/null | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -q "remote_dir"; then
+        return 0
+    fi
+    
+    # Tworzymy foldery po kolei
+    local aktualna_sciezka=""
+    IFS='/' read -ra czesci <<< "$zdalny_folder"
+    
+    for czesc in "${czesci[@]}"; do
+        [ -z "$czesc" ] && continue
+        aktualna_sciezka="$aktualna_sciezka/$czesc"
+        echo "mkdir \"$aktualna_sciezka\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null
+    done
+    
+    return 0
+}
 
-echo "=========================================================="
-echo "--- Synchronizacja NAS zakończona: $(date) ---"
-echo "=========================================================="
+synchronizuj_katalog() {
+    local nazwa_katalogu="$1"
+    local katalog_lokalny="$LOCAL_BASE_DIR/$nazwa_katalogu"
+    local katalog_zdalny="$REMOTE_BASE_DIR/$nazwa_katalogu"
+    
+    log_info "📂 Przetwarzanie: $nazwa_katalogu"
+    
+    if [ ! -d "$katalog_lokalny" ]; then
+        mkdir -p "$katalog_lokalny"
+        log_warning "Utworzono katalog lokalny: $katalog_lokalny"
+    fi
+    
+    local liczba_plikow=$(ls -1 "$katalog_lokalny" 2>/dev/null | wc -l)
+    if [ "$liczba_plikow" -eq 0 ]; then
+        log_warning "Brak plików w $nazwa_katalogu - pomijanie"
+        return 0
+    fi
+    
+    log_info "Znaleziono $liczba_plikow plik(ów) lokalnie"
+    
+    # Upewnij się że folder na NAS istnieje
+    utworz_folder_zdalny "$katalog_zdalny"
+    
+    # Pobierz listę plików z NAS
+    local pliki_zdalne=$(echo "ls -1 \"$katalog_zdalny\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -v "sftp>" | tr -d '\r' | sort)
+    
+    local wyslane=0; local istniejace=0; local nieudane=0
+    
+    for plik in $(ls -1 "$katalog_lokalny"); do
+        if echo "$pliki_zdalne" | grep -q "^$plik$"; then
+            echo -e "   ${YELLOW}⏭️ Już istnieje: $plik${NC}"
+            ((istniejace++))
+        else
+            echo -e "   ${CYAN}📤 Wysyłanie: $plik${NC}"
+            if echo "put \"$katalog_lokalny/$plik\" \"$katalog_zdalny/$plik\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null; then
+                echo -e "   ${GREEN}✅ Wysłano: $plik${NC}"
+                ((wyslane++))
+            else
+                echo -e "   ${RED}❌ Nie udało się: $plik${NC}"
+                ((nieudane++))
+            fi
+        fi
+    done
+    
+    TOTAL_UPLOADED=$((TOTAL_UPLOADED + wyslane))
+    TOTAL_EXISTING=$((TOTAL_EXISTING + istniejace))
+    TOTAL_FAILED=$((TOTAL_FAILED + nieudane))
+    
+    # Analiza wieku plików na NAS
+    local pliki_zdalne_lista=$(echo "ls -1 \"$katalog_zdalny\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -v "sftp>" | tr -d '\r' | sort)
+    
+    local nowe=0; local srednie=0; local stare=0; local archiwalne=0
+    
+    for plik in $pliki_zdalne_lista; do
+        [ -z "$plik" ] && continue
+        local wiek=$(pobierz_wiek_pliku "$plik")
+        if [ "$wiek" -le 14 ]; then ((nowe++))
+        elif [ "$wiek" -le 30 ]; then ((srednie++))
+        elif [ "$wiek" -le $DAYS_TO_KEEP ]; then ((stare++))
+        else ((archiwalne++)); fi
+    done
+    
+    # Czyszczenie starych plików
+    local zachowane=0; local usuniete=0
+    
+    for plik in $(echo "$pliki_zdalne_lista" | sort -r); do
+        [ -z "$plik" ] && continue
+        local wiek=$(pobierz_wiek_pliku "$plik")
+        
+        if [ $zachowane -lt $MIN_KEEP_COPIES ]; then
+            ((zachowane++))
+        elif [ $wiek -gt $DAYS_TO_KEEP ]; then
+            if echo "rm \"$katalog_zdalny/$plik\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null; then
+                echo -e "   ${RED}🗑️ Usunięto stary: $plik (wiek: ${wiek}d)${NC}"
+                ((usuniete++))
+            fi
+        else
+            ((zachowane++))
+        fi
+    done
+    
+    TOTAL_DELETED=$((TOTAL_DELETED + usuniete))
+    
+    echo ""
+    echo -e "   📊 ${CYAN}Podsumowanie dla $nazwa_katalogu:${NC}"
+    echo -e "      Wysłane: ${GREEN}$wyslane${NC} | Istniejące: ${YELLOW}$istniejace${NC} | Nieudane: ${RED}$nieudane${NC}"
+    echo -e "      Usunięte: ${RED}$usuniete${NC}"
+    echo -e "      Wiek: 0-14d:${GREEN}$nowe${NC} | 15-30d:${YELLOW}$srednie${NC} | 31-${DAYS_TO_KEEP}d:${CYAN}$stare${NC} | >${DAYS_TO_KEEP}d:${RED}$archiwalne${NC}"
+    echo "----------------------------------------------------"
+}
+
+main() {
+    echo "=========================================================="
+    echo -e "${CYAN}☁️ SYNCHRONIZACJA NAS - $TIMESTAMP${NC}"
+    echo "=========================================================="
+    echo ""
+    
+    log_info "Testowanie połączenia SFTP..."
+    if echo "ls" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$REMOTE_USER@$REMOTE_SERVER" >/dev/null 2>&1; then
+        log_success "Połączenie SFTP nawiązane"
+    else
+        log_error "Nie można połączyć z $REMOTE_SERVER:$REMOTE_PORT"
+        exit 1
+    fi
+    
+    log_info "Sprawdzanie katalogu głównego: $REMOTE_BASE_DIR"
+    utworz_folder_zdalny "$REMOTE_BASE_DIR"
+    
+    echo ""
+    
+    for dir in "${BACKUP_DIRS[@]}"; do
+        synchronizuj_katalog "$dir"
+    done
+    
+    echo "=========================================================="
+    echo -e "${CYAN}📊 PODSUMOWANIE KOŃCOWE${NC}"
+    echo "=========================================================="
+    echo -e "   Wysłane:    ${GREEN}$TOTAL_UPLOADED${NC} plików"
+    echo -e "   Już na NAS: ${YELLOW}$TOTAL_EXISTING${NC} plików"
+    echo -e "   Nieudane:   ${RED}$TOTAL_FAILED${NC} plików"
+    echo -e "   Usunięte:   ${RED}$TOTAL_DELETED${NC} plików"
+    echo "=========================================================="
+    echo -e "${GREEN}✅ Synchronizacja NAS zakończona${NC}"
+    echo "=========================================================="
+    
+    echo "[$TIMESTAMP] KONIEC: W=$TOTAL_UPLOADED, I=$TOTAL_EXISTING, N=$TOTAL_FAILED, U=$TOTAL_DELETED" >> "$LOG_FILE"
+}
+
 EOFNAS
 
 # -----------------------------------------------------------------
