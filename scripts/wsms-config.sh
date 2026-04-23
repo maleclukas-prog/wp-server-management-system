@@ -1,51 +1,45 @@
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.2 - CENTRAL CONFIGURATION (TEMPLATE)
-# =================================================================
-# INSTRUCTIONS:
-# 1. Copy this file to wsms-config.sh: cp wsms-config.sh.template wsms-config.sh
-# 2. Edit the values below to match your environment
-# 3. NEVER commit wsms-config.sh to Git (it's in .gitignore)
+# 🧠 WSMS GLOBAL CONFIGURATION - EXAMPLE FILE
+# Copy this file to wsms-config.sh and edit with your values
 # =================================================================
 
-# ==================== WORDPRESS SITES ====================
-# Format: "site_nickname:/full/path/to/public_html:system_user"
-# Example: "mysite:/var/www/mysite/public_html:wordpress_mysite"
+# ============================================
+# MULTI-TENANT WORDPRESS SITES
+# Format: "site-name:/full/path/to/public_html:system_user"
+# ============================================
 SITES=(
-    # "site1:/var/www/site1/public_html:user1"
-    # "site2:/var/www/site2/public_html:user2"
-
+    "example-site:/var/www/example-site/public_html:example_user"
+    "another-site:/var/www/another-site/public_html:another_user"
 )
 
-# ==================== NAS/SFTP SETTINGS ====================
-# NAS_HOST="your-nas.synology.me"
-# NAS_PORT="22"
-# NAS_USER="admin"
-# NAS_PATH="/remote/backup/path"
-# NAS_SSH_KEY="$HOME/.ssh/id_rsa"
+# ============================================
+# SYNOLOGY NAS CONFIGURATION (SFTP)
+# ============================================
+NAS_HOST="your-nas.synology.me"           # Your NAS hostname or IP
+NAS_PORT="22"                              # SSH/SFTP port (usually 22)
+NAS_USER="your_username"                   # Your NAS username
+NAS_PATH="/homes/your_username/server_backups"  # Remote backup path
+NAS_SSH_KEY="$HOME/.ssh/nas_key"           # Path to your SSH private key
 
+# ============================================
+# BACKUP RETENTION (Days)
+# ============================================
+RETENTION_LITE=14          # Lite backups: 14 days
+RETENTION_FULL=35          # Full backups: 35 days
+RETENTION_MYSQL=7          # MySQL backups: 7 days
+RETENTION_ROLLBACK=30      # Rollback snapshots: 30 days
+NAS_RETENTION_DAYS=120     # NAS remote retention: 120 days
+NAS_MIN_KEEP_COPIES=2      # Minimum copies on NAS (safety rule)
 
-# ==================== RETENTION POLICIES ====================
-RETENTION_LITE=14        # Days to keep lite backups
-RETENTION_FULL=35        # Days to keep full backups
-RETENTION_MYSQL=7        # Days to keep MySQL dumps
-RETENTION_ROLLBACK=7     # Days to keep rollback snapshots
+# ============================================
+# SYSTEM THRESHOLDS
+# ============================================
+DISK_ALERT_THRESHOLD=80    # Alert when disk usage > 80%
 
-# ==================== NAS RETENTION ====================
-NAS_RETENTION_DAYS=120   # Days to keep backups on NAS
-NAS_MIN_KEEP_COPIES=2    # Minimum copies to keep regardless of age
-
-# ==================== SYSTEM THRESHOLDS ====================
-DISK_ALERT_THRESHOLD=80  # Percentage - trigger emergency cleanup
-ROLLBACK_MAX_SIZE_MB=500 # Maximum size per snapshot (approximate)
-
-# ==================== NOTIFICATIONS (OPTIONAL) ====================
-SLACK_WEBHOOK_URL=""     # Optional: Slack webhook for alerts
-EMAIL_ALERT=""           # Optional: Email for critical alerts
-
-# =================================================================
-# DO NOT EDIT BELOW THIS LINE (auto-generated paths)
-# =================================================================
+# ============================================
+# PATH CONFIGURATION (usually no changes needed)
+# ============================================
 SCRIPT_DIR="$HOME/scripts"
 BACKUP_LITE_DIR="$HOME/backups-lite"
 BACKUP_FULL_DIR="$HOME/backups-full"
@@ -56,12 +50,17 @@ LOG_DIR="$HOME/logs"
 QUARANTINE_DIR="/var/quarantine"
 CLAMAV_LOG_DIR="/var/log/clamav"
 
-# Export all variables
+# ============================================
+# NAS LOG FILES
+# ============================================
+LOG_NAS_SYNC="$LOG_DIR/nas_sync.log"
+LOG_NAS_ERRORS="$LOG_DIR/nas_errors.log"
+
+# ============================================
+# EXPORT ALL VARIABLES
+# ============================================
 export SITES NAS_HOST NAS_PORT NAS_USER NAS_PATH NAS_SSH_KEY
 export RETENTION_LITE RETENTION_FULL RETENTION_MYSQL RETENTION_ROLLBACK
-export NAS_RETENTION_DAYS NAS_MIN_KEEP_COPIES
-export DISK_ALERT_THRESHOLD ROLLBACK_MAX_SIZE_MB
-export SLACK_WEBHOOK_URL EMAIL_ALERT
-export SCRIPT_DIR BACKUP_LITE_DIR BACKUP_FULL_DIR BACKUP_MANUAL_DIR
-export BACKUP_MYSQL_DIR BACKUP_ROLLBACK_DIR LOG_DIR
-export QUARANTINE_DIR CLAMAV_LOG_DIR
+export NAS_RETENTION_DAYS NAS_MIN_KEEP_COPIES DISK_ALERT_THRESHOLD
+export SCRIPT_DIR BACKUP_LITE_DIR BACKUP_FULL_DIR BACKUP_MANUAL_DIR BACKUP_MYSQL_DIR BACKUP_ROLLBACK_DIR
+export QUARANTINE_DIR CLAMAV_LOG_DIR LOG_DIR LOG_NAS_SYNC LOG_NAS_ERRORS
