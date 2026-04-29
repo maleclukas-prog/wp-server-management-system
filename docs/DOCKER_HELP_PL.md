@@ -149,3 +149,28 @@ bash tests/run_docker_smoke_test.sh
 ```
 
 Jeśli oba kroki są zielone, masz wysoką pewność, że zmiany nie łamią instalatora.
+
+## 9. Procedura na dwa stanowiska (iMac biuro + MacBook zdalnie)
+
+Stosuj ten sam schemat w każdym projekcie (WSMS, Python i inne):
+
+1. Otwórz katalog projektu.
+1. Zsynchronizuj projekt przez Git przed rozpoczęciem pracy:
+
+```bash
+git fetch --all --prune
+git pull --ff-only
+```
+
+1. Uruchom lokalną walidację:
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+1. Commit i push rób dopiero po zielonych testach.
+1. Sprawdź status CI na GitHub przed przejściem na drugie stanowisko.
+1. Na drugim komputerze powtórz tę samą sekwencję przed dalszą pracą.
+
+Praktyczna zasada: iCloud traktuj jako transport plików, a GitHub jako źródło prawdy i punkt awaryjnego odtworzenia repozytorium.

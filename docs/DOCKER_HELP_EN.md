@@ -149,3 +149,28 @@ bash tests/run_docker_smoke_test.sh
 ```
 
 If both steps are green, confidence is high that installer changes are safe.
+
+## 9. Two-workstation routine (Office iMac + Remote MacBook)
+
+Use this same routine in any project (WSMS, Python, and others):
+
+1. Open the project directory.
+1. Sync only through Git before coding:
+
+```bash
+git fetch --all --prune
+git pull --ff-only
+```
+
+1. Run local checks:
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+1. Commit and push only after green results.
+1. Verify CI status in GitHub before switching machines.
+1. On the second machine, repeat the same sequence before continuing.
+
+Practical rule: treat iCloud as file transport, and GitHub as the source of truth and disaster recovery point.
