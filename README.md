@@ -67,6 +67,24 @@ Preview output is generated to:
 
 This preview is generated from installers and is git-ignored to avoid source-of-truth drift.
 
+## Automated Docker Smoke Test
+
+For a repeatable Ubuntu-based installer test with safe WordPress fixtures:
+
+```bash
+bash tests/run_docker_smoke_test.sh
+```
+
+This builds [tests/docker/Dockerfile](/Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system/tests/docker/Dockerfile), provisions two fake WordPress roots from [tests/fixtures/wordpress/public_html](/Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system/tests/fixtures/wordpress/public_html), runs [installers/install_wsms.sh](/Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system/installers/install_wsms.sh), and verifies generated scripts, aliases, and crontab entries.
+
+If you prefer Docker Compose:
+
+```bash
+docker compose -f tests/docker/compose.yaml up --build --abort-on-container-exit
+```
+
+The fixture intentionally does not start a real database or full WordPress runtime. It is meant for safe installer and filesystem-oriented smoke tests, not for validating live WP-CLI database operations.
+
 ## Uninstall
 
 ```bash
@@ -80,8 +98,11 @@ This preview is generated from installers and is git-ignored to avoid source-of-
 ## Documentation
 
 - `docs/DEPLOYMENT_GUIDE.md`
+- `docs/DOCKER_HELP_PL.md`
+- `docs/DOCKER_HELP_EN.md`
 - `docs/FISH_SETUP_GUIDE.md`
 - `docs/TECHNICAL_REFERENCE.md`
+- `DOCKER_HELP.md`
 - `CHANGELOG.md`
 
 ## macOS and iCloud Note

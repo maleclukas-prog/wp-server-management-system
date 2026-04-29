@@ -1,0 +1,9 @@
+.git
+.github
+.vscode
+logs
+backups-*
+mysql-backups
+scripts/runtime-preview
+*.log
+.DS_Store

@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  syntax-and-smoke:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run repository test suite
+        run: bash tests/test_suite.sh
+
+      - name: Build Docker smoke image
+        run: docker build -t wsms-smoke-test -f tests/docker/Dockerfile .
+
+      - name: Run installer smoke test
+        run: docker run --rm wsms-smoke-test

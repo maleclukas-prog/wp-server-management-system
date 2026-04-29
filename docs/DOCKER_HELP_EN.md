@@ -1,0 +1,133 @@
+# WSMS Docker Help (EN)
+
+This document collects the most useful Docker and Docker Compose commands for WSMS testing.
+
+## 1. Where to run commands
+
+Work from the project directory:
+
+```bash
+cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+```
+
+Check Docker health:
+
+```bash
+docker version
+docker info
+```
+
+## 2. Quick Docker test (recommended)
+
+Run a full Ubuntu installer smoke test with a safe WordPress fixture:
+
+```bash
+bash tests/run_docker_smoke_test.sh
+```
+
+What this test does:
+
+- builds image from `tests/docker/Dockerfile`,
+- prepares a safe WP fixture from `tests/fixtures/wordpress/public_html`,
+- runs `installers/install_wsms.sh`,
+- validates key install artifacts (scripts, aliases, crontab).
+
+## 3. Same flow via Docker Compose
+
+```bash
+docker compose -f tests/docker/compose.yaml up --build --abort-on-container-exit
+```
+
+Cleanup after run:
+
+```bash
+docker compose -f tests/docker/compose.yaml down --remove-orphans
+```
+
+## 4. Manual image build and run
+
+Build:
+
+```bash
+docker build -t wsms-smoke-test -f tests/docker/Dockerfile .
+```
+
+Run:
+
+```bash
+docker run --rm wsms-smoke-test
+```
+
+Open interactive shell in container:
+
+```bash
+docker run --rm -it --entrypoint bash wsms-smoke-test
+```
+
+## 5. Common issues and quick fixes
+
+### Problem: No such file or directory
+
+Usually command is run outside repo.
+
+Fix:
+
+```bash
+cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+pwd
+```
+
+### Problem: Permission denied / Operation not permitted
+
+Do not run ad-hoc bind mounts outside project. Use the wrapper script:
+
+```bash
+bash tests/run_docker_smoke_test.sh
+```
+
+### Problem: Out of disk space
+
+```bash
+docker system df
+docker image prune -f
+docker container prune -f
+docker builder prune -f
+```
+
+## 6. CI integration (GitHub Actions)
+
+Workflow file:
+
+- `.github/workflows/ci.yml`
+
+It runs:
+
+1. `bash tests/test_suite.sh`
+2. smoke image build
+3. smoke container run
+
+## 7. What this test validates
+
+Yes:
+
+- WSMS installer path,
+- runtime script generation,
+- directory/log setup,
+- alias and crontab configuration,
+- WordPress filesystem-based checks.
+
+No:
+
+- real MySQL database behavior,
+- full WordPress runtime with real traffic,
+- production performance testing.
+
+## 8. Recommended daily sequence
+
+```bash
+cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+If both steps are green, confidence is high that installer changes are safe.

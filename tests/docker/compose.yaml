@@ -1,0 +1,6 @@
+services:
+  wsms-smoke:
+    build:
+      context: ../..
+      dockerfile: tests/docker/Dockerfile
+    image: wsms-smoke-test
