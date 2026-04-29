@@ -25,6 +25,12 @@ Run a full Ubuntu installer smoke test with a safe WordPress fixture:
 bash tests/run_docker_smoke_test.sh
 ```
 
+If you want to inspect the container in VS Code after the run (Containers view), keep it instead of auto-removing it:
+
+```bash
+WSMS_DOCKER_KEEP_CONTAINER=1 bash tests/run_docker_smoke_test.sh
+```
+
 What this test does:
 
 - builds image from `tests/docker/Dockerfile`,
