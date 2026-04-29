@@ -1,30 +1,35 @@
 
----
-
-## 📄 PLIK 10/12: `.gitignore`
-
-```gitignore
-# WSMS Configuration (contains sensitive data)
+# WSMS configuration and runtime artifacts
 scripts/wsms-config.sh
+scripts/runtime-preview/
 
-# Backup directories
+# Backup and log output
 backups-*/
 mysql-backups/
 backups-rollback/
-
-# Logs
 logs/
 *.log
 
-# IDE
+# IDE/editor
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# OS
+# Python env
+.venv/
+
+# OS metadata (macOS/Windows)
 .DS_Store
+.AppleDouble
+.LSOverride
+Icon
+.Spotlight-V100
+.Trashes
+.fseventsd
+._*
+*.icloud
 Thumbs.db
 
 # Temporary files
@@ -38,6 +43,3 @@ Thumbs.db
 *.pem
 *.key
 id_rsa*
-
-#santbob 
-.venv/

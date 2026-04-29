@@ -1,25 +1,56 @@
 #!/bin/bash
 # =================================================================
-# 🧹 WSMS PRO v4.2 - UNIVERSAL UNINSTALLER
-# Version: 1.0 | Works in any shell
+# 🧹 WSMS PRO v4.3 - UNIVERSAL UNINSTALLER
+# Version: 1.1 | Works in any shell
 # Description: Completely removes WSMS PRO from the system
-# Usage: ./uninstall.sh [--force]
+# Usage: ./wsms-uninstall.sh [--force] [--dry-run]
 # =================================================================
 
 FORCE_MODE=false
-if [ "$1" = "--force" ] || [ "$1" = "-f" ]; then
-    FORCE_MODE=true
-fi
+DRY_RUN=false
+for arg in "$@"; do
+    case "$arg" in
+        --force|-f) FORCE_MODE=true ;;
+        --dry-run|-n) DRY_RUN=true ;;
+    esac
+done
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
 
+WSMS_BASH_START="# >>> WSMS PRO v4.3 BASH >>>"
+WSMS_BASH_END="# <<< WSMS PRO v4.3 BASH <<<"
+WSMS_FISH_START="# >>> WSMS PRO v4.3 FISH >>>"
+WSMS_FISH_END="# <<< WSMS PRO v4.3 FISH <<<"
+WSMS_HOSTS_START="# >>> WSMS LOCAL HOSTS >>>"
+WSMS_HOSTS_END="# <<< WSMS LOCAL HOSTS <<<"
+
+run_cmd() {
+    if [ "$DRY_RUN" = true ]; then
+        echo "   [DRY-RUN] $*"
+        return 0
+    fi
+    "$@"
+}
+
+sed_in_place() {
+    # macOS/BSD sed uses: sed -i '' ; GNU sed uses: sed -i
+    if sed --version >/dev/null 2>&1; then
+        sed -i "$1" "$2"
+    else
+        sed -i '' "$1" "$2"
+    fi
+}
+
 echo -e "${CYAN}==========================================================${NC}"
-echo -e "${CYAN}   🧹 WSMS PRO v4.2 - UNIVERSAL UNINSTALLER                 ${NC}"
+echo -e "${CYAN}   🧹 WSMS PRO v4.3 - UNIVERSAL UNINSTALLER                 ${NC}"
 echo -e "${CYAN}   Completely removes WSMS from the system                  ${NC}"
 echo -e "${CYAN}==========================================================${NC}"
 
 CURRENT_SHELL=$(basename "$SHELL")
 echo -e "${YELLOW}📍 Detected shell: $CURRENT_SHELL${NC}"
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}🧪 DRY-RUN MODE: no changes will be made${NC}"
+fi
 
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
@@ -28,16 +59,12 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 # ============================================
 echo -e "\n${YELLOW}🐟 Cleaning Fish configuration...${NC}"
 if [ -f "$HOME/.config/fish/config.fish" ]; then
-    cp "$HOME/.config/fish/config.fish" "$HOME/.config/fish/config.fish.backup.$TIMESTAMP"
-    sed -i '/# WSMS PRO v4.2/d' "$HOME/.config/fish/config.fish"
-    sed -i '/set -gx SCRIPTS_DIR/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^alias wp-/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^alias backup-/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^alias mysql-backup/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^alias nas-sync/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^alias clamav-/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^alias red-robin/d' "$HOME/.config/fish/config.fish"
-    sed -i '/^function wp-update-safe/,/^end/d' "$HOME/.config/fish/config.fish"
+    run_cmd cp "$HOME/.config/fish/config.fish" "$HOME/.config/fish/config.fish.backup.$TIMESTAMP"
+    if [ "$DRY_RUN" = true ]; then
+        echo "   [DRY-RUN] Remove marker block: $WSMS_FISH_START ... $WSMS_FISH_END"
+    else
+        sed_in_place "/${WSMS_FISH_START//\//\\/}/,/${WSMS_FISH_END//\//\\/}/d" "$HOME/.config/fish/config.fish"
+    fi
     echo -e "   ${GREEN}✅ Fish config cleaned${NC}"
 fi
 
@@ -46,15 +73,12 @@ fi
 # ============================================
 echo -e "\n${YELLOW}💻 Cleaning Bash configuration...${NC}"
 if [ -f "$HOME/.bashrc" ]; then
-    cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$TIMESTAMP"
-    sed -i '/# WSMS PRO v4.2/d' "$HOME/.bashrc"
-    sed -i '/export SCRIPTS_DIR/d' "$HOME/.bashrc"
-    sed -i '/^alias wp-/d' "$HOME/.bashrc"
-    sed -i '/^alias backup-/d' "$HOME/.bashrc"
-    sed -i '/^alias mysql-backup/d' "$HOME/.bashrc"
-    sed -i '/^alias nas-sync/d' "$HOME/.bashrc"
-    sed -i '/^alias clamav-/d' "$HOME/.bashrc"
-    sed -i '/^alias red-robin/d' "$HOME/.bashrc"
+    run_cmd cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$TIMESTAMP"
+    if [ "$DRY_RUN" = true ]; then
+        echo "   [DRY-RUN] Remove marker block: $WSMS_BASH_START ... $WSMS_BASH_END"
+    else
+        sed_in_place "/${WSMS_BASH_START//\//\\/}/,/${WSMS_BASH_END//\//\\/}/d" "$HOME/.bashrc"
+    fi
     echo -e "   ${GREEN}✅ Bash config cleaned${NC}"
 fi
 
@@ -63,9 +87,9 @@ fi
 # ============================================
 echo -e "\n${YELLOW}📂 Removing scripts...${NC}"
 if [ -d "$HOME/scripts" ]; then
-    mkdir -p "$HOME/scripts-backup-old"
-    cp -r "$HOME/scripts" "$HOME/scripts-backup-old/scripts.$TIMESTAMP" 2>/dev/null
-    rm -rf "$HOME/scripts"
+    run_cmd mkdir -p "$HOME/scripts-backup-old"
+    run_cmd cp -r "$HOME/scripts" "$HOME/scripts-backup-old/scripts.$TIMESTAMP"
+    run_cmd rm -rf "$HOME/scripts"
     echo -e "   ${GREEN}✅ Scripts removed (backup saved)${NC}"
 fi
 
@@ -74,45 +98,87 @@ fi
 # ============================================
 echo -e "\n${YELLOW}⏰ Cleaning crontab...${NC}"
 if crontab -l &>/dev/null; then
-    crontab -l > "$HOME/crontab.backup.$TIMESTAMP.txt" 2>/dev/null
-    if crontab -l 2>/dev/null | grep -q "WSMS PRO"; then
-        crontab -l 2>/dev/null | grep -v "# WSMS PRO" | grep -v "wp-" | grep -v "clamav" | grep -v "nas-sftp-sync" | grep -v "freshclam" | crontab -
-        echo -e "   ${GREEN}✅ Crontab cleaned${NC}"
+    if [ "$DRY_RUN" = true ]; then
+        echo "   [DRY-RUN] Backup crontab to: $HOME/crontab.backup.$TIMESTAMP.txt"
+        echo "   [DRY-RUN] Remove WSMS-related cron entries"
+    else
+        crontab -l > "$HOME/crontab.backup.$TIMESTAMP.txt" 2>/dev/null
+        crontab -l 2>/dev/null | grep -v "# WSMS PRO" \
+        | grep -v "server-health-audit.sh" \
+        | grep -v "wp-automated-maintenance-engine.sh" \
+        | grep -v "wp-essential-assets-backup.sh" \
+        | grep -v "wp-full-recovery-backup.sh" \
+        | grep -v "wp-smart-retention-manager.sh" \
+        | grep -v "wp-rollback.sh" \
+        | grep -v "wp-hosts-sync.sh" \
+        | grep -v "mysql-backup-manager.sh" \
+        | grep -v "nas-sftp-sync.sh" \
+        | grep -v "clamav-auto-scan.sh" \
+        | grep -v "clamav-full-scan.sh" \
+        | grep -v "freshclam" \
+        | crontab -
     fi
+    echo -e "   ${GREEN}✅ Crontab cleaned${NC}"
 fi
 
 # ============================================
-# 5. REMOVE BACKUP DIRECTORIES
+# 5. CLEAN /etc/hosts WSMS BLOCK
+# ============================================
+echo -e "\n${YELLOW}🌐 Cleaning /etc/hosts WSMS block...${NC}"
+if [ -f "/etc/hosts" ]; then
+    TMP_HOSTS="$(mktemp)"
+    awk -v start="$WSMS_HOSTS_START" -v end="$WSMS_HOSTS_END" '
+        $0 == start { skip=1; next }
+        $0 == end { skip=0; next }
+        !skip { print }
+    ' /etc/hosts > "$TMP_HOSTS"
+
+    HOSTS_BACKUP="/tmp/hosts.wsms.uninstall.backup.$TIMESTAMP"
+    if [ "$DRY_RUN" = true ]; then
+        echo "   [DRY-RUN] Backup hosts to: $HOSTS_BACKUP"
+        echo "   [DRY-RUN] Remove marker block: $WSMS_HOSTS_START ... $WSMS_HOSTS_END"
+        echo -e "   ${GREEN}✅ /etc/hosts cleanup simulated${NC}"
+    elif sudo cp /etc/hosts "$HOSTS_BACKUP" && sudo cp "$TMP_HOSTS" /etc/hosts; then
+        echo -e "   ${GREEN}✅ /etc/hosts cleaned${NC}"
+        echo "   Backup: $HOSTS_BACKUP"
+    else
+        echo -e "   ${YELLOW}⚠️ Could not update /etc/hosts (sudo required?)${NC}"
+    fi
+    run_cmd rm -f "$TMP_HOSTS"
+fi
+
+# ============================================
+# 6. REMOVE BACKUP DIRECTORIES
 # ============================================
 echo -e "\n${YELLOW}💾 Backup directories...${NC}"
 BACKUP_DIRS="$HOME/backups-lite $HOME/backups-full $HOME/backups-manual $HOME/mysql-backups $HOME/backups-rollback"
 
 if [ "$FORCE_MODE" = true ]; then
     for dir in $BACKUP_DIRS; do
-        [ -d "$dir" ] && rm -rf "$dir" && echo "   🗑️ Removed: $dir"
+        [ -d "$dir" ] && run_cmd rm -rf "$dir" && echo "   🗑️ Removed: $dir"
     done
 else
     echo -e "   ${YELLOW}⚠️ Use --force to remove backup directories${NC}"
 fi
 
 # ============================================
-# 6. REMOVE LOGS
+# 7. REMOVE LOGS
 # ============================================
 echo -e "\n${YELLOW}📝 Logs directory...${NC}"
 if [ "$FORCE_MODE" = true ] && [ -d "$HOME/logs/wsms" ]; then
-    rm -rf "$HOME/logs/wsms"
+    run_cmd rm -rf "$HOME/logs/wsms"
     echo -e "   ${GREEN}✅ Logs removed${NC}"
 else
     echo -e "   ${YELLOW}⚠️ Use --force to remove logs${NC}"
 fi
 
 # ============================================
-# 7. REMOVE INSTALLATION FILES
+# 8. REMOVE INSTALLATION FILES
 # ============================================
 echo -e "\n${YELLOW}📦 Installation files...${NC}"
-for file in "$HOME/install.sh" "$HOME/install-pl.sh" "$HOME/uninstall.sh"; do
+for file in "$HOME/install_wsms.sh" "$HOME/install_wsms_pl.sh" "$HOME/wsms-uninstall.sh" "$HOME/uninstall.sh"; do
     if [ -f "$file" ]; then
-        rm -f "$file"
+        run_cmd rm -f "$file"
         echo "   🗑️ Removed: $(basename "$file")"
     fi
 done
@@ -126,6 +192,9 @@ echo -e "${GREEN}✅ WSMS PRO UNINSTALL COMPLETE!${NC}"
 echo -e "${GREEN}==========================================================${NC}"
 echo ""
 echo -e "${YELLOW}📦 Backups saved with timestamp: $TIMESTAMP${NC}"
+if [ "$DRY_RUN" = true ]; then
+    echo -e "${YELLOW}🧪 Dry-run completed: no files were modified${NC}"
+fi
 echo ""
 echo -e "${YELLOW}🔄 Reload your shell:${NC}"
 if [ "$CURRENT_SHELL" = "fish" ]; then

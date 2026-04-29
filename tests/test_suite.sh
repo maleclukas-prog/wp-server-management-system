@@ -1,13 +1,13 @@
 #!/bin/bash
 # =================================================================
-# WSMS PRO Test Suite v4.2
+# WSMS PRO Test Suite v4.3
 # Run: bash tests/test_suite.sh
 # =================================================================
 
 set -e
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 
-echo -e "${YELLOW}🧪 WSMS PRO TEST SUITE v4.2${NC}"
+echo -e "${YELLOW}🧪 WSMS PRO TEST SUITE v4.3${NC}"
 echo "=========================================================="
 
 TESTS_PASSED=0
@@ -19,10 +19,10 @@ test_script() {
     
     if bash -n "$script" 2>/dev/null; then
         echo -e "${GREEN}✅ Syntax OK${NC}"
-        ((TESTS_PASSED++))
+        ((TESTS_PASSED+=1))
     else
         echo -e "${RED}❌ Syntax Error${NC}"
-        ((TESTS_FAILED++))
+        ((TESTS_FAILED+=1))
     fi
 }
 
@@ -42,26 +42,26 @@ for doc in docs/*.md; do
         echo -n "Checking $(basename "$doc")... "
         if head -1 "$doc" | grep -q "^#"; then
             echo -e "${GREEN}✅ Format OK${NC}"
-            ((TESTS_PASSED++))
+            ((TESTS_PASSED+=1))
         else
             echo -e "${RED}❌ Format Error${NC}"
-            ((TESTS_FAILED++))
+            ((TESTS_FAILED+=1))
         fi
     fi
 done
 
 echo -e "\n${CYAN}Checking Required Files:${NC}"
 REQUIRED_FILES=(
-    "installers/install.sh"
-    "installers/install-pl.sh"
-    "tools/uninstall.sh"
+    "installers/install_wsms.sh"
+    "installers/install_wsms_pl.sh"
+    "tools/wsms-uninstall.sh"
     "docs/DEPLOYMENT_GUIDE.md"
     "docs/TECHNICAL_REFERENCE.md"
     "docs/FISH_SETUP_GUIDE.md"
     "README.md"
     "CHANGELOG.md"
     "CONTRIBUTING.md"
-    "LICENSE"
+    "LICENSE.md"
     ".gitignore"
 )
 
@@ -69,10 +69,10 @@ for file in "${REQUIRED_FILES[@]}"; do
     echo -n "Checking $file... "
     if [ -f "$file" ]; then
         echo -e "${GREEN}✅ Present${NC}"
-        ((TESTS_PASSED++))
+        ((TESTS_PASSED+=1))
     else
         echo -e "${RED}❌ Missing${NC}"
-        ((TESTS_FAILED++))
+        ((TESTS_FAILED+=1))
     fi
 done
 

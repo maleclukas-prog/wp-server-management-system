@@ -1,7 +1,7 @@
 # ============================================
-# WSMS PRO v4.2 - FISH SHELL ALIASES
+# WSMS PRO v4.3 - FISH SHELL ALIASES
 # Complete Fish Shell Configuration
-# Version: 4.2 | Last Updated: April 2026
+# Version: 4.3 | Last Updated: April 2026
 # ============================================
 
 # Exit if not interactive (SFTP/SCP sessions)
@@ -46,7 +46,7 @@ alias wp-backup-site='wp-backup-ui'
 alias red-robin='bash $SCRIPTS_DIR/red-robin-system-backup.sh'
 
 # ============================================
-# 🆕 ROLLBACK SYSTEM (NEW in v4.2)
+# 🆕 ROLLBACK SYSTEM (NEW in v4.3)
 # ============================================
 alias wp-snapshot='bash $SCRIPTS_DIR/wp-rollback.sh snapshot'
 alias wp-rollback='bash $SCRIPTS_DIR/wp-rollback.sh rollback'
@@ -107,7 +107,7 @@ alias logs-all='ls -la $HOME/logs/wsms/*/'
 # FUNCTIONS
 # ============================================
 function wp-status
-    echo "🌐 WSMS PRO v4.2 - Quick Status:"
+    echo "🌐 WSMS PRO v4.3 - Quick Status:"
     echo "=========================================================="
     wp-list
     echo ""
@@ -225,7 +225,7 @@ end
 # ============================================
 # WELCOME MESSAGE
 # ============================================
-echo "✅ WSMS PRO v4.2 - Fish aliases loaded!"
+echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"
 echo "   Type 'wp-help' for command reference"
 echo "   Type 'wp-status' for system overview"
 echo "   Type 'wp-health' for health check"
