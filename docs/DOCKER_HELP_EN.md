@@ -31,6 +31,18 @@ If you want to inspect the container in VS Code after the run (Containers view),
 WSMS_DOCKER_KEEP_CONTAINER=1 bash tests/run_docker_smoke_test.sh
 ```
 
+Use a stable debug container name:
+
+```bash
+WSMS_DOCKER_KEEP_CONTAINER=1 WSMS_DOCKER_CONTAINER_NAME=wsms-smoke-debug bash tests/run_docker_smoke_test.sh
+```
+
+Remove the kept debug container when done:
+
+```bash
+docker rm -f wsms-smoke-debug
+```
+
 What this test does:
 
 - builds image from `tests/docker/Dockerfile`,

@@ -25,6 +25,24 @@ Uruchamia pełny smoke test instalatora w Ubuntu + fixture WordPress:
 bash tests/run_docker_smoke_test.sh
 ```
 
+Jeśli chcesz obejrzeć kontener po teście w VS Code (widok Containers), zachowaj go zamiast usuwać automatycznie:
+
+```bash
+WSMS_DOCKER_KEEP_CONTAINER=1 bash tests/run_docker_smoke_test.sh
+```
+
+Użyj stałej nazwy kontenera debugowego:
+
+```bash
+WSMS_DOCKER_KEEP_CONTAINER=1 WSMS_DOCKER_CONTAINER_NAME=wsms-smoke-debug bash tests/run_docker_smoke_test.sh
+```
+
+Usuń kontener debugowy po zakończeniu:
+
+```bash
+docker rm -f wsms-smoke-debug
+```
+
 Co robi ten test:
 
 - buduje obraz z `tests/docker/Dockerfile`,
