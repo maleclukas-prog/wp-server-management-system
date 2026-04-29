@@ -64,6 +64,13 @@ Generated preview directories:
 
 Note: preview files are generated from installers and are git-ignored. The installer remains the source of truth.
 
+## Docker Testing Help
+
+For Docker-based installer smoke testing instructions:
+
+- Polish: `docs/DOCKER_HELP_PL.md`
+- English: `docs/DOCKER_HELP_EN.md`
+
 ## Uninstall
 
 ```bash
