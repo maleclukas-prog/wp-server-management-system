@@ -1050,6 +1050,10 @@ deploy "nas-sftp-sync.sh" << 'EOFNAS'
 
 source "$HOME/scripts/wsms-config.sh"
 
+LOG_DIR="${LOG_SYNC_DIR:-$HOME/logs/wsms/sync}"
+LOG_FILE="${LOG_NAS_SYNC:-$LOG_DIR/nas-sync.log}"
+mkdir -p "$LOG_DIR"
+
 REMOTE_SERVER="${NAS_HOST:-}"
 REMOTE_PORT="${NAS_PORT:-22}"
 REMOTE_USER="${NAS_USER:-}"
@@ -1057,7 +1061,9 @@ REMOTE_BASE_DIR="${NAS_PATH:-}"
 SSH_KEY="${NAS_SSH_KEY:-}"
 
 if [ -z "$REMOTE_SERVER" ] || [ -z "$REMOTE_USER" ] || [ ! -f "$SSH_KEY" ]; then
+    ts=$(date '+%Y-%m-%d %H:%M:%S')
     echo "❌ BŁĄD: Brak konfiguracji NAS"
+    echo "[$ts] BŁĄD: Brak konfiguracji NAS" >> "$LOG_FILE"
     exit 1
 fi
 
@@ -1067,9 +1073,6 @@ DAYS_TO_KEEP="${NAS_RETENTION_DAYS:-120}"
 MIN_KEEP_COPIES="${NAS_MIN_KEEP_COPIES:-2}"
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-LOG_DIR="${LOG_DIR:-$HOME/logs}"
-LOG_FILE="$LOG_DIR/nas_sync.log"
-mkdir -p "$LOG_DIR"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -1241,6 +1244,8 @@ main() {
     echo "[$TIMESTAMP] KONIEC: W=$TOTAL_UPLOADED, I=$TOTAL_EXISTING, N=$TOTAL_FAILED, U=$TOTAL_DELETED" >> "$LOG_FILE"
 }
 
+main "$@"
+
 EOFNAS
 
 # -----------------------------------------------------------------
@@ -1306,23 +1311,58 @@ emergency_cleanup() {
     echo -e "${RED}🚨 TRYB AWARYJNY: Zachowywanie tylko 2 najnowszych kopii na stronę!${NC}"
     echo "=========================================================="
     
+    normalizuj_klucz_backupu() {
+        local nazwa_pliku="$1"
+        local klucz="$nazwa_pliku"
+        klucz="${klucz%.tar.gz}"
+        klucz="${klucz%.sql.gz}"
+        klucz="${klucz%.gz}"
+        klucz="${klucz%.zip}"
+        klucz=$(echo "$klucz" | sed -E 's/[-_][0-9]{8}[-_][0-9]{6}$//; s/[-_][0-9]{8}$//')
+        echo "$klucz"
+    }
+
     for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
-        if [ -d "$dir" ]; then
-            echo -e "\n📂 Przetwarzanie $(basename "$dir")..."
-            
-            for site in "${SITES[@]}"; do
-                IFS=':' read -r name path user <<< "$site"
-                
-                files=$(find "$dir" -type f -name "*$name*" 2>/dev/null | sort -r)
-                count=$(echo "$files" | grep -c . 2>/dev/null || echo 0)
-                
-                if [ "$count" -gt 2 ]; then
-                    echo "$files" | tail -n +3 | xargs rm -f 2>/dev/null
-                    deleted=$((count - 2))
-                    echo "   🗑️ $name: Zachowano 2 najnowsze, usunięto $deleted"
-                fi
-            done
+        if [ ! -d "$dir" ]; then
+            continue
         fi
+
+        echo -e "\n📂 Przetwarzanie $(basename "$dir")..."
+
+        mapfile -t wszystkie_pliki < <(find "$dir" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null | sort -r)
+        if [ "${#wszystkie_pliki[@]}" -eq 0 ]; then
+            echo "   ℹ️ Brak plików"
+            continue
+        fi
+
+        declare -A grupy_plikow=()
+        for plik in "${wszystkie_pliki[@]}"; do
+            [ -z "$plik" ] && continue
+            klucz=$(normalizuj_klucz_backupu "$plik")
+            grupy_plikow["$klucz"]+=$'\n'"$plik"
+        done
+
+        usuniete_w_katalogu=0
+        while IFS= read -r klucz; do
+            [ -z "$klucz" ] && continue
+            pliki_grupy=$(echo "${grupy_plikow[$klucz]}" | sed '/^$/d' | sort -r)
+            count=$(echo "$pliki_grupy" | grep -c . 2>/dev/null || echo 0)
+
+            if [ "$count" -gt 2 ]; then
+                usuniete=0
+                while IFS= read -r stary_plik; do
+                    [ -z "$stary_plik" ] && continue
+                    if rm -f "$dir/$stary_plik" 2>/dev/null; then
+                        ((usuniete++))
+                    fi
+                done < <(echo "$pliki_grupy" | tail -n +3)
+
+                usuniete_w_katalogu=$((usuniete_w_katalogu + usuniete))
+                echo "   🗑️ $klucz: Zachowano 2 najnowsze, usunięto $usuniete"
+            fi
+        done < <(printf "%s\n" "${!grupy_plikow[@]}" | sort)
+
+        echo "   📉 $(basename "$dir"): łącznie usunięto $usuniete_w_katalogu"
     done
     
     echo -e "\n${GREEN}✅ AWARYJNE CZYSZCZENIE ZAKOŃCZONE${NC}"

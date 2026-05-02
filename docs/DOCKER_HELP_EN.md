@@ -50,6 +50,43 @@ What this test does:
 - runs `installers/install_wsms.sh`,
 - validates key install artifacts (scripts, aliases, crontab).
 
+## 2.1 Runtime behavior smoke test (backup/cleanup/logging)
+
+Run extended runtime verification (inside Docker):
+
+```bash
+bash tests/run_docker_runtime_smoke_test.sh
+```
+
+Keep debug container for inspection:
+
+```bash
+WSMS_DOCKER_KEEP_CONTAINER=1 WSMS_DOCKER_CONTAINER_NAME=wsms-runtime-smoke-debug bash tests/run_docker_runtime_smoke_test.sh
+```
+
+This runtime smoke test:
+
+- installs WSMS in a clean Ubuntu container,
+- executes selected runtime scripts (`wp-help`, lite backup, full backup, retention list/clean),
+- seeds old backup files and verifies emergency cleanup keeps exactly 2 newest copies,
+- verifies user-visible output markers,
+- verifies log persistence in `~/logs/wsms/retention/retention.log` and `~/logs/wsms/sync/nas-sync.log`.
+
+## 2.2 Full modules smoke test (20/20 scripts)
+
+Run complete module coverage in Docker (all deployed runtime scripts):
+
+```bash
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
+What it adds on top of standard smoke tests:
+
+- executes all runtime modules installed by WSMS,
+- records PASS/WARN/FAIL for each script,
+- stores per-script output in `/tmp/wsms-all-modules/*.out` inside the test container,
+- prints a final matrix and pass/fail counters.
+
 ## 3. Same flow via Docker Compose
 
 ```bash
@@ -149,6 +186,12 @@ bash tests/run_docker_smoke_test.sh
 ```
 
 If both steps are green, confidence is high that installer changes are safe.
+
+For runtime behavior checks after script changes, run additionally:
+
+```bash
+bash tests/run_docker_runtime_smoke_test.sh
+```
 
 ## 9. Two-workstation routine (Office iMac + Remote MacBook)
 

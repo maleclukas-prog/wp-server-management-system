@@ -50,6 +50,43 @@ Co robi ten test:
 - uruchamia `installers/install_wsms.sh`,
 - weryfikuje podstawowe artefakty instalacji (skrypty, aliasy, crontab).
 
+## 2.1 Rozszerzony smoke test runtime (backup/cleanup/logi)
+
+Uruchamia rozszerzoną walidację zachowania skryptów w Dockerze:
+
+```bash
+bash tests/run_docker_runtime_smoke_test.sh
+```
+
+Zachowanie kontenera do debugowania:
+
+```bash
+WSMS_DOCKER_KEEP_CONTAINER=1 WSMS_DOCKER_CONTAINER_NAME=wsms-runtime-smoke-debug bash tests/run_docker_runtime_smoke_test.sh
+```
+
+Ten test runtime:
+
+- instaluje WSMS w czystym kontenerze Ubuntu,
+- uruchamia wybrane skrypty runtime (`wp-help`, backup lite, backup full, retention list/clean),
+- dodaje stare pliki backupów i sprawdza, że tryb awaryjny zostawia dokładnie 2 najnowsze kopie,
+- sprawdza widoczne komunikaty na stdout,
+- sprawdza zapis logów w `~/logs/wsms/retention/retention.log` i `~/logs/wsms/sync/nas-sync.log`.
+
+## 2.2 Pełny smoke test modułów (20/20 skryptów)
+
+Uruchamia pełne pokrycie modułów runtime w Dockerze (wszystkie wdrażane skrypty):
+
+```bash
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
+Co ten test dodaje ponad standardowy smoke:
+
+- wykonuje wszystkie moduły runtime instalowane przez WSMS,
+- zapisuje status PASS/WARN/FAIL dla każdego skryptu,
+- zapisuje output per skrypt w `/tmp/wsms-all-modules/*.out` wewnątrz kontenera,
+- drukuje końcową tabelę i liczniki pass/fail.
+
 ## 3. To samo przez Docker Compose
 
 ```bash
@@ -149,6 +186,12 @@ bash tests/run_docker_smoke_test.sh
 ```
 
 Jeśli oba kroki są zielone, masz wysoką pewność, że zmiany nie łamią instalatora.
+
+Po zmianach w skryptach runtime uruchom dodatkowo:
+
+```bash
+bash tests/run_docker_runtime_smoke_test.sh
+```
 
 ## 9. Procedura na dwa stanowiska (iMac biuro + MacBook zdalnie)
 

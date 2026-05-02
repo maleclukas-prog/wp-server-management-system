@@ -1050,6 +1050,10 @@ deploy "nas-sftp-sync.sh" << 'EOFNAS'
 
 source "$HOME/scripts/wsms-config.sh"
 
+LOG_DIR="${LOG_SYNC_DIR:-$HOME/logs/wsms/sync}"
+LOG_FILE="${LOG_NAS_SYNC:-$LOG_DIR/nas-sync.log}"
+mkdir -p "$LOG_DIR"
+
 REMOTE_SERVER="${NAS_HOST:-}"
 REMOTE_PORT="${NAS_PORT:-22}"
 REMOTE_USER="${NAS_USER:-}"
@@ -1057,7 +1061,9 @@ REMOTE_BASE_DIR="${NAS_PATH:-}"
 SSH_KEY="${NAS_SSH_KEY:-}"
 
 if [ -z "$REMOTE_SERVER" ] || [ -z "$REMOTE_USER" ] || [ ! -f "$SSH_KEY" ]; then
+    ts=$(date '+%Y-%m-%d %H:%M:%S')
     echo "❌ ERROR: Missing NAS configuration"
+    echo "[$ts] ERROR: Missing NAS configuration" >> "$LOG_FILE"
     exit 1
 fi
 
@@ -1067,9 +1073,6 @@ DAYS_TO_KEEP="${NAS_RETENTION_DAYS:-120}"
 MIN_KEEP_COPIES="${NAS_MIN_KEEP_COPIES:-2}"
 
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
-LOG_DIR="${LOG_DIR:-$HOME/logs}"
-LOG_FILE="$LOG_DIR/nas_sync.log"
-mkdir -p "$LOG_DIR"
 
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -1240,6 +1243,8 @@ main() {
     
     echo "[$TIMESTAMP] FINAL: U=$TOTAL_UPLOADED, E=$TOTAL_EXISTING, F=$TOTAL_FAILED, D=$TOTAL_DELETED" >> "$LOG_FILE"
 }
+
+main "$@"
 EOFNAS
 
 # -----------------------------------------------------------------
@@ -1305,23 +1310,58 @@ emergency_cleanup() {
     echo -e "${RED}🚨 EMERGENCY MODE: Keeping only 2 latest copies per site!${NC}"
     echo "=========================================================="
     
+    normalize_backup_key() {
+        local file_name="$1"
+        local key="$file_name"
+        key="${key%.tar.gz}"
+        key="${key%.sql.gz}"
+        key="${key%.gz}"
+        key="${key%.zip}"
+        key=$(echo "$key" | sed -E 's/[-_][0-9]{8}[-_][0-9]{6}$//; s/[-_][0-9]{8}$//')
+        echo "$key"
+    }
+
     for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
-        if [ -d "$dir" ]; then
-            echo -e "\n📂 Processing $(basename "$dir")..."
-            
-            for site in "${SITES[@]}"; do
-                IFS=':' read -r name path user <<< "$site"
-                
-                files=$(find "$dir" -type f -name "*$name*" 2>/dev/null | sort -r)
-                count=$(echo "$files" | grep -c . 2>/dev/null || echo 0)
-                
-                if [ "$count" -gt 2 ]; then
-                    echo "$files" | tail -n +3 | xargs rm -f 2>/dev/null
-                    deleted=$((count - 2))
-                    echo "   🗑️ $name: Kept 2 latest, deleted $deleted"
-                fi
-            done
+        if [ ! -d "$dir" ]; then
+            continue
         fi
+
+        echo -e "\n📂 Processing $(basename "$dir")..."
+
+        mapfile -t all_files < <(find "$dir" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null | sort -r)
+        if [ "${#all_files[@]}" -eq 0 ]; then
+            echo "   ℹ️ No files found"
+            continue
+        fi
+
+        declare -A grouped_files=()
+        for file in "${all_files[@]}"; do
+            [ -z "$file" ] && continue
+            key=$(normalize_backup_key "$file")
+            grouped_files["$key"]+=$'\n'"$file"
+        done
+
+        deleted_in_dir=0
+        while IFS= read -r key; do
+            [ -z "$key" ] && continue
+            group_files=$(echo "${grouped_files[$key]}" | sed '/^$/d' | sort -r)
+            count=$(echo "$group_files" | grep -c . 2>/dev/null || echo 0)
+
+            if [ "$count" -gt 2 ]; then
+                removed=0
+                while IFS= read -r old_file; do
+                    [ -z "$old_file" ] && continue
+                    if rm -f "$dir/$old_file" 2>/dev/null; then
+                        ((removed++))
+                    fi
+                done < <(echo "$group_files" | tail -n +3)
+
+                deleted_in_dir=$((deleted_in_dir + removed))
+                echo "   🗑️ $key: Kept 2 latest, deleted $removed"
+            fi
+        done < <(printf "%s\n" "${!grouped_files[@]}" | sort)
+
+        echo "   📉 $(basename "$dir"): total deleted $deleted_in_dir"
     done
     
     echo -e "\n${GREEN}✅ EMERGENCY CLEANUP COMPLETE${NC}"
