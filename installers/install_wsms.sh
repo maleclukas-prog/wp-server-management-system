@@ -760,47 +760,150 @@ echo "=========================================================="
 success_count=0
 fail_count=0
 
-for site in "${SITES[@]}"; do
-    IFS=':' read -r name path user <<< "$site"
+find_site_config() {
+    local target_name="$1"
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name path user <<< "$site"
+        if [ "$name" = "$target_name" ]; then
+            echo "$site"
+            return 0
+        fi
+    done
+    return 1
+}
+
+check_http_code() {
+    local name="$1"
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+    if [ "$http_code" = "000" ]; then
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+    fi
+    echo "$http_code"
+}
+
+run_site_update() {
+    local name="$1"
+    local path="$2"
+    local user="$3"
+    local mode="$4"
+    local target="${5:-}"
+
     echo -e "\n🔄 Processing: $name"
-    
-    if [ -f "$path/wp-config.php" ]; then
-        echo "   📸 Creating pre-update snapshot..."
-        bash "$SCRIPT_DIR/wp-rollback.sh" snapshot "$name" 2>/dev/null
-        
-        echo "   ⚙️ Updating core..."
-        sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null
-        
-        echo "   ⚙️ Updating plugins..."
-        sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null
-        
-        echo "   ⚙️ Updating themes..."
-        sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null
-        
-        echo "   ⚙️ Updating database..."
-        sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null
-        
-        echo "   ⚙️ Flushing cache..."
-        sudo -u "$user" wp --path="$path" cache flush --quiet 2>/dev/null
-        
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
-        if [ "$http_code" = "000" ]; then
-            http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
-        fi
-        
-        if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ]; then
-            echo -e "   ${GREEN}✅ $name updated successfully (HTTP $http_code)${NC}"
-            ((success_count++))
-        else
-            echo -e "   ${RED}❌ $name may have issues (HTTP $http_code) - rolling back...${NC}"
-            bash "$SCRIPT_DIR/wp-rollback.sh" rollback "$name" 2>/dev/null
-            ((fail_count++))
-        fi
-    else
+
+    if [ ! -f "$path/wp-config.php" ]; then
         echo -e "   ${RED}❌ Failed: Config missing at $path${NC}"
         ((fail_count++))
+        return 1
     fi
-done
+
+    echo "   📸 Creating pre-update snapshot..."
+    bash "$SCRIPT_DIR/wp-rollback.sh" snapshot "$name" 2>/dev/null
+
+    case "$mode" in
+        all|site)
+            echo "   ⚙️ Updating core..."
+            sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null || true
+
+            echo "   ⚙️ Updating plugins..."
+            sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null || true
+
+            echo "   ⚙️ Updating themes..."
+            sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null || true
+
+            echo "   ⚙️ Updating database..."
+            sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null || true
+            ;;
+        plugin)
+            echo "   ⚙️ Updating plugin: $target"
+            sudo -u "$user" wp --path="$path" plugin update "$target" --quiet 2>/dev/null || true
+            ;;
+        theme)
+            echo "   ⚙️ Updating theme: $target"
+            sudo -u "$user" wp --path="$path" theme update "$target" --quiet 2>/dev/null || true
+            ;;
+    esac
+
+    echo "   ⚙️ Flushing cache..."
+    sudo -u "$user" wp --path="$path" cache flush --quiet 2>/dev/null || true
+
+    http_code=$(check_http_code "$name")
+    if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ]; then
+        echo -e "   ${GREEN}✅ $name updated successfully (HTTP $http_code)${NC}"
+        ((success_count++))
+        return 0
+    fi
+
+    echo -e "   ${RED}❌ $name may have issues (HTTP $http_code) - rolling back...${NC}"
+    bash "$SCRIPT_DIR/wp-rollback.sh" rollback "$name" 2>/dev/null
+    ((fail_count++))
+    return 1
+}
+
+update_all_sites() {
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name path user <<< "$site"
+        run_site_update "$name" "$path" "$user" "all"
+    done
+}
+
+update_single_site() {
+    local site_name="$1"
+    local site_config
+    site_config=$(find_site_config "$site_name") || {
+        echo -e "${RED}❌ Site not found: $site_name${NC}"
+        return 1
+    }
+
+    IFS=':' read -r name path user <<< "$site_config"
+    run_site_update "$name" "$path" "$user" "site"
+}
+
+update_single_component() {
+    local mode="$1"
+    local site_name="$2"
+    local slug="$3"
+    local site_config
+    site_config=$(find_site_config "$site_name") || {
+        echo -e "${RED}❌ Site not found: $site_name${NC}"
+        return 1
+    }
+
+    IFS=':' read -r name path user <<< "$site_config"
+    run_site_update "$name" "$path" "$user" "$mode" "$slug"
+}
+
+print_usage() {
+    echo "Usage: $0 [all|site|plugin|theme] [site] [slug]"
+    echo ""
+    echo "Modes:"
+    echo "  all                      - update all sites (default)"
+    echo "  site <site>              - update full stack for one site"
+    echo "  plugin <site> <plugin>   - update one plugin on one site"
+    echo "  theme <site> <theme>     - update one theme on one site"
+}
+
+case "${1:-all}" in
+    all)
+        update_all_sites
+        ;;
+    site)
+        [ -z "${2:-}" ] && print_usage && exit 1
+        update_single_site "$2"
+        ;;
+    plugin)
+        [ -z "${2:-}" ] || [ -z "${3:-}" ] && print_usage && exit 1
+        update_single_component "plugin" "$2" "$3"
+        ;;
+    theme)
+        [ -z "${2:-}" ] || [ -z "${3:-}" ] && print_usage && exit 1
+        update_single_component "theme" "$2" "$3"
+        ;;
+    *)
+        print_usage
+        exit 1
+        ;;
+esac
 
 echo -e "\n${CYAN}📊 MAINTENANCE SUMMARY:${NC}"
 echo "   ✅ Successful: $success_count site(s)"
@@ -1374,13 +1477,49 @@ emergency_cleanup() {
             echo "   ℹ️ Nothing to delete: every backup group already has 2 or fewer files"
         fi
     done
+
+    if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
+        echo -e "\n📂 Processing $(basename "$BACKUP_ROLLBACK_DIR") snapshots..."
+        rollback_deleted=0
+
+        mapfile -t rollback_sites < <(find "$BACKUP_ROLLBACK_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+        if [ "${#rollback_sites[@]}" -eq 0 ]; then
+            echo "   ℹ️ No rollback site directories found"
+        fi
+
+        for site_dir in "${rollback_sites[@]}"; do
+            [ -d "$site_dir" ] || continue
+            site_name=$(basename "$site_dir")
+            mapfile -t snapshots < <(ls -1dt "$site_dir"/*/ 2>/dev/null)
+            count=${#snapshots[@]}
+
+            if [ "$count" -le 2 ]; then
+                echo "   ℹ️ $site_name: only $count snapshot(s) — nothing to remove"
+                continue
+            fi
+
+            removed=0
+            for old_snapshot in "${snapshots[@]:2}"; do
+                [ -z "$old_snapshot" ] && continue
+                if rm -rf "$old_snapshot" 2>/dev/null; then
+                    ((removed++))
+                fi
+            done
+
+            rollback_deleted=$((rollback_deleted + removed))
+            echo "   🗑️ $site_name: kept 2 latest snapshots, deleted $removed"
+        done
+
+        total_deleted_all=$((total_deleted_all + rollback_deleted))
+        echo "   📉 $(basename "$BACKUP_ROLLBACK_DIR"): total snapshots deleted $rollback_deleted"
+    fi
     
     if [ "$total_deleted_all" -eq 0 ]; then
         echo -e "${YELLOW}ℹ️ Emergency mode removed 0 files because there were no groups above 2 copies.${NC}"
         echo -e "${YELLOW}💡 If you need additional cleanup, run option 5 (standard retention) or backup-force-clean.${NC}"
     fi
 
-    echo -e "\n${GREEN}✅ EMERGENCY CLEANUP COMPLETE${NC}"
+    echo -e "\n${GREEN}✅ EMERGENCY CLEANUP COMPLETE — total deleted: $total_deleted_all${NC}"
 }
 
 force_clean() {
@@ -1599,6 +1738,9 @@ echo ""
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-safe" "RECOMMENDED: Backup → Snapshot → Update"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-all" "Update all sites (skips backup)"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update" "Alias for wp-update-all"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-site [site]" "Update one site (core + all plugins/themes)"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-plugin [site] [plugin]" "Update one plugin on one site"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-theme [site] [theme]" "Update one theme on one site"
 echo ""
 
 # ============================================
@@ -2066,6 +2208,9 @@ alias scripts-dir='ls -la $SCRIPTS_DIR/'
 
 alias wp-update-all='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh'
 alias wp-update='wp-update-all'
+alias wp-update-site='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh site'
+alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plugin'
+alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
@@ -2212,6 +2357,9 @@ alias scripts-dir='ls -la $SCRIPTS_DIR/'
 
 alias wp-update-all='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh'
 alias wp-update='wp-update-all'
+alias wp-update-site='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh site'
+alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plugin'
+alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-update-safe='wp-backup-lite; and sleep 5; and wp-update-all'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'

@@ -14,6 +14,9 @@ WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance
 - Repository and docs aligned with current installer and uninstaller names.
 - Local hosts synchronization command (`wp-hosts-sync`) to map configured sites to `127.0.0.1`.
 - Uninstaller `--dry-run` mode for safe preview before removal.
+- Granular update modes in maintenance engine: `site`, `plugin`, `theme`.
+- Emergency retention now also prunes rollback snapshots (keeps latest 2 per site).
+- Runtime exporter supports selective extraction with `--only`.
 
 ## Quick Start
 
@@ -51,6 +54,9 @@ Notable runtime commands:
 - `wp-help` - complete command reference
 - `wp-hosts-sync` - sync configured domains from `SITES` into `/etc/hosts` (uses sudo)
 - `wp-fix-perms` - file permissions and ACL repair
+- `wp-update-site <site>` - update one site (core + all plugins/themes)
+- `wp-update-plugin <site> <plugin>` - update one plugin on one site
+- `wp-update-theme <site> <theme>` - update one theme on one site
 
 ## Inspect Scripts Without Running Installer
 
@@ -60,12 +66,18 @@ To review copy-ready runtime modules as separate files (instead of reading large
 bash tools/wsms-export-runtime-scripts.sh
 ```
 
+To extract only selected modules:
+
+```bash
+bash tools/wsms-export-runtime-scripts.sh --only wp-automated-maintenance-engine.sh,wp-smart-retention-manager.sh,wp-help.sh
+```
+
 Preview output is generated to:
 
 - `scripts/runtime-preview/en/`
 - `scripts/runtime-preview/pl/`
 
-This preview is generated from installers and is git-ignored to avoid source-of-truth drift.
+This preview is generated from installers and should be regenerated whenever installer deploy blocks change.
 
 ## Automated Docker Smoke Test
 

@@ -10,7 +10,13 @@ If you want inspectable/copy-ready module files without running installer, gener
 bash tools/wsms-export-runtime-scripts.sh
 ```
 
-Generated preview paths (git-ignored):
+To export only selected modules:
+
+```bash
+bash tools/wsms-export-runtime-scripts.sh --only wp-automated-maintenance-engine.sh,wp-smart-retention-manager.sh,wp-help.sh
+```
+
+Generated preview paths:
 
 - `scripts/runtime-preview/en/`
 - `scripts/runtime-preview/pl/`

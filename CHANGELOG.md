@@ -2,6 +2,21 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.3] - 2026-05-02
+
+### Added
+- Granular maintenance engine modes in `wp-automated-maintenance-engine.sh`:
+	- `site <site>` for one-site full update,
+	- `plugin <site> <plugin>` for one-plugin update,
+	- `theme <site> <theme>` for one-theme update.
+- New aliases for granular updates in Bash and Fish blocks:
+	- `wp-update-site`, `wp-update-plugin`, `wp-update-theme`.
+- `wp-help.sh` updated (EN/PL) with the new update command variants.
+- `tools/wsms-export-runtime-scripts.sh` supports selective export using `--only script1,script2,...`.
+
+### Changed
+- Emergency cleanup now also prunes rollback snapshots in `backups-rollback` while keeping 2 latest snapshots per site.
+
 ## [4.3.2] - 2026-05-02
 
 ### Fixed
@@ -52,6 +67,7 @@ All notable changes to WSMS PRO are documented in this file.
 ### Added
 - Initial public release.
 
+[4.3.3]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.2...v4.3.3
 [4.3.2]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.1...v4.3.2
 [4.3.1]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.0...v4.3.1
 [4.3.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.3.0

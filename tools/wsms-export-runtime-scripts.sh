@@ -1,7 +1,7 @@
 #!/bin/bash
 # =================================================================
 # WSMS PRO v4.3 - EXPORT RUNTIME MODULES FROM INSTALLERS
-# Usage: ./tools/wsms-export-runtime-scripts.sh [output_dir]
+# Usage: ./tools/wsms-export-runtime-scripts.sh [output_dir] [--only script1,script2,...]
 # =================================================================
 
 set -euo pipefail
@@ -9,6 +9,29 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_DIR="${1:-$REPO_ROOT/scripts/runtime-preview}"
+ONLY_LIST=""
+
+if [ "${1:-}" = "--only" ]; then
+    OUTPUT_DIR="$REPO_ROOT/scripts/runtime-preview"
+    ONLY_LIST="${2:-}"
+elif [ "${2:-}" = "--only" ]; then
+    ONLY_LIST="${3:-}"
+fi
+
+is_selected_module() {
+    local module="$1"
+
+    if [ -z "$ONLY_LIST" ]; then
+        return 0
+    fi
+
+    IFS=',' read -r -a selected <<< "$ONLY_LIST"
+    for item in "${selected[@]}"; do
+        [ "$item" = "$module" ] && return 0
+    done
+
+    return 1
+}
 
 extract_modules() {
     local installer_path="$1"
@@ -39,9 +62,13 @@ extract_modules() {
             fi
         else
             if [ "$line" = "$terminator" ]; then
-                mv "$temp_body" "$target_dir/$current_file"
-                chmod +x "$target_dir/$current_file" 2> /dev/null || true
-                count=$((count + 1))
+                if is_selected_module "$current_file"; then
+                    mv "$temp_body" "$target_dir/$current_file"
+                    chmod +x "$target_dir/$current_file" 2> /dev/null || true
+                    count=$((count + 1))
+                else
+                    rm -f "$temp_body"
+                fi
                 current_file=""
                 terminator=""
                 temp_body=""

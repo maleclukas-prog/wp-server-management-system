@@ -760,47 +760,150 @@ echo "=========================================================="
 success_count=0
 fail_count=0
 
-for site in "${SITES[@]}"; do
-    IFS=':' read -r name path user <<< "$site"
+znajdz_konfiguracje_strony() {
+    local target_name="$1"
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name path user <<< "$site"
+        if [ "$name" = "$target_name" ]; then
+            echo "$site"
+            return 0
+        fi
+    done
+    return 1
+}
+
+sprawdz_http_code() {
+    local name="$1"
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+    if [ "$http_code" = "000" ]; then
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+    fi
+    echo "$http_code"
+}
+
+uruchom_aktualizacje_strony() {
+    local name="$1"
+    local path="$2"
+    local user="$3"
+    local mode="$4"
+    local target="${5:-}"
+
     echo -e "\n🔄 Przetwarzanie: $name"
-    
-    if [ -f "$path/wp-config.php" ]; then
-        echo "   📸 Tworzenie migawki przed aktualizacją..."
-        bash "$SCRIPT_DIR/wp-rollback.sh" snapshot "$name" 2>/dev/null
-        
-        echo "   ⚙️ Aktualizacja rdzenia..."
-        sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null
-        
-        echo "   ⚙️ Aktualizacja wtyczek..."
-        sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null
-        
-        echo "   ⚙️ Aktualizacja motywów..."
-        sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null
-        
-        echo "   ⚙️ Aktualizacja bazy danych..."
-        sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null
-        
-        echo "   ⚙️ Czyszczenie cache..."
-        sudo -u "$user" wp --path="$path" cache flush --quiet 2>/dev/null
-        
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
-        if [ "$http_code" = "000" ]; then
-            http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
-        fi
-        
-        if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ]; then
-            echo -e "   ${GREEN}✅ $name zaktualizowana pomyślnie (HTTP $http_code)${NC}"
-            ((success_count++))
-        else
-            echo -e "   ${RED}❌ $name może mieć problemy (HTTP $http_code) - przywracanie...${NC}"
-            bash "$SCRIPT_DIR/wp-rollback.sh" rollback "$name" 2>/dev/null
-            ((fail_count++))
-        fi
-    else
+
+    if [ ! -f "$path/wp-config.php" ]; then
         echo -e "   ${RED}❌ Niepowodzenie: Brak konfiguracji w $path${NC}"
         ((fail_count++))
+        return 1
     fi
-done
+
+    echo "   📸 Tworzenie migawki przed aktualizacją..."
+    bash "$SCRIPT_DIR/wp-rollback.sh" snapshot "$name" 2>/dev/null
+
+    case "$mode" in
+        all|site)
+            echo "   ⚙️ Aktualizacja rdzenia..."
+            sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null || true
+
+            echo "   ⚙️ Aktualizacja wtyczek..."
+            sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null || true
+
+            echo "   ⚙️ Aktualizacja motywów..."
+            sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null || true
+
+            echo "   ⚙️ Aktualizacja bazy danych..."
+            sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null || true
+            ;;
+        plugin)
+            echo "   ⚙️ Aktualizacja wtyczki: $target"
+            sudo -u "$user" wp --path="$path" plugin update "$target" --quiet 2>/dev/null || true
+            ;;
+        theme)
+            echo "   ⚙️ Aktualizacja motywu: $target"
+            sudo -u "$user" wp --path="$path" theme update "$target" --quiet 2>/dev/null || true
+            ;;
+    esac
+
+    echo "   ⚙️ Czyszczenie cache..."
+    sudo -u "$user" wp --path="$path" cache flush --quiet 2>/dev/null || true
+
+    http_code=$(sprawdz_http_code "$name")
+    if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ]; then
+        echo -e "   ${GREEN}✅ $name zaktualizowana pomyślnie (HTTP $http_code)${NC}"
+        ((success_count++))
+        return 0
+    fi
+
+    echo -e "   ${RED}❌ $name może mieć problemy (HTTP $http_code) - przywracanie...${NC}"
+    bash "$SCRIPT_DIR/wp-rollback.sh" rollback "$name" 2>/dev/null
+    ((fail_count++))
+    return 1
+}
+
+aktualizuj_wszystkie_strony() {
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name path user <<< "$site"
+        uruchom_aktualizacje_strony "$name" "$path" "$user" "all"
+    done
+}
+
+aktualizuj_pojedyncza_strone() {
+    local site_name="$1"
+    local site_config
+    site_config=$(znajdz_konfiguracje_strony "$site_name") || {
+        echo -e "${RED}❌ Nie znaleziono strony: $site_name${NC}"
+        return 1
+    }
+
+    IFS=':' read -r name path user <<< "$site_config"
+    uruchom_aktualizacje_strony "$name" "$path" "$user" "site"
+}
+
+aktualizuj_pojedynczy_komponent() {
+    local mode="$1"
+    local site_name="$2"
+    local slug="$3"
+    local site_config
+    site_config=$(znajdz_konfiguracje_strony "$site_name") || {
+        echo -e "${RED}❌ Nie znaleziono strony: $site_name${NC}"
+        return 1
+    }
+
+    IFS=':' read -r name path user <<< "$site_config"
+    uruchom_aktualizacje_strony "$name" "$path" "$user" "$mode" "$slug"
+}
+
+wypisz_uzycie() {
+    echo "Użycie: $0 [all|site|plugin|theme] [strona] [slug]"
+    echo ""
+    echo "Tryby:"
+    echo "  all                      - aktualizuj wszystkie strony (domyślnie)"
+    echo "  site <strona>            - aktualizuj pełny stack jednej strony"
+    echo "  plugin <strona> <plugin> - aktualizuj jedną wtyczkę na jednej stronie"
+    echo "  theme <strona> <motyw>   - aktualizuj jeden motyw na jednej stronie"
+}
+
+case "${1:-all}" in
+    all)
+        aktualizuj_wszystkie_strony
+        ;;
+    site)
+        [ -z "${2:-}" ] && wypisz_uzycie && exit 1
+        aktualizuj_pojedyncza_strone "$2"
+        ;;
+    plugin)
+        [ -z "${2:-}" ] || [ -z "${3:-}" ] && wypisz_uzycie && exit 1
+        aktualizuj_pojedynczy_komponent "plugin" "$2" "$3"
+        ;;
+    theme)
+        [ -z "${2:-}" ] || [ -z "${3:-}" ] && wypisz_uzycie && exit 1
+        aktualizuj_pojedynczy_komponent "theme" "$2" "$3"
+        ;;
+    *)
+        wypisz_uzycie
+        exit 1
+        ;;
+esac
 
 echo -e "\n${CYAN}📊 PODSUMOWANIE UTRZYMANIA:${NC}"
 echo "   ✅ Sukces: $success_count stron(y)"
@@ -1375,13 +1478,49 @@ emergency_cleanup() {
             echo "   ℹ️ Brak plików do usunięcia: każda grupa backupów ma już 2 lub mniej plików"
         fi
     done
+
+    if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
+        echo -e "\n📂 Przetwarzanie migawek $(basename "$BACKUP_ROLLBACK_DIR")..."
+        rollback_usuniete=0
+
+        mapfile -t rollback_strony < <(find "$BACKUP_ROLLBACK_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+        if [ "${#rollback_strony[@]}" -eq 0 ]; then
+            echo "   ℹ️ Brak katalogów stron rollback"
+        fi
+
+        for site_dir in "${rollback_strony[@]}"; do
+            [ -d "$site_dir" ] || continue
+            nazwa_strony=$(basename "$site_dir")
+            mapfile -t migawki < <(ls -1dt "$site_dir"/*/ 2>/dev/null)
+            count=${#migawki[@]}
+
+            if [ "$count" -le 2 ]; then
+                echo "   ℹ️ $nazwa_strony: tylko $count migawka(i) — nic do usunięcia"
+                continue
+            fi
+
+            usuniete=0
+            for stara_migawka in "${migawki[@]:2}"; do
+                [ -z "$stara_migawka" ] && continue
+                if rm -rf "$stara_migawka" 2>/dev/null; then
+                    ((usuniete++))
+                fi
+            done
+
+            rollback_usuniete=$((rollback_usuniete + usuniete))
+            echo "   🗑️ $nazwa_strony: zachowano 2 najnowsze migawki, usunięto $usuniete"
+        done
+
+        lacznie_usuniete=$((lacznie_usuniete + rollback_usuniete))
+        echo "   📉 $(basename "$BACKUP_ROLLBACK_DIR"): łącznie usunięto migawek $rollback_usuniete"
+    fi
     
     if [ "$lacznie_usuniete" -eq 0 ]; then
         echo -e "${YELLOW}ℹ️ Tryb awaryjny usunął 0 plików, ponieważ żadna grupa nie przekraczała 2 kopii.${NC}"
         echo -e "${YELLOW}💡 Jeśli chcesz agresywniejsze czyszczenie, użyj opcji 5 (standardowa retencja) lub backup-force-clean.${NC}"
     fi
 
-    echo -e "\n${GREEN}✅ AWARYJNE CZYSZCZENIE ZAKOŃCZONE${NC}"
+    echo -e "\n${GREEN}✅ AWARYJNE CZYSZCZENIE ZAKOŃCZONE — łącznie usunięto: $lacznie_usuniete${NC}"
 }
 
 force_clean() {
@@ -1600,6 +1739,9 @@ echo ""
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-safe" "ZALECANE: Backup → Migawka → Aktualizacja"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-all" "Aktualizuj wszystkie strony (bez backupu)"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update" "Alias do wp-update-all"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-site [strona]" "Aktualizuj jedną stronę (rdzeń + wszystkie wtyczki/motywy)"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-plugin [strona] [wtyczka]" "Aktualizuj jedną wtyczkę na jednej stronie"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-theme [strona] [motyw]" "Aktualizuj jeden motyw na jednej stronie"
 echo ""
 
 # ============================================
@@ -2193,6 +2335,9 @@ alias scripts-dir='ls -la $SCRIPTS_DIR/'
 
 alias wp-update-all='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh'
 alias wp-update='wp-update-all'
+alias wp-update-site='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh site'
+alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plugin'
+alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
@@ -2339,6 +2484,9 @@ alias scripts-dir='ls -la $SCRIPTS_DIR/'
 
 alias wp-update-all='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh'
 alias wp-update='wp-update-all'
+alias wp-update-site='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh site'
+alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plugin'
+alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-update-safe='wp-backup-lite; and sleep 5; and wp-update-all'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'

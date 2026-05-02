@@ -24,7 +24,7 @@ Both installers provide:
 ## Runtime Module Groups
 
 1. Observability: health audit, fleet status, multi-instance audit.
-2. Maintenance: automated update engine, permissions orchestrator.
+2. Maintenance: automated update engine (all sites, single site, single plugin, single theme), permissions orchestrator.
 3. Backup: lite/full/mysql/interactive/red-robin.
 4. Retention and rollback: retention manager (standard clean, force-clean, emergency per-site, emergency-global), rollback engine.
 5. Security and sync: ClamAV scans, NAS sync.
@@ -78,3 +78,9 @@ For repository-side inspection, `tools/wsms-export-runtime-scripts.sh` parses in
 - `scripts/runtime-preview/pl/`
 
 This gives copy-ready module files for audit/review workflows while preserving installer-driven source-of-truth architecture.
+
+The exporter supports selective extraction of modules:
+
+- `bash tools/wsms-export-runtime-scripts.sh --only wp-automated-maintenance-engine.sh,wp-smart-retention-manager.sh`
+
+This is useful when syncing only one or a few updated modules without re-exporting all runtime previews.
