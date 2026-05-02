@@ -40,7 +40,7 @@ extract_modules() {
         else
             if [ "$line" = "$terminator" ]; then
                 mv "$temp_body" "$target_dir/$current_file"
-                chmod +x "$target_dir/$current_file" 2>/dev/null || true
+                chmod +x "$target_dir/$current_file" 2> /dev/null || true
                 count=$((count + 1))
                 current_file=""
                 terminator=""

@@ -10,12 +10,15 @@ FORCE_MODE=false
 DRY_RUN=false
 for arg in "$@"; do
     case "$arg" in
-        --force|-f) FORCE_MODE=true ;;
-        --dry-run|-n) DRY_RUN=true ;;
+        --force | -f) FORCE_MODE=true ;;
+        --dry-run | -n) DRY_RUN=true ;;
     esac
 done
 
-GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; CYAN='\033[0;36m'; NC='\033[0m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+NC='\033[0m'
 
 WSMS_BASH_START="# >>> WSMS PRO v4.3 BASH >>>"
 WSMS_BASH_END="# <<< WSMS PRO v4.3 BASH <<<"
@@ -34,7 +37,7 @@ run_cmd() {
 
 sed_in_place() {
     # macOS/BSD sed uses: sed -i '' ; GNU sed uses: sed -i
-    if sed --version >/dev/null 2>&1; then
+    if sed --version > /dev/null 2>&1; then
         sed -i "$1" "$2"
     else
         sed -i '' "$1" "$2"
@@ -97,26 +100,26 @@ fi
 # 4. CLEAN CRONTAB
 # ============================================
 echo -e "\n${YELLOW}⏰ Cleaning crontab...${NC}"
-if crontab -l &>/dev/null; then
+if crontab -l &> /dev/null; then
     if [ "$DRY_RUN" = true ]; then
         echo "   [DRY-RUN] Backup crontab to: $HOME/crontab.backup.$TIMESTAMP.txt"
         echo "   [DRY-RUN] Remove WSMS-related cron entries"
     else
-        crontab -l > "$HOME/crontab.backup.$TIMESTAMP.txt" 2>/dev/null
-        crontab -l 2>/dev/null | grep -v "# WSMS PRO" \
-        | grep -v "server-health-audit.sh" \
-        | grep -v "wp-automated-maintenance-engine.sh" \
-        | grep -v "wp-essential-assets-backup.sh" \
-        | grep -v "wp-full-recovery-backup.sh" \
-        | grep -v "wp-smart-retention-manager.sh" \
-        | grep -v "wp-rollback.sh" \
-        | grep -v "wp-hosts-sync.sh" \
-        | grep -v "mysql-backup-manager.sh" \
-        | grep -v "nas-sftp-sync.sh" \
-        | grep -v "clamav-auto-scan.sh" \
-        | grep -v "clamav-full-scan.sh" \
-        | grep -v "freshclam" \
-        | crontab -
+        crontab -l > "$HOME/crontab.backup.$TIMESTAMP.txt" 2> /dev/null
+        crontab -l 2> /dev/null | grep -v "# WSMS PRO" \
+            | grep -v "server-health-audit.sh" \
+            | grep -v "wp-automated-maintenance-engine.sh" \
+            | grep -v "wp-essential-assets-backup.sh" \
+            | grep -v "wp-full-recovery-backup.sh" \
+            | grep -v "wp-smart-retention-manager.sh" \
+            | grep -v "wp-rollback.sh" \
+            | grep -v "wp-hosts-sync.sh" \
+            | grep -v "mysql-backup-manager.sh" \
+            | grep -v "nas-sftp-sync.sh" \
+            | grep -v "clamav-auto-scan.sh" \
+            | grep -v "clamav-full-scan.sh" \
+            | grep -v "freshclam" \
+            | crontab -
     fi
     echo -e "   ${GREEN}✅ Crontab cleaned${NC}"
 fi
