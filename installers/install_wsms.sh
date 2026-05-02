@@ -877,6 +877,10 @@ for site in "${SITES[@]}"; do
         # Set ACL for backup access if available
         if command -v setfacl &>/dev/null; then
             sudo setfacl -R -m "u:$USER:r-x" "$path" 2>/dev/null || true
+            # wp-config.php must not have execute bit — override ACL to r-- so stat reports 640 not 650
+            if [ -f "$path/wp-config.php" ]; then
+                sudo setfacl -m "u:$USER:r--" "$path/wp-config.php" 2>/dev/null || true
+            fi
             log "   ✅ ACL set for user $USER"
         fi
         
@@ -1309,6 +1313,7 @@ show_dirs() {
 emergency_cleanup() {
     echo -e "${RED}🚨 EMERGENCY MODE: Keeping only 2 latest copies per site!${NC}"
     echo "=========================================================="
+    total_deleted_all=0
     
     normalize_backup_key() {
         local file_name="$1"
@@ -1342,12 +1347,14 @@ emergency_cleanup() {
         done
 
         deleted_in_dir=0
+        groups_over_limit=0
         while IFS= read -r key; do
             [ -z "$key" ] && continue
             group_files=$(echo "${grouped_files[$key]}" | sed '/^$/d' | sort -r)
             count=$(echo "$group_files" | grep -c . 2>/dev/null || echo 0)
 
             if [ "$count" -gt 2 ]; then
+                ((groups_over_limit++))
                 removed=0
                 while IFS= read -r old_file; do
                     [ -z "$old_file" ] && continue
@@ -1361,9 +1368,18 @@ emergency_cleanup() {
             fi
         done < <(printf "%s\n" "${!grouped_files[@]}" | sort)
 
+        total_deleted_all=$((total_deleted_all + deleted_in_dir))
         echo "   📉 $(basename "$dir"): total deleted $deleted_in_dir"
+        if [ "$groups_over_limit" -eq 0 ]; then
+            echo "   ℹ️ Nothing to delete: every backup group already has 2 or fewer files"
+        fi
     done
     
+    if [ "$total_deleted_all" -eq 0 ]; then
+        echo -e "${YELLOW}ℹ️ Emergency mode removed 0 files because there were no groups above 2 copies.${NC}"
+        echo -e "${YELLOW}💡 If you need additional cleanup, run option 5 (standard retention) or backup-force-clean.${NC}"
+    fi
+
     echo -e "\n${GREEN}✅ EMERGENCY CLEANUP COMPLETE${NC}"
 }
 
@@ -1391,6 +1407,48 @@ force_clean() {
     fi
 }
 
+emergency_global_cleanup() {
+    echo -e "${RED}🚨 EMERGENCY GLOBAL MODE: Keeping only 2 newest files total per directory!${NC}"
+    echo "=========================================================="
+    total_deleted_all=0
+
+    for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
+        if [ ! -d "$dir" ]; then
+            continue
+        fi
+
+        echo -e "\n📂 Processing $(basename "$dir")..."
+
+        mapfile -t all_files < <(find "$dir" -maxdepth 1 -type f -printf '%T@ %f\n' 2>/dev/null | sort -rn | awk '{print $2}')
+        total=${#all_files[@]}
+
+        if [ "$total" -eq 0 ]; then
+            echo "   ℹ️ No files found"
+            continue
+        fi
+
+        if [ "$total" -le 2 ]; then
+            echo "   ℹ️ Only $total file(s) present — nothing to remove"
+            continue
+        fi
+
+        to_delete=("${all_files[@]:2}")
+        deleted=0
+        for old_file in "${to_delete[@]}"; do
+            [ -z "$old_file" ] && continue
+            if rm -f "$dir/$old_file" 2>/dev/null; then
+                ((deleted++))
+                echo "   🗑️ Removed: $old_file"
+            fi
+        done
+
+        total_deleted_all=$((total_deleted_all + deleted))
+        echo "   📉 $(basename "$dir"): kept 2 newest, deleted $deleted"
+    done
+
+    echo -e "\n${GREEN}✅ EMERGENCY GLOBAL CLEANUP COMPLETE — total deleted: $total_deleted_all${NC}"
+}
+
 interactive_clean() {
     echo -e "${CYAN}🧹 INTERACTIVE CLEANUP MODE${NC}"
     echo "=========================================================="
@@ -1402,10 +1460,11 @@ interactive_clean() {
     echo "   3) MySQL backups (older than $RETENTION_MYSQL days)"
     echo "   4) Rollback snapshots (older than $RETENTION_ROLLBACK days)"
     echo "   5) ALL (standard retention)"
-    echo "   6) EMERGENCY (keep only 2 latest)"
+    echo "   6) EMERGENCY (keep only 2 latest per site)"
+    echo "   7) EMERGENCY GLOBAL (keep only 2 newest total per dir)"
     echo "   0) Cancel"
     echo ""
-    read -p "Enter choice [0-6]: " choice
+    read -p "Enter choice [0-7]: " choice
     
     case $choice in
         1) find "$BACKUP_LITE_DIR" -type f -mtime "+$RETENTION_LITE" -delete 2>/dev/null && echo "✅ Lite backups cleaned" ;;
@@ -1414,6 +1473,7 @@ interactive_clean() {
         4) find "$BACKUP_ROLLBACK_DIR" -type d -mtime "+$RETENTION_ROLLBACK" -exec rm -rf {} \; 2>/dev/null && echo "✅ Rollback snapshots cleaned" ;;
         5) force_clean ;;
         6) emergency_cleanup ;;
+        7) emergency_global_cleanup ;;
         0) echo "Cancelled." ;;
         *) echo "Invalid choice." ;;
     esac
@@ -1426,16 +1486,18 @@ case "${1:-}" in
     clean|c) interactive_clean ;;
     force-clean|force|f) force_clean ;;
     emergency|e) emergency_cleanup ;;
+    emergency-global|eg) emergency_global_cleanup ;;
     *) 
-        echo "Usage: $0 {list|size|dirs|clean|force-clean|emergency}"
+        echo "Usage: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global}"
         echo ""
         echo "Commands:"
-        echo "  list, l        - List all backups with details"
-        echo "  size, s        - Show storage usage per directory"
-        echo "  dirs, d        - Show directory structure"
-        echo "  clean, c       - Interactive cleanup"
-        echo "  force-clean, f - Automatic cleanup based on retention"
-        echo "  emergency, e   - Keep only 2 latest copies per site"
+        echo "  list, l              - List all backups with details"
+        echo "  size, s              - Show storage usage per directory"
+        echo "  dirs, d              - Show directory structure"
+        echo "  clean, c             - Interactive cleanup"
+        echo "  force-clean, f       - Automatic cleanup based on retention"
+        echo "  emergency, e         - Keep only 2 latest copies per site"
+        echo "  emergency-global, eg - Keep only 2 newest files total per directory"
         ;;
 esac
 EOFRET
@@ -1508,7 +1570,8 @@ echo ""
 echo -e "${YELLOW}  Cleanup:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean" "Interactive (with confirmation)"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-force-clean" "Automatic by retention policy"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "EMERGENCY: keep only 2 latest"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "EMERGENCY: keep only 2 latest per site"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "EMERGENCY GLOBAL: keep only 2 newest total per dir"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean" "Clean old logs and temp files"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean-force" "Force-clean with empty log removal"
 echo ""
@@ -1597,7 +1660,7 @@ echo -e "${BLUE}│  🚨 TROUBLESHOOTING                                       
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Site down after update:" "wp-rollback [site]"
-printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-emergency"
+printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-emergency (per site) / backup-emergency-global (most aggressive)"
 printf "  ${RED}%-30s${NC} %s\n" "Permission errors:" "wp-fix-perms"
 printf "  ${RED}%-30s${NC} %s\n" "Suspected malware:" "clamav-deep-scan"
 printf "  ${RED}%-30s${NC} %s\n" "NAS sync failed:" "nas-sync-status; nas-sync-errors"
@@ -2023,6 +2086,7 @@ alias backup-size='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh size'
 alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
+alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
 alias backup-clean-emergency='backup-emergency'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
@@ -2169,6 +2233,7 @@ alias backup-size='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh size'
 alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
+alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
 alias backup-clean-emergency='backup-emergency'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'

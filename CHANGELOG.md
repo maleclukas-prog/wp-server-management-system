@@ -2,6 +2,21 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.2] - 2026-05-02
+
+### Fixed
+- `infrastructure-permission-orchestrator.sh`: after `setfacl -R -m u:$USER:r-x`, the ACL on `wp-config.php` is now immediately overridden to `r--` (no execute bit). This prevents `stat` from reporting permissions as `650` instead of `640` due to ACL mask recalculation.
+- Uninstaller (`tools/wsms-uninstall.sh`): sed patterns are now version-agnostic (`v[0-9].[0-9]`), removing alias blocks from any previously installed WSMS version, not only v4.3. Also cleans `~/.bash_profile` if it contains WSMS blocks.
+
+## [4.3.1] - 2026-05-02
+
+### Added
+- `emergency_global_cleanup()` function in `wp-smart-retention-manager.sh`: keeps only the 2 newest files **total per backup directory** (lite/full/mysql), regardless of site grouping — the most aggressive disk-space recovery mode.
+- New alias `backup-emergency-global` (`eg` shorthand) calling `emergency-global` mode.
+- Interactive menu option 7 added to `wp-smart-retention-manager.sh`.
+- `wp-help.sh` updated in all 4 copies (EN/PL × runtime-preview/installer heredoc): new `backup-emergency-global` entry in Cleanup section, updated Low disk space troubleshooting tip.
+- `shell/aliases.fish` updated: `backup-emergency-global` alias, `wp-hosts-sync` alias (was missing).
+
 ## [4.3.0] - 2026-04-29
 
 ### Added
@@ -37,6 +52,8 @@ All notable changes to WSMS PRO are documented in this file.
 ### Added
 - Initial public release.
 
+[4.3.2]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.1...v4.3.2
+[4.3.1]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.0...v4.3.1
 [4.3.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.3.0
 [4.2.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.2.0
 [4.1.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.1.0

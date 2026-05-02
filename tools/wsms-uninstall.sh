@@ -27,6 +27,10 @@ WSMS_FISH_END="# <<< WSMS PRO v4.3 FISH <<<"
 WSMS_HOSTS_START="# >>> WSMS LOCAL HOSTS >>>"
 WSMS_HOSTS_END="# <<< WSMS LOCAL HOSTS <<<"
 
+# Wildcard patterns — match any WSMS PRO version (v4.0, v4.1, v4.2, v4.3 ...)
+WSMS_BASH_PATTERN_START='# >>> WSMS PRO v'
+WSMS_FISH_PATTERN_START='# >>> WSMS PRO v'
+
 run_cmd() {
     if [ "$DRY_RUN" = true ]; then
         echo "   [DRY-RUN] $*"
@@ -65,8 +69,12 @@ if [ -f "$HOME/.config/fish/config.fish" ]; then
     run_cmd cp "$HOME/.config/fish/config.fish" "$HOME/.config/fish/config.fish.backup.$TIMESTAMP"
     if [ "$DRY_RUN" = true ]; then
         echo "   [DRY-RUN] Remove marker block: $WSMS_FISH_START ... $WSMS_FISH_END"
+        echo "   [DRY-RUN] Remove any older WSMS PRO vX.Y FISH blocks"
     else
+        # Remove current v4.3 block
         sed_in_place "/${WSMS_FISH_START//\//\\/}/,/${WSMS_FISH_END//\//\\/}/d" "$HOME/.config/fish/config.fish"
+        # Remove any older version blocks (v4.0, v4.1, v4.2 ...)
+        sed_in_place '/# >>> WSMS PRO v[0-9][.][0-9] FISH >>>/,/# <<< WSMS PRO v[0-9][.][0-9] FISH <<</d' "$HOME/.config/fish/config.fish"
     fi
     echo -e "   ${GREEN}✅ Fish config cleaned${NC}"
 fi
@@ -79,10 +87,27 @@ if [ -f "$HOME/.bashrc" ]; then
     run_cmd cp "$HOME/.bashrc" "$HOME/.bashrc.backup.$TIMESTAMP"
     if [ "$DRY_RUN" = true ]; then
         echo "   [DRY-RUN] Remove marker block: $WSMS_BASH_START ... $WSMS_BASH_END"
+        echo "   [DRY-RUN] Remove any older WSMS PRO vX.Y BASH blocks"
     else
+        # Remove current v4.3 block
         sed_in_place "/${WSMS_BASH_START//\//\\/}/,/${WSMS_BASH_END//\//\\/}/d" "$HOME/.bashrc"
+        # Remove any older version blocks (v4.0, v4.1, v4.2 ...)
+        sed_in_place '/# >>> WSMS PRO v[0-9][.][0-9] BASH >>>/,/# <<< WSMS PRO v[0-9][.][0-9] BASH <<</d' "$HOME/.bashrc"
     fi
     echo -e "   ${GREEN}✅ Bash config cleaned${NC}"
+fi
+
+# Also clean .bash_profile if it exists and has WSMS blocks
+if [ -f "$HOME/.bash_profile" ]; then
+    if grep -q 'WSMS PRO v' "$HOME/.bash_profile" 2>/dev/null; then
+        run_cmd cp "$HOME/.bash_profile" "$HOME/.bash_profile.backup.$TIMESTAMP"
+        if [ "$DRY_RUN" = true ]; then
+            echo "   [DRY-RUN] Remove WSMS blocks from .bash_profile"
+        else
+            sed_in_place '/# >>> WSMS PRO v[0-9][.][0-9] BASH >>>/,/# <<< WSMS PRO v[0-9][.][0-9] BASH <<</d' "$HOME/.bash_profile"
+        fi
+        echo -e "   ${GREEN}✅ .bash_profile cleaned${NC}"
+    fi
 fi
 
 # ============================================
@@ -162,6 +187,39 @@ if [ "$FORCE_MODE" = true ]; then
     done
 else
     echo -e "   ${YELLOW}⚠️ Use --force to remove backup directories${NC}"
+fi
+
+# ============================================
+# 6b. REMOVE MANUAL SCRIPT COPY DIRECTORIES
+# ============================================
+echo -e "\n${YELLOW}📂 Script copy/backup directories...${NC}"
+SCRIPT_COPY_DIRS=("$HOME/scripts-backup-old" "$HOME/scripts-backup" "$HOME/scripts_copy_"*)
+
+if [ "$FORCE_MODE" = true ]; then
+    removed_script_dirs=0
+    for dir in "${SCRIPT_COPY_DIRS[@]}"; do
+        if [ -d "$dir" ]; then
+            run_cmd rm -rf "$dir"
+            echo "   🗑️ Removed: $dir"
+            ((removed_script_dirs++))
+        fi
+    done
+    if [ "$removed_script_dirs" -eq 0 ]; then
+        echo "   ✅ No script copy directories found"
+    fi
+else
+    found_script_copy=false
+    for dir in "${SCRIPT_COPY_DIRS[@]}"; do
+        if [ -d "$dir" ]; then
+            found_script_copy=true
+            echo "   ⚠️ Preserved: $dir"
+        fi
+    done
+    if [ "$found_script_copy" = true ]; then
+        echo -e "   ${YELLOW}💡 Use --force to remove script copy directories too${NC}"
+    else
+        echo "   ✅ No script copy directories found"
+    fi
 fi
 
 # ============================================

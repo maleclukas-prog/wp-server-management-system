@@ -1,7 +1,7 @@
 # ============================================
 # WSMS PRO v4.3 - FISH SHELL ALIASES
 # Complete Fish Shell Configuration
-# Version: 4.3 | Last Updated: April 2026
+# Version: 4.3 | Last Updated: May 2026
 # ============================================
 
 # Exit if not interactive (SFTP/SCP sessions)
@@ -35,6 +35,7 @@ alias wp-update-all='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh'
 alias wp-update='wp-update-all'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
+alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 
 # ============================================
 # BACKUPS & RECOVERY
@@ -61,6 +62,7 @@ alias backup-size='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh size'
 alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
+alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
 alias backup-clean-emergency='backup-emergency'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
