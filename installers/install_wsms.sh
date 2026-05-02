@@ -11,7 +11,7 @@ set -eE -o pipefail
 
 # Colors
 BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; RED='\033[0;31m'; WHITE='\033[1;37m'; NC='\033[0m'
+CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
 
 # Live output + persistent installer log
 INSTALL_LOG_DIR="$HOME/logs/wsms/system"
