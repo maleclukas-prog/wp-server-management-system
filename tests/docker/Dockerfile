@@ -7,8 +7,6 @@ WORKDIR /workspace
 
 RUN set -e; \
     printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https::Timeout "30";\nAcquire::ForceIPv4 "true";\n' > /etc/apt/apt.conf.d/99ci-retries; \
-    sed -i 's|https://archive.ubuntu.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
-    sed -i 's|https://security.ubuntu.com/ubuntu|http://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list; \
     sed -i '/jammy-backports/d' /etc/apt/sources.list; \
     updated=0; \
     for i in 1 2 3 4 5; do \
