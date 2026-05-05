@@ -49,6 +49,17 @@ The operation is idempotent and preserves non-WSMS lines in `/etc/hosts`.
 
 Uninstall removes WSMS shell blocks from `~/.bashrc`, `~/.bash_profile`, and `~/.config/fish/config.fish`. Sed patterns are version-agnostic and match any `WSMS PRO vX.Y` marker, ensuring stale blocks from older installations are also removed. Also cleans the WSMS marker block from `/etc/hosts`.
 
+In addition to marker-based cleanup, uninstaller also removes legacy v4.2 shell blocks that were written without start/end markers:
+
+- Fish header pattern: `# WSMS PRO vX.Y - FISH SHELL ALIASES`
+- Bash header pattern: `# WSMS PRO vX.Y - BASH SHELL ALIASES`
+
+For these legacy blocks, the script removes the block body and old helper echo lines (`wp-help`, `wp-status`, `wp-health`) while preserving non-WSMS user lines around the block.
+
+A dedicated regression test validates this behavior in an isolated HOME fixture:
+
+- `tests/test_uninstaller_legacy_cleanup.sh`
+
 ## ACL and wp-config.php Permissions
 
 `infrastructure-permission-orchestrator.sh` applies `setfacl -R -m u:$USER:r-x` to site directories to grant the deployment user read+execute access for backup operations. Because the recursive flag sets `r-x` on all files including `wp-config.php`, the ACL for that file is immediately overridden to `r--` after the recursive pass. This ensures `stat` reports `640` (not `650`) and `wp-audit` does not raise a false security alert.

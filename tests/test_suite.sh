@@ -50,6 +50,16 @@ for doc in docs/*.md; do
     fi
 done
 
+echo -e "\n${CYAN}Testing Runtime Behavior:${NC}"
+echo -n "Testing uninstaller legacy cleanup... "
+if bash tests/test_uninstaller_legacy_cleanup.sh >/dev/null 2>&1; then
+    echo -e "${GREEN}✅ Behavior OK${NC}"
+    ((TESTS_PASSED+=1))
+else
+    echo -e "${RED}❌ Behavior Error${NC}"
+    ((TESTS_FAILED+=1))
+fi
+
 echo -e "\n${CYAN}Checking Required Files:${NC}"
 REQUIRED_FILES=(
     "installers/install_wsms.sh"

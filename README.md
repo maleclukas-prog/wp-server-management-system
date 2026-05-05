@@ -14,9 +14,11 @@ WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance
 - Repository and docs aligned with current installer and uninstaller names.
 - Local hosts synchronization command (`wp-hosts-sync`) to map configured sites to `127.0.0.1`.
 - Uninstaller `--dry-run` mode for safe preview before removal.
+- Uninstaller now removes legacy v4.2 shell blocks even when no marker delimiters are present.
 - Granular update modes in maintenance engine: `site`, `plugin`, `theme`.
 - Emergency retention now also prunes rollback snapshots (keeps latest 2 per site).
 - Runtime exporter supports selective extraction with `--only`.
+- Added regression test for legacy uninstaller cleanup.
 
 ## Quick Start
 
@@ -97,6 +99,22 @@ docker compose -f tests/docker/compose.yaml up --build --abort-on-container-exit
 
 The fixture intentionally does not start a real database or full WordPress runtime. It is meant for safe installer and filesystem-oriented smoke tests, not for validating live WP-CLI database operations.
 
+## Regression Tests
+
+Run full repository test suite:
+
+```bash
+bash tests/test_suite.sh
+```
+
+Run focused uninstaller legacy cleanup regression test:
+
+```bash
+bash tests/test_uninstaller_legacy_cleanup.sh
+```
+
+This test verifies that old WSMS v4.2 shell blocks without marker delimiters are removed from Fish and Bash configs while non-WSMS lines are preserved.
+
 ## Uninstall
 
 ```bash
@@ -106,6 +124,8 @@ The fixture intentionally does not start a real database or full WordPress runti
 ```
 
 `--dry-run` shows planned cleanup actions without modifying files.
+
+Uninstaller cleanup covers both marker-based WSMS blocks and legacy v4.2-style shell blocks that were written without explicit start/end markers.
 
 ## Documentation
 

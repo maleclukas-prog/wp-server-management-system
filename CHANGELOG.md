@@ -2,6 +2,15 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.4] - 2026-05-05
+
+### Added
+- New regression test `tests/test_uninstaller_legacy_cleanup.sh` to verify cleanup of legacy v4.2 shell blocks without marker delimiters in Fish and Bash configs.
+- Main test suite now executes this behavior test (`tests/test_suite.sh`).
+
+### Fixed
+- Uninstaller (`tools/wsms-uninstall.sh`) now removes legacy v4.2-style shell blocks that do not have WSMS marker delimiters, including old helper echo lines, while preserving non-WSMS user lines.
+
 ## [4.3.3] - 2026-05-02
 
 ### Added
@@ -68,6 +77,7 @@ All notable changes to WSMS PRO are documented in this file.
 - Initial public release.
 
 [4.3.3]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.2...v4.3.3
+[4.3.4]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.3...v4.3.4
 [4.3.2]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.1...v4.3.2
 [4.3.1]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.0...v4.3.1
 [4.3.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.3.0

@@ -70,11 +70,17 @@ if [ -f "$HOME/.config/fish/config.fish" ]; then
     if [ "$DRY_RUN" = true ]; then
         echo "   [DRY-RUN] Remove marker block: $WSMS_FISH_START ... $WSMS_FISH_END"
         echo "   [DRY-RUN] Remove any older WSMS PRO vX.Y FISH blocks"
+        echo "   [DRY-RUN] Remove legacy WSMS Fish blocks without markers"
     else
         # Remove current v4.3 block
         sed_in_place "/${WSMS_FISH_START//\//\\/}/,/${WSMS_FISH_END//\//\\/}/d" "$HOME/.config/fish/config.fish"
         # Remove any older version blocks (v4.0, v4.1, v4.2 ...)
         sed_in_place '/# >>> WSMS PRO v[0-9][.][0-9] FISH >>>/,/# <<< WSMS PRO v[0-9][.][0-9] FISH <<</d' "$HOME/.config/fish/config.fish"
+        # Remove legacy WSMS fish blocks from older versions that had no marker delimiters
+        sed_in_place '/^# WSMS PRO v[0-9][.][0-9] - FISH SHELL ALIASES$/,/^echo "✅ WSMS PRO v[0-9][.][0-9] - Fish aliases loaded!"$/d' "$HOME/.config/fish/config.fish"
+        sed_in_place '/^echo "   Type '\''wp-help'\'' for command reference"$/d' "$HOME/.config/fish/config.fish"
+        sed_in_place '/^echo "   Type '\''wp-status'\'' for system overview"$/d' "$HOME/.config/fish/config.fish"
+        sed_in_place '/^echo "   Type '\''wp-health'\'' for health check"$/d' "$HOME/.config/fish/config.fish"
     fi
     echo -e "   ${GREEN}✅ Fish config cleaned${NC}"
 fi
@@ -88,11 +94,17 @@ if [ -f "$HOME/.bashrc" ]; then
     if [ "$DRY_RUN" = true ]; then
         echo "   [DRY-RUN] Remove marker block: $WSMS_BASH_START ... $WSMS_BASH_END"
         echo "   [DRY-RUN] Remove any older WSMS PRO vX.Y BASH blocks"
+        echo "   [DRY-RUN] Remove legacy WSMS Bash blocks without markers"
     else
         # Remove current v4.3 block
         sed_in_place "/${WSMS_BASH_START//\//\\/}/,/${WSMS_BASH_END//\//\\/}/d" "$HOME/.bashrc"
         # Remove any older version blocks (v4.0, v4.1, v4.2 ...)
         sed_in_place '/# >>> WSMS PRO v[0-9][.][0-9] BASH >>>/,/# <<< WSMS PRO v[0-9][.][0-9] BASH <<</d' "$HOME/.bashrc"
+        # Remove legacy WSMS bash blocks from older versions that had no marker delimiters
+        sed_in_place '/^# WSMS PRO v[0-9][.][0-9] - BASH SHELL ALIASES$/,/^echo "✅ WSMS PRO v[0-9][.][0-9] - Bash aliases loaded!"$/d' "$HOME/.bashrc"
+        sed_in_place '/^echo "   Type '\''wp-help'\'' for command reference"$/d' "$HOME/.bashrc"
+        sed_in_place '/^echo "   Type '\''wp-status'\'' for system overview"$/d' "$HOME/.bashrc"
+        sed_in_place '/^echo "   Type '\''wp-health'\'' for health check"$/d' "$HOME/.bashrc"
     fi
     echo -e "   ${GREEN}✅ Bash config cleaned${NC}"
 fi
