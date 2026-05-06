@@ -4,6 +4,16 @@
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
+## Architecture (Important)
+
+WSMS PRO is installer-centric.
+
+- Primary source of truth: `installers/install_wsms.sh` and `installers/install_wsms_pl.sh`
+- Runtime scripts in `~/scripts/` are generated during installation
+- Repository preview scripts in `scripts/runtime-preview/` are generated from installer deploy blocks
+
+This means you can work on a single extracted script for convenience, but final canonical logic still lives in installer deploy blocks.
+
 ## What's New in v4.3
 
 - Live console output and persistent installer logs in both installers.
@@ -81,6 +91,30 @@ Preview output is generated to:
 
 This preview is generated from installers and should be regenerated whenever installer deploy blocks change.
 
+## Edit One Script Workflow (EN + PL)
+
+If you want to modify only one module (for example `wp-smart-retention-manager.sh`):
+
+1. Edit both language variants in installers:
+	- `installers/install_wsms.sh` (English)
+	- `installers/install_wsms_pl.sh` (Polish)
+2. Regenerate preview files:
+
+```bash
+bash tools/wsms-export-runtime-scripts.sh --only wp-smart-retention-manager.sh
+```
+
+3. Review extracted outputs:
+	- `scripts/runtime-preview/en/wp-smart-retention-manager.sh`
+	- `scripts/runtime-preview/pl/wp-smart-retention-manager.sh`
+4. Run tests:
+
+```bash
+bash tests/test_suite.sh
+```
+
+Tip: use full export (`bash tools/wsms-export-runtime-scripts.sh`) before release to ensure preview folders are fully synchronized.
+
 ## Automated Docker Smoke Test
 
 For a repeatable Ubuntu-based installer test with safe WordPress fixtures:
@@ -89,7 +123,7 @@ For a repeatable Ubuntu-based installer test with safe WordPress fixtures:
 bash tests/run_docker_smoke_test.sh
 ```
 
-This builds [tests/docker/Dockerfile](/Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system/tests/docker/Dockerfile), provisions two fake WordPress roots from [tests/fixtures/wordpress/public_html](/Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system/tests/fixtures/wordpress/public_html), runs [installers/install_wsms.sh](/Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system/installers/install_wsms.sh), and verifies generated scripts, aliases, and crontab entries.
+This builds `tests/docker/Dockerfile`, provisions two fake WordPress roots from `tests/fixtures/wordpress/public_html`, runs `installers/install_wsms.sh`, and verifies generated scripts, aliases, and crontab entries.
 
 If you prefer Docker Compose:
 
