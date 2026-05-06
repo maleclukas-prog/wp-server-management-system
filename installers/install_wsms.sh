@@ -10,8 +10,12 @@
 set -eE -o pipefail
 
 # Colors
-BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m'
 
 # Live output + persistent installer log
 INSTALL_LOG_DIR="$HOME/logs/wsms/system"
@@ -95,14 +99,14 @@ NAS_SSH_KEY="$HOME/.ssh/id_rsa"
 # Validation function
 validate_config() {
     local errors=0
-    
+
     echo -e "\n${CYAN}🔍 Phase 0: Validating configuration...${NC}"
-    
+
     if [ ${#MANAGED_SITES[@]} -eq 0 ]; then
         echo -e "   ${RED}❌ ERROR: No sites configured in MANAGED_SITES array${NC}"
         ((errors++))
     fi
-    
+
     for site in "${MANAGED_SITES[@]}"; do
         IFS=':' read -r name path user <<< "$site"
         if [ -z "$name" ] || [ -z "$path" ] || [ -z "$user" ]; then
@@ -110,25 +114,25 @@ validate_config() {
             echo -e "      Expected: 'nickname:/path/to/site:username'"
             ((errors++))
         fi
-        if ! id "$user" &>/dev/null; then
+        if ! id "$user" &> /dev/null; then
             echo -e "   ${YELLOW}⚠️  Warning: User '$user' does not exist (will be created if needed)${NC}"
         fi
     done
-    
+
     if [ "$NAS_HOST" = "your-nas.synology.me" ]; then
         echo -e "   ${YELLOW}⚠️  Warning: NAS_HOST not configured (NAS sync will be skipped)${NC}"
     fi
-    
+
     if [ -n "$NAS_SSH_KEY" ] && [ ! -f "$NAS_SSH_KEY" ]; then
         echo -e "   ${YELLOW}⚠️  Warning: SSH key '$NAS_SSH_KEY' not found${NC}"
     fi
-    
+
     if [ $errors -gt 0 ]; then
         echo -e "\n${RED}❌ Configuration validation failed with $errors error(s)${NC}"
         echo -e "${YELLOW}Please edit the MANAGED_SITES array and NAS settings at the top of this script.${NC}"
         exit 1
     fi
-    
+
     echo -e "   ${GREEN}✅ Configuration validated successfully${NC}"
 }
 
@@ -212,8 +216,8 @@ fi
 
 # Verify installations
 echo -e "   ✅ Dependencies verified:"
-echo -e "      - WP-CLI: $(wp --version 2>/dev/null | head -1 || echo 'installed')"
-echo -e "      - ClamAV: $(clamscan --version 2>/dev/null | head -1 || echo 'installed')"
+echo -e "      - WP-CLI: $(wp --version 2> /dev/null | head -1 || echo 'installed')"
+echo -e "      - ClamAV: $(clamscan --version 2> /dev/null | head -1 || echo 'installed')"
 echo -e "${GREEN}✅ Dependencies ready${NC}"
 
 # ==================== PHASE 3: CENTRAL CONFIGURATION ====================
@@ -392,7 +396,7 @@ echo -e "${GREEN}✅ Configuration generated${NC}"
 # ==================== PHASE 4: DEPLOY SCRIPTS ====================
 echo -e "\n${BLUE}📝 Phase 4: Deploying 20 operational modules...${NC}"
 
-deploy() { 
+deploy() {
     echo -e "   📦 ${CYAN}$1${NC}"
     local target_script="$HOME/scripts/$1"
     cat > "$target_script"
@@ -2185,7 +2189,7 @@ echo -e "${GREEN}✅ All 20 modules deployed${NC}"
 echo -e "\n${BLUE}🔧 Phase 5: Installing shell aliases...${NC}"
 
 if [ -f "$HOME/.bashrc" ]; then
-    sed -i '/# >>> WSMS PRO v4.3 BASH >>>/,/# <<< WSMS PRO v4.3 BASH <<</d' "$HOME/.bashrc" 2>/dev/null
+    sed -i '/# >>> WSMS PRO v4.3 BASH >>>/,/# <<< WSMS PRO v4.3 BASH <<</d' "$HOME/.bashrc" 2> /dev/null
     cat >> "$HOME/.bashrc" << 'EOFALIAS'
 
 # >>> WSMS PRO v4.3 BASH >>>
@@ -2330,10 +2334,10 @@ EOFALIAS
     echo -e "   ✅ Bash aliases installed"
 fi
 
-if command -v fish &>/dev/null; then
+if command -v fish &> /dev/null; then
     mkdir -p "$HOME/.config/fish"
     touch "$HOME/.config/fish/config.fish"
-    sed -i '/# >>> WSMS PRO v4.3 FISH >>>/,/# <<< WSMS PRO v4.3 FISH <<</d' "$HOME/.config/fish/config.fish" 2>/dev/null
+    sed -i '/# >>> WSMS PRO v4.3 FISH >>>/,/# <<< WSMS PRO v4.3 FISH <<</d' "$HOME/.config/fish/config.fish" 2> /dev/null
     cat >> "$HOME/.config/fish/config.fish" << 'EOFFISH'
 
 # >>> WSMS PRO v4.3 FISH >>>
@@ -2470,7 +2474,7 @@ fi
 
 # ==================== PHASE 6: CRONTAB ====================
 echo -e "\n${BLUE}⏰ Phase 6: Configuring crontab...${NC}"
-crontab -l > "/tmp/crontab_backup.txt" 2>/dev/null || true
+crontab -l > "/tmp/crontab_backup.txt" 2> /dev/null || true
 
 cat > /tmp/wsms_crontab.txt << CRON
 # WSMS PRO v4.3 - CRONTAB
@@ -2490,7 +2494,7 @@ echo -e "${GREEN}✅ Crontab configured (9 tasks)${NC}"
 
 # ==================== PHASE 7: PERMISSIONS ====================
 log_step "Phase 7: Setting script permissions"
-chmod +x "$HOME/scripts/"*.sh 2>/dev/null && log_success "All scripts in ~/scripts/ set to executable"
+chmod +x "$HOME/scripts/"*.sh 2> /dev/null && log_success "All scripts in ~/scripts/ set to executable"
 echo -e "${GREEN}✅ Permissions set${NC}"
 
 # ==================== FINAL SUMMARY ====================

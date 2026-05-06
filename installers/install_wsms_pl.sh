@@ -10,8 +10,12 @@
 set -eE -o pipefail
 
 # Kolory
-BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+CYAN='\033[0;36m'
+RED='\033[0;31m'
+NC='\033[0m'
 
 # Wyjście na żywo + trwały log instalatora
 INSTALL_LOG_DIR="$HOME/logs/wsms/system"
@@ -95,14 +99,14 @@ NAS_SSH_KEY="$HOME/.ssh/id_rsa"
 # Funkcja walidacji
 validate_config() {
     local errors=0
-    
+
     echo -e "\n${CYAN}🔍 Faza 0: Walidacja konfiguracji...${NC}"
-    
+
     if [ ${#MANAGED_SITES[@]} -eq 0 ]; then
         echo -e "   ${RED}❌ BŁĄD: Brak skonfigurowanych stron w MANAGED_SITES${NC}"
         ((errors++))
     fi
-    
+
     for site in "${MANAGED_SITES[@]}"; do
         IFS=':' read -r name path user <<< "$site"
         if [ -z "$name" ] || [ -z "$path" ] || [ -z "$user" ]; then
@@ -110,25 +114,25 @@ validate_config() {
             echo -e "      Oczekiwano: 'nazwa:/sciezka/do/strony:uzytkownik'"
             ((errors++))
         fi
-        if ! id "$user" &>/dev/null; then
+        if ! id "$user" &> /dev/null; then
             echo -e "   ${YELLOW}⚠️  Ostrzeżenie: Użytkownik '$user' nie istnieje${NC}"
         fi
     done
-    
+
     if [ "$NAS_HOST" = "your-nas.synology.me" ]; then
         echo -e "   ${YELLOW}⚠️  Ostrzeżenie: NAS_HOST nie skonfigurowany${NC}"
     fi
-    
+
     if [ -n "$NAS_SSH_KEY" ] && [ ! -f "$NAS_SSH_KEY" ]; then
         echo -e "   ${YELLOW}⚠️  Ostrzeżenie: Klucz SSH '$NAS_SSH_KEY' nie znaleziony${NC}"
     fi
-    
+
     if [ $errors -gt 0 ]; then
         echo -e "\n${RED}❌ Walidacja nie powiodła się ($errors błędów)${NC}"
         echo -e "${YELLOW}Edytuj tablicę MANAGED_SITES i ustawienia NAS na początku tego skryptu.${NC}"
         exit 1
     fi
-    
+
     echo -e "   ${GREEN}✅ Konfiguracja zwalidowana pomyślnie${NC}"
 }
 
@@ -212,8 +216,8 @@ fi
 
 # Weryfikacja instalacji
 echo -e "   ✅ Zależności zweryfikowane:"
-echo -e "      - WP-CLI: $(wp --version 2>/dev/null | head -1 || echo 'zainstalowane')"
-echo -e "      - ClamAV: $(clamscan --version 2>/dev/null | head -1 || echo 'zainstalowane')"
+echo -e "      - WP-CLI: $(wp --version 2> /dev/null | head -1 || echo 'zainstalowane')"
+echo -e "      - ClamAV: $(clamscan --version 2> /dev/null | head -1 || echo 'zainstalowane')"
 echo -e "${GREEN}✅ Zależności gotowe${NC}"
 
 # ==================== FAZA 3: KONFIGURACJA CENTRALNA ====================
@@ -392,7 +396,7 @@ echo -e "${GREEN}✅ Konfiguracja wygenerowana${NC}"
 # ==================== FAZA 4: WDROŻENIE SKRYPTÓW ====================
 echo -e "\n${BLUE}📝 Faza 4: Wdrażanie 20 modułów operacyjnych...${NC}"
 
-deploy() { 
+deploy() {
     echo -e "   📦 ${CYAN}$1${NC}"
     local target_script="$HOME/scripts/$1"
     cat > "$target_script"
@@ -2312,7 +2316,7 @@ echo -e "${GREEN}✅ Wszystkie 20 modułów wdrożonych${NC}"
 echo -e "\n${BLUE}🔧 Faza 5: Instalacja aliasów powłoki...${NC}"
 
 if [ -f "$HOME/.bashrc" ]; then
-    sed -i '/# >>> WSMS PRO v4.3 BASH >>>/,/# <<< WSMS PRO v4.3 BASH <<</d' "$HOME/.bashrc" 2>/dev/null
+    sed -i '/# >>> WSMS PRO v4.3 BASH >>>/,/# <<< WSMS PRO v4.3 BASH <<</d' "$HOME/.bashrc" 2> /dev/null
     cat >> "$HOME/.bashrc" << 'EOFALIAS'
 
 # >>> WSMS PRO v4.3 BASH >>>
@@ -2457,10 +2461,10 @@ EOFALIAS
     echo -e "   ✅ Aliasy Bash zainstalowane"
 fi
 
-if command -v fish &>/dev/null; then
+if command -v fish &> /dev/null; then
     mkdir -p "$HOME/.config/fish"
     touch "$HOME/.config/fish/config.fish"
-    sed -i '/# >>> WSMS PRO v4.3 FISH >>>/,/# <<< WSMS PRO v4.3 FISH <<</d' "$HOME/.config/fish/config.fish" 2>/dev/null
+    sed -i '/# >>> WSMS PRO v4.3 FISH >>>/,/# <<< WSMS PRO v4.3 FISH <<</d' "$HOME/.config/fish/config.fish" 2> /dev/null
     cat >> "$HOME/.config/fish/config.fish" << 'EOFFISH'
 
 # >>> WSMS PRO v4.3 FISH >>>
@@ -2597,7 +2601,7 @@ fi
 
 # ==================== FAZA 6: CRONTAB ====================
 echo -e "\n${BLUE}⏰ Faza 6: Konfiguracja crontab...${NC}"
-crontab -l > "/tmp/crontab_backup.txt" 2>/dev/null || true
+crontab -l > "/tmp/crontab_backup.txt" 2> /dev/null || true
 
 cat > /tmp/wsms_crontab.txt << CRON
 # WSMS PRO v4.3 - CRONTAB
@@ -2617,7 +2621,7 @@ echo -e "${GREEN}✅ Crontab skonfigurowany (9 zadań)${NC}"
 
 # ==================== FAZA 7: UPRAWNIENIA ====================
 log_step "Faza 7: Nadawanie uprawnień skryptom"
-chmod +x "$HOME/scripts/"*.sh 2>/dev/null && log_success "Wszystkie skrypty w ~/scripts/ ustawione jako wykonywalne"
+chmod +x "$HOME/scripts/"*.sh 2> /dev/null && log_success "Wszystkie skrypty w ~/scripts/ ustawione jako wykonywalne"
 echo -e "${GREEN}✅ Uprawnienia nadane${NC}"
 
 # ==================== PODSUMOWANIE ====================
