@@ -87,6 +87,42 @@ Co ten test dodaje ponad standardowy smoke:
 - zapisuje output per skrypt w `/tmp/wsms-all-modules/*.out` wewnątrz kontenera,
 - drukuje końcową tabelę i liczniki pass/fail.
 
+## 2.3 Pełna mapa testów (co i kiedy uruchamiać)
+
+Ta lista pozwala nie pominąć żadnej walidacji:
+
+1. `bash tests/test_suite.sh`
+	Zakres: składnia skryptów, format docs, wymagane pliki, regresja zachowania uninstallera.
+	Uruchamiaj: przed każdym commit/PR.
+2. `bash tests/run_docker_smoke_test.sh`
+	Zakres: smoke ścieżki instalatora w kontenerze Ubuntu.
+	Uruchamiaj: po zmianach instalatora, aliasów, crona, generowania runtime.
+3. `bash tests/run_docker_runtime_smoke_test.sh`
+	Zakres: zachowanie runtime (backup/retention/logowanie/scenariusz braku konfiguracji NAS).
+	Uruchamiaj: po zmianach logiki modułów runtime.
+4. `bash tests/run_docker_all_modules_smoke_test.sh`
+	Zakres: wszystkie wdrażane moduły runtime (pełna macierz PASS/WARN/FAIL).
+	Uruchamiaj: przed wydaniem lub przy dużych refaktorach.
+5. `bash tests/test_uninstaller_legacy_cleanup.sh`
+	Zakres: czyszczenie legacy bloków v4.2.
+	Uruchamiaj: po zmianach logiki uninstallera.
+
+Zalecane minimum na co dzień:
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+Zalecany zestaw przed release:
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+bash tests/run_docker_runtime_smoke_test.sh
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
 ## 3. To samo przez Docker Compose
 
 ```bash
@@ -193,6 +229,45 @@ Po zmianach w skryptach runtime uruchom dodatkowo:
 bash tests/run_docker_runtime_smoke_test.sh
 ```
 
+## 8.1 Szybkie drzewko decyzji (co zmieniłem -> co uruchomić)
+
+1. Zmieniłem tylko dokumentację (`*.md`).
+
+```bash
+bash tests/test_suite.sh
+```
+
+2. Zmieniłem flow instalatora, aliasy, cron lub generowany layout.
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+3. Zmieniłem logikę modułów runtime (bloki deploy skryptów w `installers/*`).
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+bash tests/run_docker_runtime_smoke_test.sh
+```
+
+4. Zmieniłem wiele modułów lub przygotowuję release.
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+bash tests/run_docker_runtime_smoke_test.sh
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
+5. Zmieniłem zachowanie uninstallera.
+
+```bash
+bash tests/test_uninstaller_legacy_cleanup.sh
+bash tests/test_suite.sh
+```
+
 ## 9. Procedura na dwa stanowiska (iMac biuro + MacBook zdalnie)
 
 Stosuj ten sam schemat w każdym projekcie (WSMS, Python i inne):
@@ -217,3 +292,43 @@ bash tests/run_docker_smoke_test.sh
 1. Na drugim komputerze powtórz tę samą sekwencję przed dalszą pracą.
 
 Praktyczna zasada: iCloud traktuj jako transport plików, a GitHub jako źródło prawdy i punkt awaryjnego odtworzenia repozytorium.
+
+## 10. Szczegóły techniczne (jak działają testy Docker)
+
+Przepływ wykonania:
+
+1. Build obrazu z `tests/docker/Dockerfile` (`ubuntu:22.04`).
+2. Skopiowanie repo do `/workspace` w obrazie.
+3. Domyślny command kontenera uruchamia `tests/docker/run-install-smoke.sh`.
+4. Wrappery runtime/all-modules nadpisują command i uruchamiają:
+	 - `/workspace/tests/docker/run-runtime-behavior-smoke.sh`
+	 - `/workspace/tests/docker/run-all-modules-smoke.sh`
+
+Detale techniczne kontenera:
+
+- Dockerfile ustawia retry/timeouts APT (`/etc/apt/apt.conf.d/99ci-retries`).
+- tworzony jest użytkownik testowy `tester` z passwordless sudo.
+- bezpieczna atrapa WordPress trafia do:
+	- `/var/www/site1/public_html`
+	- `/var/www/site2/public_html`
+- instalator uruchamiany jest jako `tester` z katalogu `/home/tester/workspace`.
+
+Przydatne zmienne środowiskowe wrapperów:
+
+- `IMAGE_NAME` (domyślnie: `wsms-smoke-test`)
+- `WSMS_DOCKER_KEEP_CONTAINER` (`1` zostawia kontener do debugowania)
+- `WSMS_DOCKER_CONTAINER_NAME` (nazwa kontenera debugowego)
+
+Artefakty i logi:
+
+- raport all-modules: `/tmp/wsms-all-modules/report.txt`
+- outputy per moduł: `/tmp/wsms-all-modules/*.out`
+- logi runtime sprawdzane przez testy:
+	- `~/logs/wsms/retention/retention.log`
+	- `~/logs/wsms/sync/nas-sync.log`
+
+Zachowanie kodów wyjścia:
+
+- wrappery i smoke skrypty używają `set -euo pipefail`.
+- każdy nieudany assert zwraca kod != 0 i failuje test.
+- w all-modules: WARN nie failuje całego runa, FAIL failuje.

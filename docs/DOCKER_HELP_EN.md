@@ -87,6 +87,42 @@ What it adds on top of standard smoke tests:
 - stores per-script output in `/tmp/wsms-all-modules/*.out` inside the test container,
 - prints a final matrix and pass/fail counters.
 
+## 2.3 Complete test map (what to run, when)
+
+Use this matrix to avoid missing checks:
+
+1. `bash tests/test_suite.sh`
+	Scope: repository-wide syntax + docs format + required files + uninstaller behavior regression.
+	Run when: before every commit/PR.
+2. `bash tests/run_docker_smoke_test.sh`
+	Scope: installer smoke path in Ubuntu container.
+	Run when: installer, shell aliases, cron, generated runtime layout changed.
+3. `bash tests/run_docker_runtime_smoke_test.sh`
+	Scope: runtime behavior (backup/retention/logging/NAS missing config path).
+	Run when: runtime module logic changed.
+4. `bash tests/run_docker_all_modules_smoke_test.sh`
+	Scope: all deployed runtime modules (full coverage matrix with PASS/WARN/FAIL).
+	Run when: release prep or broad refactor across many modules.
+5. `bash tests/test_uninstaller_legacy_cleanup.sh`
+	Scope: legacy v4.2 shell block cleanup behavior.
+	Run when: uninstall logic changes.
+
+Recommended minimum daily sequence:
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+Recommended before release:
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+bash tests/run_docker_runtime_smoke_test.sh
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
 ## 3. Same flow via Docker Compose
 
 ```bash
@@ -193,6 +229,45 @@ For runtime behavior checks after script changes, run additionally:
 bash tests/run_docker_runtime_smoke_test.sh
 ```
 
+## 8.1 Quick decision tree (what changed -> what to run)
+
+1. I changed only documentation (`*.md`).
+
+```bash
+bash tests/test_suite.sh
+```
+
+2. I changed installer flow, aliases, cron, or generated layout.
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+```
+
+3. I changed runtime module logic (`installers/*` deploy blocks for scripts).
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+bash tests/run_docker_runtime_smoke_test.sh
+```
+
+4. I changed many modules or prepare a release.
+
+```bash
+bash tests/test_suite.sh
+bash tests/run_docker_smoke_test.sh
+bash tests/run_docker_runtime_smoke_test.sh
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
+5. I changed uninstaller behavior.
+
+```bash
+bash tests/test_uninstaller_legacy_cleanup.sh
+bash tests/test_suite.sh
+```
+
 ## 9. Two-workstation routine (Office iMac + Remote MacBook)
 
 Use this same routine in any project (WSMS, Python, and others):
@@ -217,3 +292,43 @@ bash tests/run_docker_smoke_test.sh
 1. On the second machine, repeat the same sequence before continuing.
 
 Practical rule: treat iCloud as file transport, and GitHub as the source of truth and disaster recovery point.
+
+## 10. Technical internals (how Docker tests work)
+
+Execution flow:
+
+1. Image is built from `tests/docker/Dockerfile` (`ubuntu:22.04`).
+2. Repository is copied into `/workspace` in the image.
+3. Default container command runs `tests/docker/run-install-smoke.sh`.
+4. Runtime/all-modules wrappers override command to run:
+	 - `/workspace/tests/docker/run-runtime-behavior-smoke.sh`
+	 - `/workspace/tests/docker/run-all-modules-smoke.sh`
+
+Container-level technical details:
+
+- apt retries/timeouts are configured in Dockerfile (`/etc/apt/apt.conf.d/99ci-retries`).
+- test user `tester` is created with passwordless sudo for deterministic setup.
+- safe WordPress fixture is copied to:
+	- `/var/www/site1/public_html`
+	- `/var/www/site2/public_html`
+- installer is executed as `tester` from `/home/tester/workspace`.
+
+Useful environment variables in wrappers:
+
+- `IMAGE_NAME` (default: `wsms-smoke-test`)
+- `WSMS_DOCKER_KEEP_CONTAINER` (`1` keeps container for inspection)
+- `WSMS_DOCKER_CONTAINER_NAME` (debug container name)
+
+Artifacts and logs:
+
+- all-modules report: `/tmp/wsms-all-modules/report.txt`
+- all-modules per-script outputs: `/tmp/wsms-all-modules/*.out`
+- runtime logs validated in tests:
+	- `~/logs/wsms/retention/retention.log`
+	- `~/logs/wsms/sync/nas-sync.log`
+
+Exit behavior:
+
+- wrappers and smoke scripts use `set -euo pipefail`.
+- any failed assertion returns non-zero and fails the test.
+- in all-modules smoke, WARN does not fail run; FAIL does.
