@@ -91,6 +91,21 @@ Preview output is generated to:
 
 This preview is generated from installers and should be regenerated whenever installer deploy blocks change.
 
+### Should `scripts/runtime-preview` be synchronized in Git?
+
+Short answer: optional, not mandatory.
+
+- For beginner users: no impact (they run installer only).
+- For advanced users: they can export locally at any time.
+- For maintainers/reviewers: committing refreshed preview files can help code review of single modules.
+
+Recommended policy:
+
+- Keep installers as the only source of truth.
+- Treat `scripts/runtime-preview/` as generated review artifacts.
+- Synchronize preview files in commits when they improve review clarity (for example larger module refactors or release preparation).
+- It is acceptable to skip preview synchronization for small internal edits if CI/tests pass and installers are updated.
+
 ## Edit One Script Workflow (EN + PL)
 
 If you want to modify only one module (for example `wp-smart-retention-manager.sh`):

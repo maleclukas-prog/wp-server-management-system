@@ -95,3 +95,16 @@ The exporter supports selective extraction of modules:
 - `bash tools/wsms-export-runtime-scripts.sh --only wp-automated-maintenance-engine.sh,wp-smart-retention-manager.sh`
 
 This is useful when syncing only one or a few updated modules without re-exporting all runtime previews.
+
+## Synchronization Policy for `scripts/runtime-preview`
+
+`scripts/runtime-preview/` exists for repository-side inspection and review convenience.
+It is not required for runtime correctness because production deployment always comes from installer deploy blocks.
+
+Practical guidance:
+
+- Keep installer files as canonical source (`installers/install_wsms.sh`, `installers/install_wsms_pl.sh`).
+- Consider preview files generated artifacts for auditing and PR readability.
+- Synchronizing preview files in Git is optional.
+- Prefer synchronizing them for releases, major module rewrites, or reviewer-facing changes.
+- Skipping preview synchronization is acceptable for small edits when installers are updated and tests pass.
