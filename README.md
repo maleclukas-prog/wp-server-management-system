@@ -9,6 +9,12 @@ Important notes:
 - For full operation of all commands listed by `wp-help`, install antivirus packages used by WSMS security modules (ClamAV).
 - This is an author-driven personal server management system and includes operational solutions used in the author's own environment.
 
+Deployment status:
+
+- The system was developed and tested on AWS EC2.
+- It is currently running in production on a physical Ubuntu server.
+- An AMI image is in progress to simplify deployment for other users.
+
 ## Architecture (Important)
 
 WSMS PRO is installer-centric.

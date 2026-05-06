@@ -7,6 +7,12 @@
 - WordPress sites with valid `wp-config.php`
 - ClamAV installed for full availability of security-related commands shown by `wp-help`
 
+## Platform Notes
+
+- System was developed and tested on AWS EC2.
+- Current production runtime is a physical Ubuntu server.
+- AMI image preparation is in progress to simplify external deployments.
+
 ## Project Context
 
 WSMS is an author-driven personal server management system and includes operational solutions used in the author's own environment.
