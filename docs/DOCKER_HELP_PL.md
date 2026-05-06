@@ -7,8 +7,10 @@ Ten dokument zbiera najważniejsze komendy Docker i Docker Compose do pracy z te
 Pracuj z katalogu projektu:
 
 ```bash
-cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+cd /path/to/wp-server-management-system
 ```
+
+Uwaga: `/path/to/wp-server-management-system` to placeholder. Podmień go na lokalną ścieżkę do repo.
 
 Sprawdź, czy Docker działa:
 
@@ -164,7 +166,7 @@ Najczęściej uruchamiasz komendę poza repo.
 Naprawa:
 
 ```bash
-cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+cd /path/to/wp-server-management-system
 pwd
 ```
 
@@ -216,7 +218,7 @@ Nie:
 ## 8. Polecana codzienna sekwencja
 
 ```bash
-cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+cd /path/to/wp-server-management-system
 bash tests/test_suite.sh
 bash tests/run_docker_smoke_test.sh
 ```

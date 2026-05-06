@@ -7,8 +7,10 @@ This document collects the most useful Docker and Docker Compose commands for WS
 Work from the project directory:
 
 ```bash
-cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+cd /path/to/wp-server-management-system
 ```
+
+Note: `/path/to/wp-server-management-system` is a placeholder. Replace it with your local repository path.
 
 Check Docker health:
 
@@ -164,7 +166,7 @@ Usually command is run outside repo.
 Fix:
 
 ```bash
-cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+cd /path/to/wp-server-management-system
 pwd
 ```
 
@@ -216,7 +218,7 @@ No:
 ## 8. Recommended daily sequence
 
 ```bash
-cd /Users/lukaszmalec/Documents/Work_grup_space/wp-server-management-system
+cd /path/to/wp-server-management-system
 bash tests/test_suite.sh
 bash tests/run_docker_smoke_test.sh
 ```
