@@ -19,6 +19,11 @@ docker version
 docker info
 ```
 
+Important:
+
+- To ensure all commands shown by `wp-help` work correctly, install ClamAV (WSMS security modules rely on antivirus components).
+- WSMS is an author-driven personal server management system and includes solutions used in the author's own environment.
+
 ## 2. Quick Docker test (recommended)
 
 Run a full Ubuntu installer smoke test with a safe WordPress fixture:

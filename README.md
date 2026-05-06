@@ -4,6 +4,11 @@
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
+Important notes:
+
+- For full operation of all commands listed by `wp-help`, install antivirus packages used by WSMS security modules (ClamAV).
+- This is an author-driven personal server management system and includes operational solutions used in the author's own environment.
+
 ## Architecture (Important)
 
 WSMS PRO is installer-centric.

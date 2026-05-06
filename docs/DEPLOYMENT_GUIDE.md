@@ -5,6 +5,11 @@
 - Ubuntu 20.04+ or 22.04+
 - sudo access
 - WordPress sites with valid `wp-config.php`
+- ClamAV installed for full availability of security-related commands shown by `wp-help`
+
+## Project Context
+
+WSMS is an author-driven personal server management system and includes operational solutions used in the author's own environment.
 
 ## Install (English)
 
@@ -32,6 +37,8 @@ wp-status
 wp-help
 wp-hosts-sync
 ```
+
+Note: to ensure all commands shown by `wp-help` work correctly, install ClamAV components used by WSMS security modules.
 
 `wp-hosts-sync` updates a managed block in `/etc/hosts` for all domains from `SITES` and may request sudo.
 

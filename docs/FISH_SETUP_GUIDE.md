@@ -4,6 +4,7 @@
 
 - Fish installed (`sudo apt install fish`)
 - WSMS installed using `installers/install_wsms.sh` or `installers/install_wsms_pl.sh`
+- ClamAV installed to ensure all security-related commands listed in `wp-help` run correctly
 
 ## Automatic Setup
 
@@ -25,6 +26,8 @@ alias | grep wp-
 ```
 
 Note: `wp-hosts-sync` updates a managed block in `/etc/hosts` and may request sudo.
+
+Note: WSMS is an author-driven personal server management system and includes solutions used in the author's own server environment.
 
 ## Troubleshooting
 

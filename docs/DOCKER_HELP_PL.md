@@ -19,6 +19,11 @@ docker version
 docker info
 ```
 
+Ważne:
+
+- Aby wszystkie komendy widoczne w `wp-help` działały poprawnie, doinstaluj ClamAV (moduły bezpieczeństwa WSMS korzystają z antywirusa).
+- WSMS to system autorski do zarządzania serwerem i zawiera rozwiązania używane przez autora na własnym środowisku.
+
 ## 2. Szybki test Dockera (zalecany)
 
 Uruchamia pełny smoke test instalatora w Ubuntu + fixture WordPress:
