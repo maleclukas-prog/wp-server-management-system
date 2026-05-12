@@ -111,3 +111,5 @@ bash tools/wsms-export-runtime-scripts.sh --only wp-automated-maintenance-engine
 ```
 
 The installer remains the only source of truth. Preview files are local-only artifacts.
+
+> **Note:** `wsms-config.sh` is intentionally excluded from the export. It is generated directly by the installer (`cat >`) during installation and contains user-specific values (hosts, paths, SSH keys). It is not a `deploy` heredoc block and is not part of the runtime module set.
