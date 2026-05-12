@@ -100,22 +100,7 @@ Preview output is generated to:
 - `scripts/runtime-preview/en/`
 - `scripts/runtime-preview/pl/`
 
-This preview is generated from installers and should be regenerated whenever installer deploy blocks change.
-
-### Should `scripts/runtime-preview` be synchronized in Git?
-
-Short answer: optional, not mandatory.
-
-- For beginner users: no impact (they run installer only).
-- For advanced users: they can export locally at any time.
-- For maintainers/reviewers: committing refreshed preview files can help code review of single modules.
-
-Recommended policy:
-
-- Keep installers as the only source of truth.
-- Treat `scripts/runtime-preview/` as generated review artifacts.
-- Synchronize preview files in commits when they improve review clarity (for example larger module refactors or release preparation).
-- It is acceptable to skip preview synchronization for small internal edits if CI/tests pass and installers are updated.
+This preview is generated from installers and should be regenerated whenever installer deploy blocks change. Preview files are git-ignored — use `tools/wsms-export-runtime-scripts.sh` to generate them locally when needed.
 
 ## Edit One Script Workflow (EN + PL)
 
@@ -138,8 +123,6 @@ bash tools/wsms-export-runtime-scripts.sh --only wp-smart-retention-manager.sh
 ```bash
 bash tests/test_suite.sh
 ```
-
-Tip: use full export (`bash tools/wsms-export-runtime-scripts.sh`) before release to ensure preview folders are fully synchronized.
 
 ## Automated Docker Smoke Test
 

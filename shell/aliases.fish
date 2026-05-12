@@ -50,7 +50,7 @@ alias wp-backup-site='wp-backup-ui'
 alias red-robin='bash $SCRIPTS_DIR/red-robin-system-backup.sh'
 
 # ============================================
-# 🆕 ROLLBACK SYSTEM (NEW in v4.3)
+# ROLLBACK SYSTEM
 # ============================================
 alias wp-snapshot='bash $SCRIPTS_DIR/wp-rollback.sh snapshot'
 alias wp-rollback='bash $SCRIPTS_DIR/wp-rollback.sh rollback'

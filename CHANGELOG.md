@@ -2,6 +2,18 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.7] - 2026-05-12
+
+### Changed
+- `tests/test_suite.sh` expanded with full behavioral coverage (143 tests):
+  - syntax checks for all installers, tools, and runtime preview scripts (EN/PL),
+  - required file presence checks,
+  - documentation format validation,
+  - installer content markers (all key modules, version, crontab),
+  - EN/PL module parity (12 modules verified),
+  - runtime script content checks (key functions and patterns),
+  - behavioral tests: `normalize_backup_key` logic, `emergency_cleanup` file grouping, hosts-sync domain validation, hosts-sync marker idempotency, uninstaller legacy cleanup, uninstaller `--dry-run` no-op, rollback graceful error on missing snapshot, maintenance engine usage on invalid mode, retention manager usage on unknown arg.
+
 ## [4.3.6] - 2026-05-12
 
 ### Added

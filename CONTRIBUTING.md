@@ -14,14 +14,11 @@ Thanks for contributing.
 Run before opening PR:
 
 ```bash
-# Syntax checks
-for f in installers/*.sh tools/*.sh tests/*.sh; do bash -n "$f" || exit 1; done
+# Full test suite (syntax, required files, behavioral checks)
+bash tests/test_suite.sh
 
 # Optional shellcheck (if installed)
 shellcheck installers/*.sh tools/*.sh tests/*.sh || true
-
-# Repository checks
-bash tests/test_suite.sh
 ```
 
 ## Runtime Script Rule
