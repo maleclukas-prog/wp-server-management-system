@@ -34,6 +34,7 @@ Note: WSMS is an author-driven personal server management system and includes so
 - If aliases are missing, rerun installer or inspect `~/.config/fish/config.fish`.
 - If Fish is not installed during install, installer skips Fish aliases and prints a tip.
 - To preview uninstall cleanup actions without modifying files, run `bash tools/wsms-uninstall.sh --dry-run`.
+- If SFTP stops working after install (`Received message too long`), it means the shell config is printing output during non-interactive sessions. The installer wraps welcome messages with `status --is-interactive` to prevent this. If you edited `config.fish` manually, ensure any top-level `echo` calls are guarded the same way.
 
 ## Optional: Make Fish Default
 

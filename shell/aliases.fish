@@ -230,8 +230,7 @@ end
 # ============================================
 # WELCOME MESSAGE
 # ============================================
-echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"
-echo "   Type 'wp-help' for command reference"
-echo "   Type 'wp-status' for system overview"
-echo "   Type 'wp-health' for health check"
-echo ""
+status --is-interactive; and echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"
+status --is-interactive; and echo "   Type 'wp-help' for command reference"
+status --is-interactive; and echo "   Type 'wp-status' for system overview"
+status --is-interactive; and echo "   Type 'wp-health' for health check"

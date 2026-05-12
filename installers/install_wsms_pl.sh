@@ -2486,10 +2486,12 @@ wp-health() {
     fi
 }
 
-echo "✅ WSMS PRO v4.3 - Bash aliases loaded!"
-echo "   Type 'wp-help' for command reference"
-echo "   Type 'wp-status' for system overview"
-echo "   Type 'wp-health' for health check"
+if [[ $- == *i* ]]; then
+    echo "✅ WSMS PRO v4.3 - Bash aliases loaded!"
+    echo "   Type 'wp-help' for command reference"
+    echo "   Type 'wp-status' for system overview"
+    echo "   Type 'wp-health' for health check"
+fi
 # <<< WSMS PRO v4.3 BASH <<<
 EOFALIAS
     echo -e "   ✅ Aliasy Bash zainstalowane"
@@ -2621,10 +2623,10 @@ function wp-health
     end
 end
 
-echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"
-echo "   Type 'wp-help' for command reference"
-echo "   Type 'wp-status' for system overview"
-echo "   Type 'wp-health' for health check"
+status --is-interactive; and echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"
+status --is-interactive; and echo "   Type 'wp-help' for command reference"
+status --is-interactive; and echo "   Type 'wp-status' for system overview"
+status --is-interactive; and echo "   Type 'wp-health' for health check"
 # <<< WSMS PRO v4.3 FISH <<<
 EOFFISH
     echo -e "   🐟 Aliasy Fish zainstalowane"
