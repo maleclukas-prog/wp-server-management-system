@@ -645,25 +645,59 @@ GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; RED='\033[0;31m'; NC
 echo -e "${CYAN}📊 STATUS FLOTY WORDPRESS v4.3${NC}"
 echo "=========================================================="
 
+check_ssl_expiry() {
+    local domain="$1"
+    local expiry_date
+    expiry_date=$(echo | openssl s_client -servername "$domain" -connect "$domain":443 2>/dev/null | openssl x509 -noout -dates 2>/dev/null | grep notAfter | cut -d= -f2)
+
+    if [ -z "$expiry_date" ]; then
+        echo "N/A"
+        return
+    fi
+
+    local expiry_epoch
+    expiry_epoch=$(date -d "$expiry_date" +%s 2>/dev/null || echo 0)
+    if [ "$expiry_epoch" -eq 0 ]; then
+        echo "N/A"
+        return
+    fi
+
+    local now_epoch
+    now_epoch=$(date +%s)
+    echo $(( (expiry_epoch - now_epoch) / 86400 ))
+}
+
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    
+
     if [ -f "$path/wp-config.php" ]; then
         ver=$(sudo -u "$user" wp --path="$path" core version 2>/dev/null || echo "nieznana")
         updates_plugins=$(sudo -u "$user" wp --path="$path" plugin list --update=available --format=count 2>/dev/null || echo "0")
         updates_themes=$(sudo -u "$user" wp --path="$path" theme list --update=available --format=count 2>/dev/null || echo "0")
         total_updates=$((updates_plugins + updates_themes))
-        
-        # Sprawdzanie HTTP/HTTPS z ignorowaniem SSL i podążaniem za przekierowaniami
+
+        # Sprawdzanie SSL
+        ssl_days=$(check_ssl_expiry "$name")
+        if [ "$ssl_days" != "N/A" ]; then
+            if [ "$ssl_days" -lt 14 ]; then
+                ssl_info="${RED}SSL: $ssl_days dni${NC}"
+            else
+                ssl_info="${GREEN}SSL: $ssl_days dni${NC}"
+            fi
+        else
+            ssl_info="${YELLOW}SSL: N/A${NC}"
+        fi
+
+        # Sprawdzanie HTTP/HTTPS statusu
         http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
-        
+
         if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
             status_icon="${GREEN}✅${NC}"
         else
             status_icon="${RED}❌ (HTTP $http_code)${NC}"
         fi
-        
-        echo -e "   $status_icon $name: Core v$ver | ${YELLOW}Aktualizacje: $total_updates${NC} (Wtyczki: $updates_plugins, Motywy: $updates_themes)"
+
+        echo -e "   $status_icon $name: v$ver | $ssl_info | ${YELLOW}Aktualizacje: $total_updates${NC}"
     else
         echo -e "   ${RED}❌ $name: Błąd środowiska w $path${NC}"
     fi

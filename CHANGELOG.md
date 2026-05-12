@@ -2,6 +2,13 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.5] - 2026-05-12
+
+### Added
+- SSL certificate expiry monitoring in `wp-fleet-status-monitor.sh`: each site in fleet status now shows remaining days of SSL validity (`SSL: N days`).
+  - Green if ≥ 14 days remaining, red if < 14 days, yellow if certificate is unavailable or unreachable.
+  - EN version displays days as `d`, PL version as `dni`.
+
 ## [4.3.4] - 2026-05-05
 
 ### Added
@@ -77,6 +84,7 @@ All notable changes to WSMS PRO are documented in this file.
 - Initial public release.
 
 [4.3.3]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.2...v4.3.3
+[4.3.5]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.4...v4.3.5
 [4.3.4]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.3...v4.3.4
 [4.3.2]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.1...v4.3.2
 [4.3.1]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.0...v4.3.1
