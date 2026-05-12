@@ -1152,7 +1152,7 @@ if [ "$target" = "list" ]; then
     for site in "${SITES[@]}"; do
         IFS=':' read -r name path user <<< "$site"
         count=$(find "$BACKUP_MYSQL_DIR" -name "db-$name-*.sql.gz" 2>/dev/null | wc -l)
-        latest=$(ls -t "$BACKUP_MYSQL_DIR"/db-$name-*.sql.gz 2>/dev/null | head -1 | xargs basename 2>/dev/null)
+        latest=$(ls -t "$BACKUP_MYSQL_DIR"/db-"$name"-*.sql.gz 2>/dev/null | head -1 | xargs basename 2>/dev/null)
         echo "   📂 $name: $count backups (Latest: ${latest:-none})"
     done
     exit 0
@@ -1244,7 +1244,7 @@ ensure_remote_dir() {
     local remote_dir="$1"
     
     # Sprawdź czy folder istnieje
-    if echo "ls \"$remote_dir\"" 2>/dev/null | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -q "remote_dir"; then
+    if echo "ls \"$remote_dir\"" 2>/dev/null | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -qF "$remote_dir"; then
         return 0
     fi
     
@@ -1289,7 +1289,7 @@ sync_directory() {
     
     local uploaded=0; local existing=0; local failed=0
     
-    for file in $(ls -1 "$local_dir"); do
+    while IFS= read -r file; do
         if echo "$remote_files" | grep -q "^$file$"; then
             echo -e "   ${YELLOW}⏭️ Already exists: $file${NC}"
             ((existing++))
@@ -1303,7 +1303,7 @@ sync_directory() {
                 ((failed++))
             fi
         fi
-    done
+    done < <(find "$local_dir" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null)
     
     TOTAL_UPLOADED=$((TOTAL_UPLOADED + uploaded))
     TOTAL_EXISTING=$((TOTAL_EXISTING + existing))

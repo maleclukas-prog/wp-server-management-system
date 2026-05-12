@@ -213,7 +213,7 @@ if [ "$FORCE_MODE" = true ]; then
         if [ -d "$dir" ]; then
             run_cmd rm -rf "$dir"
             echo "   🗑️ Removed: $dir"
-            ((removed_script_dirs++))
+            removed_script_dirs=$((removed_script_dirs + 1))
         fi
     done
     if [ "$removed_script_dirs" -eq 0 ]; then

@@ -97,6 +97,11 @@ if [ ! -f "$EN_INSTALLER" ] || [ ! -f "$PL_INSTALLER" ]; then
     exit 1
 fi
 
+if [ -z "$EN_OUT" ] || [ -z "$PL_OUT" ] || [ "$EN_OUT" = "/" ] || [ "$PL_OUT" = "/" ]; then
+    echo "ERROR: Output paths are invalid: EN=$EN_OUT PL=$PL_OUT" >&2
+    exit 1
+fi
+
 rm -rf "$EN_OUT" "$PL_OUT"
 
 extract_modules "$EN_INSTALLER" "$EN_OUT" "EN"

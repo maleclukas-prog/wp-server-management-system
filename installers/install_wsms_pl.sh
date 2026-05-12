@@ -1152,7 +1152,7 @@ if [ "$target" = "list" ]; then
     for site in "${SITES[@]}"; do
         IFS=':' read -r name path user <<< "$site"
         count=$(find "$BACKUP_MYSQL_DIR" -name "db-$name-*.sql.gz" 2>/dev/null | wc -l)
-        latest=$(ls -t "$BACKUP_MYSQL_DIR"/db-$name-*.sql.gz 2>/dev/null | head -1 | xargs basename 2>/dev/null)
+        latest=$(ls -t "$BACKUP_MYSQL_DIR"/db-"$name"-*.sql.gz 2>/dev/null | head -1 | xargs basename 2>/dev/null)
         echo "   📂 $name: $count backupów (Ostatni: ${latest:-brak})"
     done
     exit 0
@@ -1244,7 +1244,7 @@ utworz_folder_zdalny() {
     local zdalny_folder="$1"
     
     # Sprawdź czy folder istnieje
-    if echo "ls \"$zdalny_folder\"" 2>/dev/null | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -q "remote_dir"; then
+    if echo "ls \"$zdalny_folder\"" 2>/dev/null | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -qF "$zdalny_folder"; then
         return 0
     fi
     
@@ -1289,7 +1289,7 @@ synchronizuj_katalog() {
     
     local wyslane=0; local istniejace=0; local nieudane=0
     
-    for plik in $(ls -1 "$katalog_lokalny"); do
+    while IFS= read -r plik; do
         if echo "$pliki_zdalne" | grep -q "^$plik$"; then
             echo -e "   ${YELLOW}⏭️ Już istnieje: $plik${NC}"
             ((istniejace++))
@@ -1303,7 +1303,7 @@ synchronizuj_katalog() {
                 ((nieudane++))
             fi
         fi
-    done
+    done < <(find "$katalog_lokalny" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null)
     
     TOTAL_UPLOADED=$((TOTAL_UPLOADED + wyslane))
     TOTAL_EXISTING=$((TOTAL_EXISTING + istniejace))

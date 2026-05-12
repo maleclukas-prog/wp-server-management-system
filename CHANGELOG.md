@@ -2,6 +2,16 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.8] - 2026-05-12
+
+### Fixed
+- `nas-sftp-sync.sh`: `ensure_remote_dir` was checking for literal string `"remote_dir"` instead of the variable value — replaced `grep -q "remote_dir"` with `grep -qF "$remote_dir"` (EN) / `grep -qF "$zdalny_folder"` (PL).
+- `nas-sftp-sync.sh`: replaced `for file in $(ls ...)` with `while IFS= read -r file; done < <(find ...)` to handle filenames with spaces correctly.
+- `mysql-backup-manager.sh`: unquoted `$name` in glob `db-$name-*.sql.gz` — now `db-"$name"-*.sql.gz`.
+- `tools/wsms-uninstall.sh`: `((removed_script_dirs++))` replaced with `removed_script_dirs=$((removed_script_dirs + 1))` for bash 3 compatibility.
+- `tools/wsms-export-runtime-scripts.sh`: added safety guard before `rm -rf` to prevent accidental deletion if output paths are empty or `/`.
+- All fixes applied to both EN and PL installer deploy blocks (source of truth) and runtime preview files.
+
 ## [4.3.7] - 2026-05-12
 
 ### Changed
