@@ -60,6 +60,8 @@ assert_contains() {
 
 validate_installation() {
     assert_file "/home/$TEST_USER/scripts/wsms-config.sh"
+    assert_file "/home/$TEST_USER/scripts/wsms-notify.sh"
+    assert_file "/home/$TEST_USER/scripts/wsms-daily-check.sh"
     assert_file "/home/$TEST_USER/scripts/wp-help.sh"
     assert_file "/home/$TEST_USER/logs/wsms/system"
     assert_file "/var/www/site1/public_html/wp-config.php"

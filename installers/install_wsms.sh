@@ -260,7 +260,9 @@ ROLLBACK_MAX_SIZE_MB=500
 
 # ==================== NOTIFICATIONS ====================
 SLACK_WEBHOOK_URL=""
-EMAIL_ALERT=""
+ALERT_EMAIL=""              # leave empty to disable all email alerts
+ALERT_ON_FAILURE="yes"      # send alert on critical failure
+ALERT_ON_SUCCESS="no"       # send alert on successful cron run
 
 # ==================== DIRECTORY PATHS ====================
 SCRIPT_DIR="$HOME/scripts"
@@ -355,7 +357,7 @@ export SITES NAS_HOST NAS_PORT NAS_USER NAS_PATH NAS_SSH_KEY
 export RETENTION_LITE RETENTION_FULL RETENTION_MYSQL RETENTION_ROLLBACK
 export NAS_RETENTION_DAYS NAS_MIN_KEEP_COPIES
 export DISK_ALERT_THRESHOLD ROLLBACK_MAX_SIZE_MB
-export SLACK_WEBHOOK_URL EMAIL_ALERT
+export SLACK_WEBHOOK_URL EMAIL_ALERT ALERT_EMAIL ALERT_ON_FAILURE ALERT_ON_SUCCESS
 export SCRIPT_DIR
 export BACKUP_LITE_DIR BACKUP_FULL_DIR BACKUP_MANUAL_DIR BACKUP_MYSQL_DIR BACKUP_ROLLBACK_DIR
 export LOG_BASE_DIR LOG_BACKUPS_DIR LOG_MAINTENANCE_DIR LOG_SECURITY_DIR
@@ -412,6 +414,78 @@ wsms_init_live_logging
 }
 
 # -----------------------------------------------------------------
+# SCRIPT 0: wsms-notify.sh
+# -----------------------------------------------------------------
+deploy "wsms-notify.sh" << 'EOFNOTIFY'
+#!/bin/bash
+# =================================================================
+# WSMS PRO v4.3 - EMAIL ALERT MODULE
+# Source this file in other scripts to enable email notifications.
+# Requires ALERT_EMAIL, ALERT_ON_FAILURE, ALERT_ON_SUCCESS in wsms-config.sh
+# =================================================================
+
+send_alert() {
+    local type="$1"   # "failure" or "success"
+    local subject="$2"
+    local body="$3"
+
+    [ -z "${ALERT_EMAIL:-}" ] && return 0
+
+    case "$type" in
+        failure) [ "${ALERT_ON_FAILURE:-yes}" = "yes" ] || return 0 ;;
+        success) [ "${ALERT_ON_SUCCESS:-no}"  = "yes" ] || return 0 ;;
+        *)       return 0 ;;
+    esac
+
+    command -v mail >/dev/null 2>&1 || {
+        echo "WSMS alert error: 'mail' command is not available." >&2
+        return 1
+    }
+
+    printf '%b\n' "$body" | mail -s "[WSMS] $subject" "$ALERT_EMAIL"
+}
+EOFNOTIFY
+
+# -----------------------------------------------------------------
+# SCRIPT 0b: wsms-daily-check.sh
+# -----------------------------------------------------------------
+deploy "wsms-daily-check.sh" << 'EOFDAILY'
+#!/bin/bash
+# =================================================================
+# WSMS PRO v4.3 - DAILY SYSTEM CHECK
+# Run via cron once a day to detect critical issues and send alerts.
+# Cron example: 0 7 * * * bash $HOME/scripts/wsms-daily-check.sh
+# =================================================================
+
+source "$HOME/scripts/wsms-config.sh"
+source "$HOME/scripts/wsms-notify.sh"
+
+REPORT=""
+FAILURES=0
+
+run_check() {
+    local label="$1"
+    local output
+    output=$(bash "$SCRIPT_DIR/$2" 2>&1)
+    REPORT+="=== $label ===\n$output\n\n"
+
+    if echo "$output" | grep -qiE "❌|CRITICAL|ERROR|failed|unreachable|stopped"; then
+        ((FAILURES++))
+    fi
+}
+
+run_check "Server Health Audit"         "server-health-audit.sh"
+run_check "WordPress Fleet Status"      "wp-fleet-status-monitor.sh"
+run_check "WP-CLI Infrastructure Test"  "wp-cli-infrastructure-validator.sh"
+
+if [ "$FAILURES" -gt 0 ]; then
+    send_alert "failure" "Daily check: $FAILURES issue(s) detected on $(hostname)" "$REPORT"
+else
+    send_alert "success" "Daily check: all systems OK on $(hostname)" "$REPORT"
+fi
+EOFDAILY
+
+# -----------------------------------------------------------------
 # SCRIPT 1: server-health-audit.sh
 # -----------------------------------------------------------------
 deploy "server-health-audit.sh" << 'EOFAUDIT'
@@ -421,6 +495,7 @@ deploy "server-health-audit.sh" << 'EOFAUDIT'
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
+source "$HOME/scripts/wsms-notify.sh"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 
@@ -609,12 +684,14 @@ echo "----------------------------------------------------------"
 # Check Nginx/Apache
 if ! systemctl is-active --quiet nginx && ! systemctl is-active --quiet apache2; then
     echo -e "   ${RED}⚠️ CRITICAL: No web server running! Run: sudo systemctl start nginx${NC}"
+    send_alert "failure" "CRITICAL: Web server down on $(hostname)" "Neither Nginx nor Apache2 is running.\nTime: $(date)"
 fi
 
 # Check disk space
 disk_usage=$(df /home 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//')
 if [ -n "$disk_usage" ] && [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
     echo -e "   ⚠️  ${RED}CRITICAL: Disk usage at ${disk_usage}% - run backup-emergency!${NC}"
+    send_alert "failure" "CRITICAL: Disk usage at ${disk_usage}% on $(hostname)" "Disk usage reached ${disk_usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nRun: backup-emergency\nTime: $(date)"
 fi
 
 # Check backups
@@ -786,6 +863,7 @@ deploy "wp-automated-maintenance-engine.sh" << 'EOFMAINT'
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
+source "$HOME/scripts/wsms-notify.sh"
 CYAN='\033[0;36m'; GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; NC='\033[0m'
 
 LOG_FILE="$LOG_UPDATES"
@@ -874,6 +952,7 @@ run_site_update() {
 
     echo -e "   ${RED}❌ $name may have issues (HTTP $http_code) - rolling back...${NC}"
     bash "$SCRIPT_DIR/wp-rollback.sh" rollback "$name" 2>/dev/null
+    send_alert "failure" "Update failed: $name" "Site: $name\nHTTP code after update: $http_code\nRollback triggered.\nTime: $(date)"
     ((fail_count++))
     return 1
 }
@@ -948,6 +1027,12 @@ echo "   ✅ Successful: $success_count site(s)"
 echo "   ❌ Failed: $fail_count site(s)"
 echo "   ⏰ Completed: $(date)"
 echo -e "${GREEN}✅ MAINTENANCE CYCLE COMPLETE${NC}"
+
+if [ "$fail_count" -gt 0 ]; then
+    send_alert "failure" "Maintenance cycle finished with failures" "Successful: $success_count\nFailed: $fail_count\nTime: $(date)"
+else
+    send_alert "success" "Maintenance cycle complete" "All $success_count site(s) updated successfully.\nTime: $(date)"
+fi
 EOFMAINT
 
 # -----------------------------------------------------------------
@@ -1402,6 +1487,7 @@ deploy "wp-smart-retention-manager.sh" << 'EOFRET'
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
+source "$HOME/scripts/wsms-notify.sh"
 GREEN='\033[0;32m'; RED='\033[0;31m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 LOG_FILE="$LOG_RETENTION"
 wsms_init_live_logging "$LOG_FILE"
@@ -1565,6 +1651,7 @@ force_clean() {
     
     if [ "$usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
         echo -e "${YELLOW}⚠️ Disk usage at ${usage}% - triggering emergency mode${NC}"
+        send_alert "failure" "Disk usage critical: ${usage}%" "Disk usage on $(hostname) reached ${usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nEmergency cleanup triggered.\nTime: $(date)"
         emergency_cleanup
     else
         echo -e "${GREEN}✅ Standard cleanup: Deleting files older than retention period${NC}"
@@ -1819,7 +1906,23 @@ printf "  ${GREEN}%-22s${NC} %s\n" "clamav-clean-quarantine" "Empty quarantine d
 echo ""
 
 # ============================================
-# SECTION 8: LOG SHORTCUTS
+# SECTION 8: ALERTING
+# ============================================
+echo -e "${BLUE}┌────────────────────────────────────────────────────────────┐${NC}"
+echo -e "${BLUE}│  🔔 ALERTING                                                │${NC}"
+echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
+echo ""
+printf "  ${GREEN}%-22s${NC} %s\n" "wsms-daily-check" "Run daily health check and send alert"
+printf "  ${GREEN}%-22s${NC} %s\n" "wsms-test-alert" "Send a test alert email to verify setup"
+echo ""
+echo -e "  ${YELLOW}Config in ~/scripts/wsms-config.sh:${NC}"
+printf "    ${CYAN}%-22s${NC} %s\n" "ALERT_EMAIL" "Recipient address (empty = disabled)"
+printf "    ${CYAN}%-22s${NC} %s\n" "ALERT_ON_FAILURE" "yes/no — alert on critical failure"
+printf "    ${CYAN}%-22s${NC} %s\n" "ALERT_ON_SUCCESS" "yes/no — alert on successful cron run"
+echo ""
+
+# ============================================
+# SECTION 9: LOG SHORTCUTS
 # ============================================
 echo -e "${BLUE}┌────────────────────────────────────────────────────────────┐${NC}"
 echo -e "${BLUE}│  📝 LOG SHORTCUTS (~/logs/wsms/)                            │${NC}"
@@ -1879,6 +1982,7 @@ printf "  ${GREEN}%-22s${NC} %s\n" "red-robin" "Emergency full system backup"
 printf "  ${GREEN}%-22s${NC} %s\n" "wsms-clean" "Clean old logs and temp files"
 printf "  ${GREEN}%-22s${NC} %s\n" "scripts-dir" "List scripts directory"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-hosts-sync" "Sync all configured domains to /etc/hosts"
+printf "  ${GREEN}%-22s${NC} %s\n" "wsms-test-alert" "Send a test alert email to verify setup"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-help" "This reference"
 echo ""
 
@@ -1938,9 +2042,13 @@ EOFROBIN
 deploy "clamav-auto-scan.sh" << 'EOFCLAM'
 #!/bin/bash
 source "$HOME/scripts/wsms-config.sh"
+source "$HOME/scripts/wsms-notify.sh"
 LOG_FILE="$LOG_CLAMAV_SCAN"
 echo "--- Scan: $(date) ---" | sudo tee -a "$LOG_FILE"
-sudo clamscan -r --infected --no-summary /var/www /home 2>/dev/null | sudo tee -a "$LOG_FILE"
+INFECTED=$(sudo clamscan -r --infected --no-summary /var/www /home 2>/dev/null | sudo tee -a "$LOG_FILE")
+if [ -n "$INFECTED" ]; then
+    send_alert "failure" "ClamAV: infected files found on $(hostname)" "$(date)\n\n$INFECTED"
+fi
 EOFCLAM
 
 # -----------------------------------------------------------------
@@ -1949,10 +2057,14 @@ EOFCLAM
 deploy "clamav-full-scan.sh" << 'EOFFULLCLAM'
 #!/bin/bash
 source "$HOME/scripts/wsms-config.sh"
+source "$HOME/scripts/wsms-notify.sh"
 TS=$(date +%Y%m%d-%H%M%S)
 LOG_FILE="$LOG_CLAMAV_FULL"
-sudo clamscan -r --infected --move="$QUARANTINE_DIR" --exclude-dir="^/sys" --exclude-dir="^/proc" / 2>&1 | sudo tee "$LOG_FILE"
+INFECTED=$(sudo clamscan -r --infected --move="$QUARANTINE_DIR" --exclude-dir="^/sys" --exclude-dir="^/proc" / 2>&1 | sudo tee "$LOG_FILE")
 echo "✅ Full scan complete"
+if echo "$INFECTED" | grep -q "FOUND"; then
+    send_alert "failure" "ClamAV full scan: infected files found on $(hostname)" "$(date)\n\n$(echo "$INFECTED" | grep FOUND)"
+fi
 EOFFULLCLAM
 
 # -----------------------------------------------------------------
@@ -2359,6 +2471,9 @@ wp-health() {
     fi
 }
 
+alias wsms-daily-check='bash $SCRIPTS_DIR/wsms-daily-check.sh'
+alias wsms-test-alert='source $SCRIPTS_DIR/wsms-config.sh; source $SCRIPTS_DIR/wsms-notify.sh; send_alert failure "Test alert from $(hostname)" "This is a test alert from WSMS PRO.\nTime: $(date)\nIf you received this, alerts are working correctly." && echo "✅ Test alert submitted to local mail system for $ALERT_EMAIL" || echo "❌ Failed — check ALERT_EMAIL, mail command, and MTA configuration"'
+
 if [[ $- == *i* ]]; then
     echo "✅ WSMS PRO v4.3 - Bash aliases loaded!"
     echo "   Type 'wp-help' for command reference"
@@ -2372,8 +2487,12 @@ fi
 
 if command -v fish &> /dev/null; then
     mkdir -p "$HOME/.config/fish"
+    mkdir -p "$HOME/.config/fish/functions"
     touch "$HOME/.config/fish/config.fish"
     sed -i '/# >>> WSMS PRO v4.3 FISH >>>/,/# <<< WSMS PRO v4.3 FISH <<</d' "$HOME/.config/fish/config.fish" 2> /dev/null
+    # Remove any stale wsms-test-alert lines/functions left by older installs.
+    sed -i '/wsms-test-alert/d' "$HOME/.config/fish/config.fish" 2> /dev/null
+    rm -f "$HOME/.config/fish/functions/wsms-test-alert.fish" 2> /dev/null
     cat >> "$HOME/.config/fish/config.fish" << 'EOFFISH'
 
 # >>> WSMS PRO v4.3 FISH >>>
@@ -2494,6 +2613,11 @@ function wp-health
     else
         echo "   ❌ WP-CLI: Missing"
     end
+end
+
+alias wsms-daily-check='bash $SCRIPTS_DIR/wsms-daily-check.sh'
+function wsms-test-alert
+    bash -lc 'source "$HOME/scripts/wsms-config.sh"; source "$HOME/scripts/wsms-notify.sh"; send_alert failure "Test alert from $(hostname)" "This is a test alert from WSMS PRO.\nTime: $(date)\nIf you received this, alerts are working correctly." && echo "✅ Test alert submitted to local mail system for $ALERT_EMAIL" || echo "❌ Failed — check ALERT_EMAIL, mail command, and MTA configuration"'
 end
 
 status --is-interactive; and echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"

@@ -78,19 +78,11 @@ if [ -f "$HOME/.config/fish/config.fish" ]; then
         sed_in_place '/# >>> WSMS PRO v[0-9][.][0-9] FISH >>>/,/# <<< WSMS PRO v[0-9][.][0-9] FISH <<</d' "$HOME/.config/fish/config.fish"
         # Remove legacy WSMS fish blocks from older versions that had no marker delimiters
         sed_in_place '/^# WSMS PRO v[0-9][.][0-9] - FISH SHELL ALIASES$/,/^echo "✅ WSMS PRO v[0-9][.][0-9] - Fish aliases loaded!"$/d' "$HOME/.config/fish/config.fish"
-        # Remove legacy broken test-alert aliases/functions (Bash syntax executed in Fish)
-        sed_in_place '/^alias wsms-test-alert=.*source .*wsms-config\.sh/d' "$HOME/.config/fish/config.fish"
-        sed_in_place '/^function wsms-test-alert --wraps source .*wsms-config\.sh/d' "$HOME/.config/fish/config.fish"
         sed_in_place '/^echo "   Type '\''wp-help'\'' for command reference"$/d' "$HOME/.config/fish/config.fish"
         sed_in_place '/^echo "   Type '\''wp-status'\'' for system overview"$/d' "$HOME/.config/fish/config.fish"
         sed_in_place '/^echo "   Type '\''wp-health'\'' for health check"$/d' "$HOME/.config/fish/config.fish"
     fi
     echo -e "   ${GREEN}✅ Fish config cleaned${NC}"
-fi
-
-# Remove stale fish autoloaded function files if present
-if [ -f "$HOME/.config/fish/functions/wsms-test-alert.fish" ]; then
-    run_cmd rm -f "$HOME/.config/fish/functions/wsms-test-alert.fish"
 fi
 
 # ============================================
@@ -163,7 +155,6 @@ if crontab -l &> /dev/null; then
             | grep -v "nas-sftp-sync.sh" \
             | grep -v "clamav-auto-scan.sh" \
             | grep -v "clamav-full-scan.sh" \
-            | grep -v "wsms-daily-check.sh" \
             | grep -v "freshclam" \
             | crontab -
     fi

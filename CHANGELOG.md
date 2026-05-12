@@ -2,6 +2,31 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.10] - 2026-05-13
+
+### Added
+- New mail setup guide: `docs/MAIL_CONFIGURATION.md`.
+- Example SMTP relay config files: `docs/msmtprc.example` and `docs/mailrc.example`.
+
+### Fixed
+- `wsms-notify.sh`: alert delivery no longer masks `mail` failures with `|| true`; WSMS now returns a real error when local mail submission fails.
+- `wsms-notify.sh`: explicit check added for missing `mail` command.
+- `wsms-test-alert` messaging updated to say alert was submitted to the local mail system, instead of implying final mailbox delivery.
+
+## [4.3.9] - 2026-05-12
+
+### Added
+- Email alert system: `wsms-notify.sh` module with `send_alert()` function (sourced by other scripts).
+- `wsms-daily-check.sh`: daily cron script that runs `server-health-audit`, `wp-fleet-status-monitor`, and `wp-cli-infrastructure-validator`, then sends a consolidated alert email.
+- Three new configuration variables in `wsms-config.sh`: `ALERT_EMAIL`, `ALERT_ON_FAILURE`, `ALERT_ON_SUCCESS`. Empty `ALERT_EMAIL` disables all alerts.
+- `send_alert` calls added to: `wp-automated-maintenance-engine.sh` (rollback triggered, cycle summary), `wp-smart-retention-manager.sh` (disk threshold exceeded), `server-health-audit.sh` (web server down, disk critical), `clamav-auto-scan.sh` (infected files found), `clamav-full-scan.sh` (infected files found).
+- Docker smoke test `tests/docker/run-notify-smoke.sh` and launcher `tests/run_docker_notify_smoke_test.sh` (7 tests on Ubuntu with mailutils).
+- `tests/test_suite.sh` expanded with 24 new assertions covering notify/daily-check modules, installer content, and EN/PL parity (171 total).
+- `tests/docker/run-all-modules-smoke.sh` updated: `wsms-notify.sh` and `wsms-daily-check.sh` added to module run list (25 modules total).
+- `tests/docker/run-install-smoke.sh` updated: asserts presence of `wsms-notify.sh` and `wsms-daily-check.sh` after installation.
+- `tools/wsms-uninstall.sh`: `wsms-daily-check.sh` added to crontab cleanup list.
+- `docs/TECHNICAL_REFERENCE.md`: new "Email Alerting" section with alert trigger table and cron setup.
+
 ## [4.3.8] - 2026-05-12
 
 ### Fixed

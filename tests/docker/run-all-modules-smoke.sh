@@ -110,6 +110,8 @@ run_all_module_checks() {
     run_check "clamav-auto-scan.sh" "success" "~/scripts/clamav-auto-scan.sh"
     run_check "clamav-full-scan.sh" "marker" "~/scripts/clamav-full-scan.sh" "Full scan complete"
     run_check "wp-cli-infrastructure-validator.sh" "success" "~/scripts/wp-cli-infrastructure-validator.sh"
+    run_check "wsms-notify.sh" "success" "source ~/scripts/wsms-notify.sh && echo ok"
+    run_check "wsms-daily-check.sh" "success" "ALERT_EMAIL='' bash ~/scripts/wsms-daily-check.sh"
     run_check "wp-rollback.sh:snapshot-all" "success" "~/scripts/wp-rollback.sh snapshot all"
     run_check "wp-rollback.sh:list-site1" "success" "~/scripts/wp-rollback.sh list site1"
     run_check "wp-rollback.sh:rollback-site1" "success" "~/scripts/wp-rollback.sh rollback site1"

@@ -228,6 +228,14 @@ end
 # alias wp-site2='sudo -u wordpress_site2 /usr/local/bin/wp --path=/var/www/site2/public_html'
 
 # ============================================
+# ALERTING
+# ============================================
+alias wsms-daily-check='bash $SCRIPTS_DIR/wsms-daily-check.sh'
+function wsms-test-alert
+    bash -lc 'source "$HOME/scripts/wsms-config.sh"; source "$HOME/scripts/wsms-notify.sh"; send_alert failure "Test alert from $(hostname)" "This is a test alert from WSMS PRO.\nTime: $(date)\nIf you received this, alerts are working correctly." && echo "✅ Test alert submitted to local mail system for $ALERT_EMAIL" || echo "❌ Failed — check ALERT_EMAIL, mail command, and MTA configuration"'
+end
+
+# ============================================
 # WELCOME MESSAGE
 # ============================================
 status --is-interactive; and echo "✅ WSMS PRO v4.3 - Fish aliases loaded!"

@@ -40,6 +40,7 @@ This means you can work on a single extracted script for convenience, but final 
 - Emergency retention now also prunes rollback snapshots (keeps latest 2 per site).
 - Runtime exporter supports selective extraction with `--only`.
 - Added regression test for legacy uninstaller cleanup.
+- Email alert system (`wsms-notify.sh`, `wsms-daily-check.sh`) with configurable failure/success notifications.
 
 ## Quick Start
 
@@ -80,6 +81,26 @@ Notable runtime commands:
 - `wp-update-site <site>` - update one site (core + all plugins/themes)
 - `wp-update-plugin <site> <plugin>` - update one plugin on one site
 - `wp-update-theme <site> <theme>` - update one theme on one site
+
+## Email Alerts
+
+WSMS can send email notifications on critical failures. Configure in `~/scripts/wsms-config.sh` after installation:
+
+```bash
+ALERT_EMAIL="you@example.com"   # leave empty to disable
+ALERT_ON_FAILURE="yes"
+ALERT_ON_SUCCESS="no"
+```
+
+Add daily health check to cron:
+
+```
+0 7 * * * bash $HOME/scripts/wsms-daily-check.sh
+```
+
+Requires `mail` and a configured MTA on the server (e.g. `postfix`, `msmtp`). See `docs/TECHNICAL_REFERENCE.md` for full details.
+
+For the simplest SMTP relay setup on Ubuntu using `msmtp`, see `docs/MAIL_CONFIGURATION.md`.
 
 ## Inspect Scripts Without Running Installer
 
@@ -148,6 +169,12 @@ Full modules smoke test (all deployed runtime scripts):
 bash tests/run_docker_all_modules_smoke_test.sh
 ```
 
+Email alert system smoke test (Ubuntu + mailutils):
+
+```bash
+bash tests/run_docker_notify_smoke_test.sh
+```
+
 If you prefer Docker Compose:
 
 ```bash
@@ -190,6 +217,7 @@ Uninstaller cleanup covers both marker-based WSMS blocks and legacy v4.2-style s
 - `docs/DOCKER_HELP_PL.md`
 - `docs/DOCKER_HELP_EN.md`
 - `docs/FISH_SETUP_GUIDE.md`
+- `docs/MAIL_CONFIGURATION.md`
 - `docs/TECHNICAL_REFERENCE.md`
 - `DOCKER_HELP.md`
 - `CHANGELOG.md`

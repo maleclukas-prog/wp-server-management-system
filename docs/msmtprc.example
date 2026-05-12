@@ -1,0 +1,14 @@
+defaults
+auth on
+tls on
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile ~/.msmtp.log
+auto_from off
+set_from_header on
+
+account default
+host SMTP_HOST
+port 587
+from SMTP_FROM
+user SMTP_USER
+password SMTP_PASSWORD

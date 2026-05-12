@@ -52,6 +52,9 @@ REQUIRED=(
     "tools/wsms-uninstall.sh"
     "tools/wsms-export-runtime-scripts.sh"
     "docs/DEPLOYMENT_GUIDE.md"
+    "docs/MAIL_CONFIGURATION.md"
+    "docs/msmtprc.example"
+    "docs/mailrc.example"
     "docs/TECHNICAL_REFERENCE.md"
     "docs/FISH_SETUP_GUIDE.md"
     "docs/DOCKER_HELP_EN.md"
@@ -89,6 +92,10 @@ echo -e "\n${CYAN}[4] Installer content${NC}"
 for installer in "$ROOT/installers/install_wsms.sh" "$ROOT/installers/install_wsms_pl.sh"; do
     base=$(basename "$installer")
     assert_contains "$installer" "wsms-config.sh"                         "config deploy block in $base"
+    assert_contains "$installer" "wsms-notify.sh"                         "notify module in $base"
+    assert_contains "$installer" "wsms-daily-check.sh"                    "daily check module in $base"
+    assert_contains "$installer" "ALERT_EMAIL"                            "ALERT_EMAIL in $base"
+    assert_contains "$installer" "ALERT_ON_FAILURE"                       "ALERT_ON_FAILURE in $base"
     assert_contains "$installer" "wp-automated-maintenance-engine.sh"     "maintenance engine in $base"
     assert_contains "$installer" "wp-smart-retention-manager.sh"          "retention manager in $base"
     assert_contains "$installer" "wp-rollback.sh"                         "rollback engine in $base"
@@ -112,6 +119,8 @@ MODULES=(
     "wp-multi-instance-audit.sh"
     "server-health-audit.sh"
     "wsms-clean.sh"
+    "wsms-notify.sh"
+    "wsms-daily-check.sh"
     "mysql-backup-manager.sh"
     "infrastructure-permission-orchestrator.sh"
     "nas-sftp-sync.sh"
@@ -131,6 +140,7 @@ assert_contains "$PREVIEW_EN/wp-automated-maintenance-engine.sh" 'source "$HOME/
 assert_contains "$PREVIEW_EN/wp-automated-maintenance-engine.sh" "run_site_update"                       "maintenance engine has run_site_update"
 assert_contains "$PREVIEW_EN/wp-automated-maintenance-engine.sh" "wp-rollback.sh"                       "maintenance engine calls rollback"
 assert_contains "$PREVIEW_EN/wp-automated-maintenance-engine.sh" "check_http_code"                      "maintenance engine checks HTTP after update"
+assert_contains "$PREVIEW_EN/wp-automated-maintenance-engine.sh" "send_alert"                           "maintenance engine calls send_alert"
 
 assert_contains "$PREVIEW_EN/wp-smart-retention-manager.sh" "emergency_cleanup"    "retention manager has emergency_cleanup"
 assert_contains "$PREVIEW_EN/wp-smart-retention-manager.sh" "force_clean"          "retention manager has force_clean"
@@ -146,6 +156,29 @@ assert_contains "$PREVIEW_EN/wp-hosts-sync.sh" "MARKER_END"   "hosts-sync has ma
 assert_contains "$PREVIEW_EN/wp-hosts-sync.sh" "127.0.0.1"    "hosts-sync maps to 127.0.0.1"
 
 assert_contains "$PREVIEW_EN/wsms-clean.sh" "FORCE_MODE" "wsms-clean has force mode"
+
+assert_contains "$PREVIEW_EN/wsms-notify.sh"      "send_alert"          "wsms-notify has send_alert function"
+assert_contains "$PREVIEW_EN/wsms-notify.sh"      "ALERT_EMAIL"         "wsms-notify checks ALERT_EMAIL"
+assert_contains "$PREVIEW_EN/wsms-notify.sh"      "ALERT_ON_FAILURE"    "wsms-notify checks ALERT_ON_FAILURE"
+assert_contains "$PREVIEW_EN/wsms-notify.sh"      "ALERT_ON_SUCCESS"    "wsms-notify checks ALERT_ON_SUCCESS"
+assert_contains "$PREVIEW_EN/wsms-notify.sh"      "command -v mail"     "wsms-notify verifies mail command exists"
+
+assert_contains "$PREVIEW_EN/wsms-daily-check.sh" "wsms-notify.sh"      "daily-check sources wsms-notify"
+assert_contains "$PREVIEW_EN/wsms-daily-check.sh" "server-health-audit" "daily-check runs server-health-audit"
+assert_contains "$PREVIEW_EN/wsms-daily-check.sh" "wp-fleet-status"     "daily-check runs fleet-status"
+assert_contains "$PREVIEW_EN/wsms-daily-check.sh" "send_alert"          "daily-check calls send_alert"
+
+assert_contains "$PREVIEW_EN/clamav-auto-scan.sh"  "send_alert"         "clamav-auto-scan calls send_alert"
+assert_contains "$PREVIEW_EN/clamav-full-scan.sh"  "send_alert"         "clamav-full-scan calls send_alert"
+assert_contains "$PREVIEW_EN/server-health-audit.sh" "send_alert"       "server-health-audit calls send_alert"
+
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "msmtp"               "mail configuration guide mentions msmtp"
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "msmtprc.example"     "mail configuration guide references example config"
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "mailrc.example"      "mail configuration guide references mailrc example"
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "invalid envelope sender" "mail configuration guide covers invalid envelope sender"
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "admin ubuntu_server"     "mail configuration guide includes invalid sender example"
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "SMTP 501"               "mail configuration guide covers SMTP 501 troubleshooting"
+assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "envelope from address"   "mail configuration guide covers envelope sender rejection"
 
 # =================================================================
 # 7. BEHAVIORAL — normalize_backup_key logic
