@@ -76,6 +76,8 @@ This runtime smoke test:
 - installs WSMS in a clean Ubuntu container,
 - executes selected runtime scripts (`wp-help`, lite backup, full backup, retention list/clean),
 - seeds old backup files and verifies emergency cleanup keeps exactly 2 newest copies,
+- executes `wp-hosts-sync` twice and verifies marker-block idempotency in `/etc/hosts`,
+- validates that `wp-fleet-status-monitor` output contains SSL status field (`SSL:`),
 - verifies user-visible output markers,
 - verifies log persistence in `~/logs/wsms/retention/retention.log` and `~/logs/wsms/sync/nas-sync.log`.
 

@@ -26,6 +26,15 @@ run_as_tester() {
     su - "$TEST_USER" -c "$1"
 }
 
+assert_hosts_marker_once() {
+    local marker_count
+    marker_count=$(grep -c "WSMS LOCAL HOSTS" /etc/hosts)
+    if [ "$marker_count" -ne 2 ]; then
+        echo "Expected exactly one WSMS hosts marker block (2 marker lines), got: $marker_count" >&2
+        exit 1
+    fi
+}
+
 seed_old_backups_for_retention_test() {
     run_as_tester "mkdir -p ~/backups-lite ~/mysql-backups ~/backups-rollback/site1"
 
@@ -77,6 +86,12 @@ validate_logs() {
     assert_contains "Missing NAS configuration" "$HOME_DIR/logs/wsms/sync/nas-sync.log"
 }
 
+prepare_valid_domains_for_hosts_sync() {
+    run_as_tester "cp ~/scripts/wsms-config.sh ~/scripts/wsms-config.sh.bak"
+    run_as_tester "sed -i 's/site1:\/var\/www\/site1\/public_html/site1.local:\/var\/www\/site1\/public_html/g' ~/scripts/wsms-config.sh"
+    run_as_tester "sed -i 's/site2:\/var\/www\/site2\/public_html/site2.local:\/var\/www\/site2\/public_html/g' ~/scripts/wsms-config.sh"
+}
+
 run_runtime_scripts() {
     run_as_tester "TERM=xterm bash ~/scripts/wp-help.sh > /tmp/wsms-help.out 2>&1"
     run_as_tester "bash ~/scripts/wp-essential-assets-backup.sh > /tmp/wsms-lite.out 2>&1"
@@ -91,6 +106,12 @@ run_runtime_scripts() {
 
     run_as_tester "mkdir -p ~/.ssh && touch ~/.ssh/fake_nas_key && chmod 600 ~/.ssh/fake_nas_key"
     run_as_tester "NAS_HOST= NAS_PORT=22 NAS_USER=tester NAS_PATH=/tmp/nas NAS_SSH_KEY=/home/tester/.ssh/fake_nas_key bash ~/scripts/nas-sftp-sync.sh > /tmp/wsms-nas.out 2>&1 || true"
+
+    prepare_valid_domains_for_hosts_sync
+    run_as_tester "bash ~/scripts/wp-hosts-sync.sh > /tmp/wsms-hosts-sync-1.out 2>&1"
+    run_as_tester "bash ~/scripts/wp-hosts-sync.sh > /tmp/wsms-hosts-sync-2.out 2>&1"
+
+    run_as_tester "bash ~/scripts/wp-fleet-status-monitor.sh > /tmp/wsms-fleet.out 2>&1"
 }
 
 validate_stdout_markers() {
@@ -100,6 +121,21 @@ validate_stdout_markers() {
     assert_contains "Processing backups-lite" "/tmp/wsms-clean.out"
     assert_contains "backups-rollback" "/tmp/wsms-clean.out"
     assert_contains "Missing NAS configuration" "/tmp/wsms-nas.out"
+    assert_contains "SSL:" "/tmp/wsms-fleet.out"
+}
+
+validate_hosts_sync_idempotency() {
+    assert_hosts_marker_once
+
+    if ! grep -q "127.0.0.1 site1.local" /etc/hosts; then
+        echo "Expected hosts entry for site1.local in /etc/hosts" >&2
+        exit 1
+    fi
+
+    if ! grep -q "127.0.0.1 site2.local" /etc/hosts; then
+        echo "Expected hosts entry for site2.local in /etc/hosts" >&2
+        exit 1
+    fi
 }
 
 main() {
@@ -109,6 +145,7 @@ main() {
     validate_stdout_markers
     validate_retention_effect
     validate_logs
+    validate_hosts_sync_idempotency
 
     echo "WSMS runtime behavior smoke test passed"
 }

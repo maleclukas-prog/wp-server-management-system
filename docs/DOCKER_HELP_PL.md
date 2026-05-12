@@ -76,6 +76,8 @@ Ten test runtime:
 - instaluje WSMS w czystym kontenerze Ubuntu,
 - uruchamia wybrane skrypty runtime (`wp-help`, backup lite, backup full, retention list/clean),
 - dodaje stare pliki backupów i sprawdza, że tryb awaryjny zostawia dokładnie 2 najnowsze kopie,
+- uruchamia `wp-hosts-sync` dwukrotnie i sprawdza idempotencję bloku markerów w `/etc/hosts`,
+- weryfikuje, że output `wp-fleet-status-monitor` zawiera pole statusu SSL (`SSL:`),
 - sprawdza widoczne komunikaty na stdout,
 - sprawdza zapis logów w `~/logs/wsms/retention/retention.log` i `~/logs/wsms/sync/nas-sync.log`.
 

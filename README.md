@@ -151,6 +151,20 @@ bash tests/run_docker_smoke_test.sh
 
 This builds `tests/docker/Dockerfile`, provisions two fake WordPress roots from `tests/fixtures/wordpress/public_html`, runs `installers/install_wsms.sh`, and verifies generated scripts, aliases, and crontab entries.
 
+Extended runtime behavior smoke test:
+
+```bash
+bash tests/run_docker_runtime_smoke_test.sh
+```
+
+This validates runtime flows including backup/retention behavior, log persistence, `wp-hosts-sync` marker idempotency in `/etc/hosts`, and `wp-fleet-status-monitor` output containing SSL status (`SSL:`).
+
+Full modules smoke test (all deployed runtime scripts):
+
+```bash
+bash tests/run_docker_all_modules_smoke_test.sh
+```
+
 If you prefer Docker Compose:
 
 ```bash

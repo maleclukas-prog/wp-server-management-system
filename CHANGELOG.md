@@ -2,6 +2,13 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.3.6] - 2026-05-12
+
+### Added
+- Docker runtime smoke test (`tests/docker/run-runtime-behavior-smoke.sh`) expanded with real script behavior checks:
+	- runs `wp-hosts-sync` twice and verifies idempotent WSMS marker block handling in `/etc/hosts`,
+	- validates `wp-fleet-status-monitor` output includes SSL status field (`SSL:`).
+
 ## [4.3.5] - 2026-05-12
 
 ### Added
@@ -84,6 +91,7 @@ All notable changes to WSMS PRO are documented in this file.
 - Initial public release.
 
 [4.3.3]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.2...v4.3.3
+[4.3.6]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.5...v4.3.6
 [4.3.5]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.4...v4.3.5
 [4.3.4]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.3...v4.3.4
 [4.3.2]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.1...v4.3.2
