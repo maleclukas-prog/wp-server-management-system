@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
   syntax-and-smoke:
@@ -15,6 +16,13 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Print CI revision and test suite fingerprint
+        run: |
+          echo "GITHUB_SHA=$GITHUB_SHA"
+          git rev-parse HEAD
+          wc -l tests/test_suite.sh
+          grep -n "MAIL_CONFIGURATION\|ALERT_EMAIL\|\[15\]|Total:" tests/test_suite.sh || true
 
       - name: Run repository test suite
         run: bash tests/test_suite.sh
