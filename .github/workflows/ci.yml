@@ -24,6 +24,9 @@ jobs:
           wc -l tests/test_suite.sh
           grep -n "MAIL_CONFIGURATION\|ALERT_EMAIL\|\[15\]|Total:" tests/test_suite.sh || true
 
+      - name: Generate runtime preview scripts
+        run: bash tools/wsms-export-runtime-scripts.sh
+
       - name: Run repository test suite
         run: bash tests/test_suite.sh
 
