@@ -744,6 +744,23 @@ check_ssl_expiry() {
     echo $(( (expiry_epoch - now_epoch) / 86400 ))
 }
 
+resolve_site_domain() {
+    local fallback_name="$1"
+    local path="$2"
+    local user="$3"
+    local home_url
+    local domain
+
+    home_url=$(sudo -u "$user" wp --path="$path" option get home 2>/dev/null || true)
+    if [ -n "$home_url" ]; then
+        domain=$(echo "$home_url" | sed -E 's|^[A-Za-z]+://||; s|/.*$||; s|:[0-9]+$||')
+    else
+        domain="$fallback_name"
+    fi
+
+    echo "$domain"
+}
+
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
     
@@ -752,9 +769,11 @@ for site in "${SITES[@]}"; do
         updates_plugins=$(sudo -u "$user" wp --path="$path" plugin list --update=available --format=count 2>/dev/null || echo "0")
         updates_themes=$(sudo -u "$user" wp --path="$path" theme list --update=available --format=count 2>/dev/null || echo "0")
         total_updates=$((updates_plugins + updates_themes))
+
+        site_domain=$(resolve_site_domain "$name" "$path" "$user")
         
         # SSL Check
-        ssl_days=$(check_ssl_expiry "$name")
+        ssl_days=$(check_ssl_expiry "$site_domain")
         if [ "$ssl_days" != "N/A" ]; then
             if [ "$ssl_days" -lt 14 ]; then
                 ssl_info="${RED}SSL: $ssl_days d${NC}"
@@ -766,7 +785,7 @@ for site in "${SITES[@]}"; do
         fi
 
         # HTTP/HTTPS status check
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$site_domain" 2>/dev/null || echo "000")
         
         if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
             status_icon="${GREEN}✅${NC}"
