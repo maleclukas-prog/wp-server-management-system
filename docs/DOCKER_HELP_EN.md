@@ -58,7 +58,13 @@ What this test does:
 - validates key install artifacts (scripts, aliases, crontab).
 
 ## 2.1 Runtime behavior smoke test (backup/cleanup/logging)
+## 2.2 SSL Certificate Expiry in Fleet Status
 
+Each entry in the fleet status (`wp-status`) shows the number of days until the SSL certificate expires for the actual WordPress domain (resolved automatically from the WP config, not just the SITES nickname).
+
+Example: `SSL: 74 d` means the certificate expires in 74 days. `SSL: N/A` means the certificate is unreachable or missing.
+
+This logic is covered by Docker smoke tests.
 Run extended runtime verification (inside Docker):
 
 ```bash

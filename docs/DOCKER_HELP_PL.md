@@ -58,7 +58,13 @@ Co robi ten test:
 - weryfikuje podstawowe artefakty instalacji (skrypty, aliasy, crontab).
 
 ## 2.1 Rozszerzony smoke test runtime (backup/cleanup/logi)
+## 2.2 Sprawdzanie certyfikatów SSL w statusie floty
 
+Każdy wpis w statusie floty (`wp-status`) pokazuje liczbę dni do wygaśnięcia certyfikatu SSL dla prawdziwej domeny WordPressa (rozpoznawanej automatycznie z konfiguracji WP, nie tylko z nazwy wpisu w SITES).
+
+Przykład: `SSL: 74 dni` oznacza, że certyfikat wygasa za 74 dni. `SSL: N/A` oznacza błąd połączenia lub brak certyfikatu.
+
+Ta logika jest testowana w smoke testach Dockera.
 Uruchamia rozszerzoną walidację zachowania skryptów w Dockerze:
 
 ```bash

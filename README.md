@@ -4,6 +4,8 @@
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
+Each site status includes SSL certificate expiry (days left) for the real domain.
+
 Important notes:
 
 - For full operation of all commands listed by `wp-help`, install antivirus packages used by WSMS security modules (ClamAV).
@@ -26,6 +28,14 @@ WSMS PRO is installer-centric.
 This means you can work on a single extracted script for convenience, but final canonical logic still lives in installer deploy blocks.
 
 ## What's New in v4.3
+## SSL Certificate Expiry in Fleet Status
+
+Each site row in the fleet status output (command: `wp-status`) now displays:
+
+- `SSL: N d` — days until SSL certificate expiry for the real WordPress domain (resolved from the WP home URL, not just the config nickname)
+- `SSL: N/A` — certificate unreachable or parse error
+
+This ensures you always see the true SSL status for each managed site.
 
 - Live console output and persistent installer logs in both installers.
 - Improved installer error diagnostics with step, line, command, exit code, and log path.

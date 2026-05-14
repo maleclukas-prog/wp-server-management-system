@@ -8,6 +8,9 @@ All notable changes to WSMS PRO are documented in this file.
 - New mail setup guide: `docs/MAIL_CONFIGURATION.md`.
 - Example SMTP relay config files: `docs/msmtprc.example` and `docs/mailrc.example`.
 
+### Changed
+- `wp-fleet-status-monitor.sh` (EN/PL): SSL expiry is now checked for the real WordPress domain (resolved from WP home URL), not just the SITES config nickname. Output: `SSL: N d` or `SSL: N/A`.
+
 ### Fixed
 - `wsms-notify.sh`: alert delivery no longer masks `mail` failures with `|| true`; WSMS now returns a real error when local mail submission fails.
 - `wsms-notify.sh`: explicit check added for missing `mail` command.

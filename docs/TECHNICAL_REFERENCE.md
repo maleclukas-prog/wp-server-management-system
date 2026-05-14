@@ -38,7 +38,13 @@ Both installers provide:
 
 ## Fleet Status — SSL Monitoring
 
-`wp-fleet-status-monitor.sh` checks the SSL certificate expiry for each configured domain using `openssl s_client`. Each site row in fleet output includes:
+
+`wp-fleet-status-monitor.sh` checks the SSL certificate expiry for each managed site using `openssl s_client` and `date -d`. The domain is resolved dynamically:
+
+- For each entry in `SITES`, the script runs `wp option get home` (as the correct user) to extract the real domain from the WordPress configuration (home URL). If this fails, it falls back to the SITES nickname.
+- This ensures SSL expiry is checked for the actual domain in use, not just the config label.
+
+Each site row in fleet output includes:
 
 - `SSL: N d` (EN) / `SSL: N dni` (PL) — days until expiry, green if ≥ 14 days, red if < 14 days.
 - `SSL: N/A` (yellow) — certificate unreachable or parse error.
