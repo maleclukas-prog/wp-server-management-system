@@ -38,6 +38,8 @@ alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plu
 alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
+alias http200-fix='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh --repair-http'
+alias http200='http200-fix'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 
 # ============================================

@@ -917,6 +917,39 @@ check_http_code() {
     echo "$http_code"
 }
 
+apply_plugin_updates_with_report() {
+    local path="$1"
+    local user="$2"
+    local updates_csv
+
+    updates_csv=$(sudo -u "$user" wp --path="$path" plugin list --update=available --fields=name,version,update_version --format=csv 2>/dev/null | tail -n +2)
+
+    if [ -z "$updates_csv" ]; then
+        echo "   ✅ Plugins already up to date"
+        return 0
+    fi
+
+    echo "   📋 Plugin update plan:"
+    printf "      %-34s %-12s %-12s\n" "PLUGIN" "CURRENT" "TARGET"
+    while IFS=',' read -r plugin_name plugin_current plugin_target; do
+        [ -z "$plugin_name" ] && continue
+        printf "      %-34s %-12s %-12s\n" "$plugin_name" "$plugin_current" "$plugin_target"
+    done <<< "$updates_csv"
+
+    sudo -u "$user" wp --path="$path" plugin update --all --quiet >/dev/null 2>&1 || true
+
+    echo "   🟩 Plugin update results:"
+    while IFS=',' read -r plugin_name plugin_current plugin_target; do
+        [ -z "$plugin_name" ] && continue
+        plugin_after=$(sudo -u "$user" wp --path="$path" plugin get "$plugin_name" --field=version 2>/dev/null || echo "unknown")
+        if [ "$plugin_after" = "$plugin_target" ]; then
+            echo "      ✅ $plugin_name: $plugin_current -> $plugin_after"
+        else
+            echo "      ⚠️  $plugin_name: expected $plugin_target, got $plugin_after"
+        fi
+    done <<< "$updates_csv"
+}
+
 run_site_update() {
     local name="$1"
     local path="$2"
@@ -938,24 +971,30 @@ run_site_update() {
     case "$mode" in
         all|site)
             echo "   ⚙️ Updating core..."
-            sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null || true
+            sudo -u "$user" wp --path="$path" core update --quiet >/dev/null 2>&1 || true
 
             echo "   ⚙️ Updating plugins..."
-            sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null || true
+            apply_plugin_updates_with_report "$path" "$user"
 
             echo "   ⚙️ Updating themes..."
-            sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null || true
+            sudo -u "$user" wp --path="$path" theme update --all --quiet >/dev/null 2>&1 || true
 
             echo "   ⚙️ Updating database..."
-            sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null || true
+            sudo -u "$user" wp --path="$path" core update-db --quiet >/dev/null 2>&1 || true
             ;;
         plugin)
             echo "   ⚙️ Updating plugin: $target"
-            sudo -u "$user" wp --path="$path" plugin update "$target" --quiet 2>/dev/null || true
+            plugin_before=$(sudo -u "$user" wp --path="$path" plugin get "$target" --field=version 2>/dev/null || echo "unknown")
+            sudo -u "$user" wp --path="$path" plugin update "$target" --quiet >/dev/null 2>&1 || true
+            plugin_after=$(sudo -u "$user" wp --path="$path" plugin get "$target" --field=version 2>/dev/null || echo "unknown")
+            echo "   🟩 Plugin result: $target ($plugin_before -> $plugin_after)"
             ;;
         theme)
             echo "   ⚙️ Updating theme: $target"
-            sudo -u "$user" wp --path="$path" theme update "$target" --quiet 2>/dev/null || true
+            theme_before=$(sudo -u "$user" wp --path="$path" theme get "$target" --field=version 2>/dev/null || echo "unknown")
+            sudo -u "$user" wp --path="$path" theme update "$target" --quiet >/dev/null 2>&1 || true
+            theme_after=$(sudo -u "$user" wp --path="$path" theme get "$target" --field=version 2>/dev/null || echo "unknown")
+            echo "   🟩 Theme result: $target ($theme_before -> $theme_after)"
             ;;
     esac
 
@@ -1067,6 +1106,41 @@ source "$HOME/scripts/wsms-config.sh"
 BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 
 LOG_FILE="$LOG_PERMISSIONS"
+REPAIR_HTTP=false
+TARGET_SITE=""
+
+check_http_code() {
+    local name="$1"
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+    if [ "$http_code" = "000" ]; then
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+    fi
+    echo "$http_code"
+}
+
+is_http_healthy() {
+    case "$1" in
+        200|301|302) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --repair-http|http200)
+            REPAIR_HTTP=true
+            ;;
+        --site)
+            shift
+            TARGET_SITE="${1:-}"
+            ;;
+        --site=*)
+            TARGET_SITE="${1#*=}"
+            ;;
+    esac
+    shift
+done
 
 # Function to log AND display
 log() {
@@ -1092,9 +1166,28 @@ fi
 
 fixed_count=0
 error_count=0
+http_selected=0
+http_recovered=0
+http_still_failed=0
+repaired_sites=()
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
+
+    if [ -n "$TARGET_SITE" ] && [ "$name" != "$TARGET_SITE" ]; then
+        continue
+    fi
+
+    if [ "$REPAIR_HTTP" = true ]; then
+        pre_code=$(check_http_code "$name")
+        if is_http_healthy "$pre_code"; then
+            log ""
+            log "${GREEN}ℹ️  $name already healthy (HTTP $pre_code) — skipping${NC}"
+            continue
+        fi
+        ((http_selected++))
+    fi
+
     log ""
     log "${YELLOW}Fixing permissions for $name (User: $user)${NC}"
     
@@ -1130,6 +1223,7 @@ for site in "${SITES[@]}"; do
         fi
         
         log "   ${GREEN}✅ $name permissions fixed${NC}"
+                repaired_sites+=("$name")
         ((fixed_count++))
     else
         log "   ${RED}❌ Directory $path not found${NC}"
@@ -1144,11 +1238,37 @@ if [ -n "$WEB_SERVER" ]; then
     sudo systemctl start "$WEB_SERVER" 2>/dev/null || true
 fi
 
+if [ "$REPAIR_HTTP" = true ]; then
+    if [ "$http_selected" -eq 0 ]; then
+        log ""
+        log "${GREEN}ℹ️  No HTTP 500/000 sites found in selected scope.${NC}"
+    else
+        log ""
+        log "${CYAN}🌐 HTTP RECOVERY CHECK:${NC}"
+        for name in "${repaired_sites[@]}"; do
+            post_code=$(check_http_code "$name")
+            if is_http_healthy "$post_code"; then
+                log "   ${GREEN}✅ $name recovered (HTTP $post_code)${NC}"
+                ((http_recovered++))
+            else
+                log "   ${RED}❌ $name still failing (HTTP $post_code)${NC}"
+                ((http_still_failed++))
+            fi
+        done
+    fi
+fi
+
 log ""
 log "${GREEN}==========================================================${NC}"
 log "${GREEN}✅ PERMISSIONS FIXED: $fixed_count site(s)${NC}"
 if [ $error_count -gt 0 ]; then
     log "${RED}❌ ERRORS: $error_count site(s)${NC}"
+fi
+if [ "$REPAIR_HTTP" = true ]; then
+    log "${CYAN}🌐 HTTP recovered: $http_recovered${NC}"
+    if [ $http_still_failed -gt 0 ]; then
+        log "${RED}❌ HTTP still failing: $http_still_failed${NC}"
+    fi
 fi
 log "${GREEN}==========================================================${NC}"
 EOFPERM
@@ -1828,6 +1948,7 @@ printf "  ${GREEN}%-22s${NC} %s\n" "wp-fleet" "All sites: versions + pending upd
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-audit" "Deep audit: DB, plugins, themes, security"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-cli-validator" "Test WP-CLI connectivity for all sites"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-fix-perms" "Fix file permissions and ACLs"
+printf "  ${GREEN}%-22s${NC} %s\n" "http200-fix" "Repair unreachable sites (HTTP 500/000)"
 echo ""
 
 # ============================================
@@ -1964,6 +2085,7 @@ echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Site down after update:" "wp-rollback [site]"
 printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-emergency (per site) / backup-emergency-global (most aggressive)"
 printf "  ${RED}%-30s${NC} %s\n" "Permission errors:" "wp-fix-perms"
+printf "  ${RED}%-30s${NC} %s\n" "Domain unreachable (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Suspected malware:" "clamav-deep-scan"
 printf "  ${RED}%-30s${NC} %s\n" "NAS sync failed:" "nas-sync-status; nas-sync-errors"
 printf "  ${RED}%-30s${NC} %s\n" "WP-CLI broken:" "wp-cli-validator"
@@ -2382,6 +2504,8 @@ alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plu
 alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
+alias http200-fix='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh --repair-http'
+alias http200='http200-fix'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 
 alias wp-backup-lite='bash $SCRIPTS_DIR/wp-essential-assets-backup.sh'
@@ -2541,6 +2665,8 @@ alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh them
 alias wp-update-safe='wp-backup-lite; and sleep 5; and wp-update-all'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
+alias http200-fix='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh --repair-http'
+alias http200='http200-fix'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 
 alias wp-backup-lite='bash $SCRIPTS_DIR/wp-essential-assets-backup.sh'

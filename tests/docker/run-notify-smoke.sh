@@ -76,7 +76,7 @@ assert_ok "wsms-notify.sh sourcuje się bez błędów" \
 # TEST 1b: wsms-notify.sh wymaga komendy mail
 # ============================================
 assert_ok "wsms-notify.sh sprawdza obecność komendy mail" \
-    "run_as_tester 'grep -q "'"'command -v mail'"'" ~/scripts/wsms-notify.sh'"
+    "run_as_tester \"grep -q 'command -v mail' ~/scripts/wsms-notify.sh\""
 
 # ============================================
 # TEST 2: pusty ALERT_EMAIL nie wywołuje mail

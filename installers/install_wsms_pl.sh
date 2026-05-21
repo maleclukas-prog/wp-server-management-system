@@ -917,6 +917,39 @@ sprawdz_http_code() {
     echo "$http_code"
 }
 
+aktualizuj_wtyczki_z_raportem() {
+    local path="$1"
+    local user="$2"
+    local updates_csv
+
+    updates_csv=$(sudo -u "$user" wp --path="$path" plugin list --update=available --fields=name,version,update_version --format=csv 2>/dev/null | tail -n +2)
+
+    if [ -z "$updates_csv" ]; then
+        echo "   ✅ Wtyczki są już aktualne"
+        return 0
+    fi
+
+    echo "   📋 Plan aktualizacji wtyczek:"
+    printf "      %-34s %-12s %-12s\n" "WTYCZKA" "OBECNA" "DOCELOWA"
+    while IFS=',' read -r plugin_name plugin_current plugin_target; do
+        [ -z "$plugin_name" ] && continue
+        printf "      %-34s %-12s %-12s\n" "$plugin_name" "$plugin_current" "$plugin_target"
+    done <<< "$updates_csv"
+
+    sudo -u "$user" wp --path="$path" plugin update --all --quiet >/dev/null 2>&1 || true
+
+    echo "   🟩 Wynik aktualizacji wtyczek:"
+    while IFS=',' read -r plugin_name plugin_current plugin_target; do
+        [ -z "$plugin_name" ] && continue
+        plugin_after=$(sudo -u "$user" wp --path="$path" plugin get "$plugin_name" --field=version 2>/dev/null || echo "unknown")
+        if [ "$plugin_after" = "$plugin_target" ]; then
+            echo "      ✅ $plugin_name: $plugin_current -> $plugin_after"
+        else
+            echo "      ⚠️  $plugin_name: oczekiwano $plugin_target, otrzymano $plugin_after"
+        fi
+    done <<< "$updates_csv"
+}
+
 uruchom_aktualizacje_strony() {
     local name="$1"
     local path="$2"
@@ -938,24 +971,30 @@ uruchom_aktualizacje_strony() {
     case "$mode" in
         all|site)
             echo "   ⚙️ Aktualizacja rdzenia..."
-            sudo -u "$user" wp --path="$path" core update --quiet 2>/dev/null || true
+            sudo -u "$user" wp --path="$path" core update --quiet >/dev/null 2>&1 || true
 
             echo "   ⚙️ Aktualizacja wtyczek..."
-            sudo -u "$user" wp --path="$path" plugin update --all --quiet 2>/dev/null || true
+            aktualizuj_wtyczki_z_raportem "$path" "$user"
 
             echo "   ⚙️ Aktualizacja motywów..."
-            sudo -u "$user" wp --path="$path" theme update --all --quiet 2>/dev/null || true
+            sudo -u "$user" wp --path="$path" theme update --all --quiet >/dev/null 2>&1 || true
 
             echo "   ⚙️ Aktualizacja bazy danych..."
-            sudo -u "$user" wp --path="$path" core update-db --quiet 2>/dev/null || true
+            sudo -u "$user" wp --path="$path" core update-db --quiet >/dev/null 2>&1 || true
             ;;
         plugin)
             echo "   ⚙️ Aktualizacja wtyczki: $target"
-            sudo -u "$user" wp --path="$path" plugin update "$target" --quiet 2>/dev/null || true
+            plugin_before=$(sudo -u "$user" wp --path="$path" plugin get "$target" --field=version 2>/dev/null || echo "unknown")
+            sudo -u "$user" wp --path="$path" plugin update "$target" --quiet >/dev/null 2>&1 || true
+            plugin_after=$(sudo -u "$user" wp --path="$path" plugin get "$target" --field=version 2>/dev/null || echo "unknown")
+            echo "   🟩 Wynik wtyczki: $target ($plugin_before -> $plugin_after)"
             ;;
         theme)
             echo "   ⚙️ Aktualizacja motywu: $target"
-            sudo -u "$user" wp --path="$path" theme update "$target" --quiet 2>/dev/null || true
+            theme_before=$(sudo -u "$user" wp --path="$path" theme get "$target" --field=version 2>/dev/null || echo "unknown")
+            sudo -u "$user" wp --path="$path" theme update "$target" --quiet >/dev/null 2>&1 || true
+            theme_after=$(sudo -u "$user" wp --path="$path" theme get "$target" --field=version 2>/dev/null || echo "unknown")
+            echo "   🟩 Wynik motywu: $target ($theme_before -> $theme_after)"
             ;;
     esac
 
@@ -1068,6 +1107,41 @@ source "$HOME/scripts/wsms-config.sh"
 BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 
 LOG_FILE="$LOG_PERMISSIONS"
+NAPRAWA_HTTP=false
+TARGET_SITE=""
+
+sprawdz_http_code() {
+    local name="$1"
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+    if [ "$http_code" = "000" ]; then
+        http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+    fi
+    echo "$http_code"
+}
+
+czy_http_ok() {
+    case "$1" in
+        200|301|302) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --repair-http|http200)
+            NAPRAWA_HTTP=true
+            ;;
+        --site)
+            shift
+            TARGET_SITE="${1:-}"
+            ;;
+        --site=*)
+            TARGET_SITE="${1#*=}"
+            ;;
+    esac
+    shift
+done
 
 # Funkcja do logowania i wyświetlania
 log() {
@@ -1093,9 +1167,28 @@ fi
 
 naprawione=0
 bledy=0
+http_wybrane=0
+http_naprawione=0
+http_nadal_bledy=0
+naprawione_strony=()
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
+
+    if [ -n "$TARGET_SITE" ] && [ "$name" != "$TARGET_SITE" ]; then
+        continue
+    fi
+
+    if [ "$NAPRAWA_HTTP" = true ]; then
+        pre_code=$(sprawdz_http_code "$name")
+        if czy_http_ok "$pre_code"; then
+            log ""
+            log "${GREEN}ℹ️  $name działa poprawnie (HTTP $pre_code) — pomijam${NC}"
+            continue
+        fi
+        ((http_wybrane++))
+    fi
+
     log ""
     log "${YELLOW}Naprawa uprawnień dla $name (Użytkownik: $user)${NC}"
     
@@ -1131,6 +1224,7 @@ for site in "${SITES[@]}"; do
         fi
         
         log "   ${GREEN}✅ Uprawnienia $name naprawione${NC}"
+                naprawione_strony+=("$name")
         ((naprawione++))
     else
         log "   ${RED}❌ Katalog $path nie znaleziony${NC}"
@@ -1145,11 +1239,37 @@ if [ -n "$WEB_SERVER" ]; then
     sudo systemctl start "$WEB_SERVER" 2>/dev/null || true
 fi
 
+if [ "$NAPRAWA_HTTP" = true ]; then
+    if [ "$http_wybrane" -eq 0 ]; then
+        log ""
+        log "${GREEN}ℹ️  Brak stron z HTTP 500/000 w wybranym zakresie.${NC}"
+    else
+        log ""
+        log "${CYAN}🌐 KONTROLA NAPRAWY HTTP:${NC}"
+        for name in "${naprawione_strony[@]}"; do
+            post_code=$(sprawdz_http_code "$name")
+            if czy_http_ok "$post_code"; then
+                log "   ${GREEN}✅ $name naprawiona (HTTP $post_code)${NC}"
+                ((http_naprawione++))
+            else
+                log "   ${RED}❌ $name nadal niedostępna (HTTP $post_code)${NC}"
+                ((http_nadal_bledy++))
+            fi
+        done
+    fi
+fi
+
 log ""
 log "${GREEN}==========================================================${NC}"
 log "${GREEN}✅ NAPRAWIONO UPRAWNIEŃ: $naprawione stron(y)${NC}"
 if [ $bledy -gt 0 ]; then
     log "${RED}❌ BŁĘDY: $bledy stron(y)${NC}"
+fi
+if [ "$NAPRAWA_HTTP" = true ]; then
+    log "${CYAN}🌐 HTTP naprawione: $http_naprawione${NC}"
+    if [ $http_nadal_bledy -gt 0 ]; then
+        log "${RED}❌ HTTP nadal błędne: $http_nadal_bledy${NC}"
+    fi
 fi
 log "${GREEN}==========================================================${NC}"
 EOFPERM
@@ -1830,6 +1950,7 @@ printf "  ${GREEN}%-22s${NC} %s\n" "wp-fleet" "Wszystkie strony: wersje + oczeku
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-audit" "Głęboki audyt: DB, wtyczki, motywy, bezpieczeństwo"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-cli-validator" "Test połączenia WP-CLI dla wszystkich stron"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-fix-perms" "Napraw uprawnienia plików i ACL"
+printf "  ${GREEN}%-22s${NC} %s\n" "http200-fix" "Napraw strony niedostępne (HTTP 500/000)"
 echo ""
 
 # ============================================
@@ -1950,6 +2071,7 @@ echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Strona padła po aktualizacji:" "wp-rollback [strona]"
 printf "  ${RED}%-30s${NC} %s\n" "Mało miejsca na dysku:" "backup-emergency (na stronę) / backup-emergency-global (najbardziej agresywne)"
 printf "  ${RED}%-30s${NC} %s\n" "Błędy uprawnień:" "wp-fix-perms"
+printf "  ${RED}%-30s${NC} %s\n" "Domena niedostępna (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Podejrzenie malware:" "clamav-deep-scan"
 printf "  ${RED}%-30s${NC} %s\n" "Awaria synchronizacji NAS:" "nas-sync-status; nas-sync-errors"
 printf "  ${RED}%-30s${NC} %s\n" "WP-CLI nie działa:" "wp-cli-validator"
@@ -2493,6 +2615,8 @@ alias wp-update-plugin='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh plu
 alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh theme'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
+alias http200-fix='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh --repair-http'
+alias http200='http200-fix'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 
 alias wp-backup-lite='bash $SCRIPTS_DIR/wp-essential-assets-backup.sh'
@@ -2652,6 +2776,8 @@ alias wp-update-theme='bash $SCRIPTS_DIR/wp-automated-maintenance-engine.sh them
 alias wp-update-safe='wp-backup-lite; and sleep 5; and wp-update-all'
 alias wp-fix-perms='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh'
 alias wp-fix-permissions='wp-fix-perms'
+alias http200-fix='bash $SCRIPTS_DIR/infrastructure-permission-orchestrator.sh --repair-http'
+alias http200='http200-fix'
 alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 
 alias wp-backup-lite='bash $SCRIPTS_DIR/wp-essential-assets-backup.sh'
