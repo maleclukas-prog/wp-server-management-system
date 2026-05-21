@@ -690,8 +690,8 @@ fi
 # Sprawdź miejsce na dysku
 disk_usage=$(df /home 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//')
 if [ -n "$disk_usage" ] && [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
-    echo -e "   ⚠️  ${RED}KRYTYCZNY: Zajętość dysku ${disk_usage}% - uruchom backup-emergency!${NC}"
-    send_alert "failure" "KRYTYCZNY: Zajętość dysku ${disk_usage}% na $(hostname)" "Zajętość dysku osiągnęła ${disk_usage}% (próg: ${DISK_ALERT_THRESHOLD}%).\nUruchom: backup-emergency\nCzas: $(date)"
+    echo -e "   ⚠️  ${RED}KRYTYCZNY: Zajętość dysku ${disk_usage}% - uruchom backup-clean-emergency!${NC}"
+    send_alert "failure" "KRYTYCZNY: Zajętość dysku ${disk_usage}% na $(hostname)" "Zajętość dysku osiągnęła ${disk_usage}% (próg: ${DISK_ALERT_THRESHOLD}%).\nUruchom: backup-clean-emergency\nCzas: $(date)"
 fi
 
 # Sprawdź backupy
@@ -1453,6 +1453,22 @@ log_success() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${GREEN}[$ts] �
 log_warning() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${YELLOW}[$ts] ⚠️ $1${NC}"; echo "[$ts] OSTRZEŻENIE: $1" >> "$LOG_FILE"; }
 log_error() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${RED}[$ts] ❌ $1${NC}"; echo "[$ts] BŁĄD: $1" >> "$LOG_FILE"; }
 
+print_divider() {
+    echo "----------------------------------------------------------"
+}
+
+print_section() {
+    echo ""
+    echo -e "${CYAN}=== $1 ===${NC}"
+}
+
+on_interrupt() {
+    log_error "Synchronizacja NAS przerwana (SIGINT/SIGTERM). Kończę działanie."
+    exit 130
+}
+
+trap on_interrupt INT TERM
+
 pobierz_wiek_pliku() {
     local nazwa_pliku="$1"
     if [[ "$nazwa_pliku" =~ ([0-9]{4})([0-9]{2})([0-9]{2}) ]]; then
@@ -1504,12 +1520,39 @@ pobierz_liste_zdalnych_plikow() {
     ' | tr -d '\r' | sort -u
 }
 
+wyslij_plik_z_ponowieniem() {
+    local plik_lokalny="$1"
+    local plik_zdalny="$2"
+    local max_prob=3
+    local proba=1
+
+    while [ $proba -le $max_prob ]; do
+        if echo "put \"$plik_lokalny\" \"$plik_zdalny\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null; then
+            return 0
+        fi
+
+        status=$?
+        if [ $status -eq 130 ]; then
+            return 130
+        fi
+
+        if [ $proba -lt $max_prob ]; then
+            echo -e "   ${YELLOW}↻ Próba $proba/$max_prob nieudana, ponawiam...${NC}"
+            sleep 1
+        fi
+        proba=$((proba + 1))
+    done
+
+    return 1
+}
+
 synchronizuj_katalog() {
     local nazwa_katalogu="$1"
     local katalog_lokalny="$LOCAL_BASE_DIR/$nazwa_katalogu"
     local katalog_zdalny="$REMOTE_BASE_DIR/$nazwa_katalogu"
     
-    log_info "📂 Przetwarzanie: $nazwa_katalogu"
+    print_section "Katalog: $nazwa_katalogu"
+    log_info "📂 Przetwarzanie zestawu backupów"
     
     if [ ! -d "$katalog_lokalny" ]; then
         mkdir -p "$katalog_lokalny"
@@ -1531,15 +1574,20 @@ synchronizuj_katalog() {
     
     while IFS= read -r plik; do
         if zdalny_plik_istnieje "$katalog_zdalny/$plik"; then
-            echo -e "   ${YELLOW}⏭️ Już istnieje: $plik${NC}"
+            echo -e "   ${YELLOW}⏭️ Istnieje${NC}   $plik"
             ((istniejace++))
         else
-            echo -e "   ${CYAN}📤 Wysyłanie: $plik${NC}"
-            if echo "put \"$katalog_lokalny/$plik\" \"$katalog_zdalny/$plik\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null; then
-                echo -e "   ${GREEN}✅ Wysłano: $plik${NC}"
+            echo -e "   ${CYAN}📤 Wysyłanie${NC}  $plik"
+            if wyslij_plik_z_ponowieniem "$katalog_lokalny/$plik" "$katalog_zdalny/$plik"; then
+                echo -e "   ${GREEN}✅ Wysłano${NC}    $plik"
                 ((wyslane++))
             else
-                echo -e "   ${RED}❌ Nie udało się: $plik${NC}"
+                status=$?
+                if [ $status -eq 130 ]; then
+                    log_error "Przerwano podczas wysyłania $plik"
+                    exit 130
+                fi
+                echo -e "   ${RED}❌ Nieudane${NC}   $plik"
                 ((nieudane++))
             fi
         fi
@@ -1585,18 +1633,25 @@ synchronizuj_katalog() {
     
     TOTAL_DELETED=$((TOTAL_DELETED + usuniete))
     
+    local przetworzone=$((wyslane + istniejace + nieudane))
+
     echo ""
-    echo -e "   📊 ${CYAN}Podsumowanie dla $nazwa_katalogu:${NC}"
-    echo -e "      Wysłane: ${GREEN}$wyslane${NC} | Istniejące: ${YELLOW}$istniejace${NC} | Nieudane: ${RED}$nieudane${NC}"
-    echo -e "      Usunięte: ${RED}$usuniete${NC}"
-    echo -e "      Wiek: 0-14d:${GREEN}$nowe${NC} | 15-30d:${YELLOW}$srednie${NC} | 31-${DAYS_TO_KEEP}d:${CYAN}$stare${NC} | >${DAYS_TO_KEEP}d:${RED}$archiwalne${NC}"
-    echo "----------------------------------------------------"
+    echo -e "   ${CYAN}📊 Podsumowanie katalogu${NC}"
+    echo -e "      Przeskanowane: ${CYAN}$przetworzone${NC}/${CYAN}$liczba_plikow${NC}"
+    echo -e "      Wysłane:       ${GREEN}$wyslane${NC}"
+    echo -e "      Istniejące:    ${YELLOW}$istniejace${NC}"
+    echo -e "      Nieudane:      ${RED}$nieudane${NC}"
+    echo -e "      Usunięte:      ${RED}$usuniete${NC}"
+    echo -e "      Przedziały:    0-14d=${GREEN}$nowe${NC} | 15-30d=${YELLOW}$srednie${NC} | 31-${DAYS_TO_KEEP}d=${CYAN}$stare${NC} | >${DAYS_TO_KEEP}d=${RED}$archiwalne${NC}"
+    print_divider
 }
 
 main() {
     echo "=========================================================="
     echo -e "${CYAN}☁️ SYNCHRONIZACJA NAS - $TIMESTAMP${NC}"
     echo "=========================================================="
+    echo -e "${CYAN}Cel:${NC} $REMOTE_USER@$REMOTE_SERVER:$REMOTE_BASE_DIR"
+    echo -e "${CYAN}Zestawy:${NC} ${BACKUP_DIRS[*]}"
     echo ""
     
     log_info "Testowanie połączenia SFTP..."
@@ -1619,12 +1674,16 @@ main() {
     echo "=========================================================="
     echo -e "${CYAN}📊 PODSUMOWANIE KOŃCOWE${NC}"
     echo "=========================================================="
-    echo -e "   Wysłane:    ${GREEN}$TOTAL_UPLOADED${NC} plików"
-    echo -e "   Już na NAS: ${YELLOW}$TOTAL_EXISTING${NC} plików"
-    echo -e "   Nieudane:   ${RED}$TOTAL_FAILED${NC} plików"
-    echo -e "   Usunięte:   ${RED}$TOTAL_DELETED${NC} plików"
-    echo "=========================================================="
-    echo -e "${GREEN}✅ Synchronizacja NAS zakończona${NC}"
+    echo -e "   Wysłane:     ${GREEN}$TOTAL_UPLOADED${NC} plik(ów)"
+    echo -e "   Już na NAS:  ${YELLOW}$TOTAL_EXISTING${NC} plik(ów)"
+    echo -e "   Nieudane:    ${RED}$TOTAL_FAILED${NC} plik(ów)"
+    echo -e "   Usunięte:    ${RED}$TOTAL_DELETED${NC} plik(ów)"
+    print_divider
+    if [ "$TOTAL_FAILED" -eq 0 ]; then
+        echo -e "${GREEN}✅ Synchronizacja NAS zakończona pomyślnie${NC}"
+    else
+        echo -e "${YELLOW}⚠️ Synchronizacja zakończona z błędami (sprawdź log)${NC}"
+    fi
     echo "=========================================================="
     
     echo "[$TIMESTAMP] KONIEC: W=$TOTAL_UPLOADED, I=$TOTAL_EXISTING, N=$TOTAL_FAILED, U=$TOTAL_DELETED" >> "$LOG_FILE"
@@ -1684,7 +1743,7 @@ show_size() {
     
     if [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
         echo -e "   ${RED}⚠️ OSTRZEŻENIE: Wykorzystanie dysku powyżej progu ($DISK_ALERT_THRESHOLD%)!${NC}"
-        echo -e "   ${YELLOW}💡 Uruchom 'backup-emergency' aby pilnie zwolnić miejsce${NC}"
+        echo -e "   ${YELLOW}💡 Uruchom 'backup-clean-emergency' aby pilnie zwolnić miejsce${NC}"
     fi
 }
 
@@ -1807,9 +1866,9 @@ force_clean() {
     usage=$(get_disk_usage)
     
     if [ "$usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
-        echo -e "${YELLOW}⚠️ Wykorzystanie dysku ${usage}% - aktywacja trybu awaryjnego${NC}"
-        send_alert "failure" "KRYTYCZNY: Zajętość dysku ${usage}% na $(hostname)" "Zajętość dysku osiągnęła ${usage}% (próg: ${DISK_ALERT_THRESHOLD}%).\nUruchomiono czyszczenie awaryjne.\nCzas: $(date)"
-        emergency_cleanup
+        echo -e "${YELLOW}⚠️ Wykorzystanie dysku ${usage}% - aktywacja głębokiego czyszczenia awaryjnego${NC}"
+        send_alert "failure" "KRYTYCZNY: Zajętość dysku ${usage}% na $(hostname)" "Zajętość dysku osiągnęła ${usage}% (próg: ${DISK_ALERT_THRESHOLD}%).\nUruchomiono awaryjne głębokie czyszczenie.\nCzas: $(date)"
+        emergency_global_cleanup
     else
         echo -e "${GREEN}✅ Standardowe czyszczenie: Usuwanie plików starszych niż okres retencji${NC}"
         echo "=========================================================="
@@ -1829,7 +1888,7 @@ force_clean() {
 }
 
 emergency_global_cleanup() {
-    echo -e "${RED}🚨 TRYB AWARYJNY GLOBALNY: Zachowuję tylko 2 najnowsze pliki łącznie w każdym katalogu!${NC}"
+    echo -e "${RED}🚨 TRYB AWARYJNEGO GŁĘBOKIEGO CZYSZCZENIA: Zachowuję tylko 1 najnowszą kopię wszystkiego!${NC}"
     echo "=========================================================="
     total_deleted_all=0
 
@@ -1848,12 +1907,12 @@ emergency_global_cleanup() {
             continue
         fi
 
-        if [ "$total" -le 2 ]; then
+        if [ "$total" -le 1 ]; then
             echo "   ℹ️ Tylko $total plik(i) — nic do usunięcia"
             continue
         fi
 
-        to_delete=("${all_files[@]:2}")
+        to_delete=("${all_files[@]:1}")
         deleted=0
         for old_file in "${to_delete[@]}"; do
             [ -z "$old_file" ] && continue
@@ -1864,10 +1923,88 @@ emergency_global_cleanup() {
         done
 
         total_deleted_all=$((total_deleted_all + deleted))
-        echo "   📉 $(basename "$dir"): zachowano 2 najnowsze, usunięto $deleted"
+        echo "   📉 $(basename "$dir"): zachowano 1 najnowszy, usunięto $deleted"
     done
 
-    echo -e "\n${GREEN}✅ AWARYJNE CZYSZCZENIE GLOBALNE ZAKOŃCZONE — łącznie usunięto: $total_deleted_all${NC}"
+    if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
+        echo -e "\n📂 Przetwarzanie migawek $(basename "$BACKUP_ROLLBACK_DIR")..."
+        rollback_deleted=0
+
+        mapfile -t rollback_strony < <(find "$BACKUP_ROLLBACK_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+        if [ "${#rollback_strony[@]}" -eq 0 ]; then
+            echo "   ℹ️ Brak katalogów stron rollback"
+        fi
+
+        for site_dir in "${rollback_strony[@]}"; do
+            [ -d "$site_dir" ] || continue
+            nazwa_strony=$(basename "$site_dir")
+            mapfile -t migawki < <(ls -1dt "$site_dir"/*/ 2>/dev/null)
+            count=${#migawki[@]}
+
+            if [ "$count" -le 1 ]; then
+                echo "   ℹ️ $nazwa_strony: tylko $count migawka(i) — nic do usunięcia"
+                continue
+            fi
+
+            usuniete=0
+            for stara_migawka in "${migawki[@]:1}"; do
+                [ -z "$stara_migawka" ] && continue
+                if rm -rf "$stara_migawka" 2>/dev/null; then
+                    ((usuniete++))
+                fi
+            done
+
+            rollback_deleted=$((rollback_deleted + usuniete))
+            echo "   🗑️ $nazwa_strony: zachowano 1 najnowszą migawkę, usunięto $usuniete"
+        done
+
+        total_deleted_all=$((total_deleted_all + rollback_deleted))
+        echo "   📉 $(basename "$BACKUP_ROLLBACK_DIR"): łącznie usunięto migawek $rollback_deleted"
+    fi
+
+    echo -e "\n${GREEN}✅ AWARYJNE GŁĘBOKIE CZYSZCZENIE ZAKOŃCZONE — łącznie usunięto: $total_deleted_all${NC}"
+}
+
+cleanup_housekeeping() {
+    echo -e "${CYAN}🧽 CZYSZCZENIE DODATKOWE${NC}"
+    echo "=========================================================="
+
+    local stare_logi=0
+    local stare_bashrc=0
+    local stare_crontab=0
+
+    if [ -d "$HOME/logs/wsms" ]; then
+        while IFS= read -r log_file; do
+            [ -z "$log_file" ] && continue
+            rm -f "$log_file" 2>/dev/null || true
+            ((stare_logi++))
+            echo "   🗑️ Usunięto stary log: $(basename "$log_file")"
+        done < <(find "$HOME/logs/wsms" -type f -name "*.log" -mtime +30 2>/dev/null)
+    fi
+
+    mapfile -t bashrc_backups < <(ls -1t "$HOME"/.bashrc.backup.* 2>/dev/null || true)
+    if [ "${#bashrc_backups[@]}" -gt 1 ]; then
+        for backup_file in "${bashrc_backups[@]:1}"; do
+            rm -f "$backup_file" 2>/dev/null || true
+            ((stare_bashrc++))
+            echo "   🗑️ Usunięto starą kopię bashrc: $(basename "$backup_file")"
+        done
+    fi
+
+    mapfile -t crontab_backups < <(ls -1t "$HOME"/crontab.backup.*.txt 2>/dev/null || true)
+    if [ "${#crontab_backups[@]}" -gt 1 ]; then
+        for backup_file in "${crontab_backups[@]:1}"; do
+            rm -f "$backup_file" 2>/dev/null || true
+            ((stare_crontab++))
+            echo "   🗑️ Usunięto starą kopię crontab: $(basename "$backup_file")"
+        done
+    fi
+
+    echo ""
+    echo -e "   ${GREEN}✅ Czyszczenie dodatkowe zakończone${NC}"
+    echo "      Usunięte stare logi: $stare_logi"
+    echo "      Usunięte stare kopie .bashrc: $stare_bashrc"
+    echo "      Usunięte stare kopie crontab: $stare_crontab"
 }
 
 interactive_clean() {
@@ -1882,10 +2019,11 @@ interactive_clean() {
     echo "   4) Migawki rollback (starsze niż $RETENTION_ROLLBACK dni)"
     echo "   5) WSZYSTKO (standardowa retencja)"
     echo "   6) AWARYJNE (zachowaj tylko 2 najnowsze na stronę)"
-    echo "   7) AWARYJNE GLOBALNE (zachowaj tylko 2 najnowsze łącznie w katalogu)"
+    echo "   7) AWARYJNE GŁĘBOKIE (zachowaj tylko 1 najnowszą kopię wszystkiego)"
+    echo "   8) CZYSZCZENIE DODATKOWE (stare logi + stare kopie bashrc/crontab)"
     echo "   0) Anuluj"
     echo ""
-    read -p "Wprowadź wybór [0-7]: " choice
+    read -p "Wprowadź wybór [0-8]: " choice
     
     case $choice in
         1) find "$BACKUP_LITE_DIR" -type f -mtime "+$RETENTION_LITE" -delete 2>/dev/null && echo "✅ Szybkie backupy wyczyszczone" ;;
@@ -1895,6 +2033,7 @@ interactive_clean() {
         5) force_clean ;;
         6) emergency_cleanup ;;
         7) emergency_global_cleanup ;;
+        8) cleanup_housekeeping ;;
         0) echo "Anulowano." ;;
         *) echo "Nieprawidłowy wybór." ;;
     esac
@@ -1907,9 +2046,9 @@ case "${1:-}" in
     clean|c) interactive_clean ;;
     force-clean|force|f) force_clean ;;
     emergency|e) emergency_cleanup ;;
-    emergency-global|eg) emergency_global_cleanup ;;
+    emergency-global|eg|emergency-deep|ed) emergency_global_cleanup ;;
     *) 
-        echo "Użycie: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global}"
+        echo "Użycie: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global|emergency-deep}"
         echo ""
         echo "Komendy:"
         echo "  list, l              - Lista wszystkich backupów ze szczegółami"
@@ -1918,7 +2057,8 @@ case "${1:-}" in
         echo "  clean, c             - Interaktywne czyszczenie"
         echo "  force-clean, f       - Automatyczne czyszczenie wg retencji"
         echo "  emergency, e         - Zachowaj tylko 2 najnowsze kopie na stronę"
-        echo "  emergency-global, eg - Zachowaj tylko 2 najnowsze pliki łącznie w katalogu"
+        echo "  emergency-global, eg - Głębokie czyszczenie: zostaw tylko 1 najnowszą kopię wszystkiego"
+        echo "  emergency-deep, ed   - Alias dla emergency-global"
         ;;
 esac
 EOFRET
@@ -1993,7 +2133,8 @@ echo -e "${YELLOW}  Czyszczenie:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean" "Interaktywne (z potwierdzeniem)"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-force-clean" "Automatyczne wg polityki retencji"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "AWARYJNE: zachowaj tylko 2 najnowsze na stronę"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "AWARYJNE GLOBALNE: tylko 2 najnowsze łącznie w katalogu"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "AWARYJNE GŁĘBOKIE: zachowaj tylko 1 najnowszą kopię wszystkiego"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "Alias głębokiego czyszczenia (nazwa legacy)"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean" "Wyczyść stare logi i pliki tymczasowe"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean-force" "Wymuś czyszczenie + puste logi"
 echo ""
@@ -2085,7 +2226,7 @@ echo -e "${BLUE}│  🚨 ROZWIĄZYWANIE PROBLEMÓW                             
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Strona padła po aktualizacji:" "wp-rollback [strona]"
-printf "  ${RED}%-30s${NC} %s\n" "Mało miejsca na dysku:" "backup-emergency (na stronę) / backup-emergency-global (najbardziej agresywne)"
+printf "  ${RED}%-30s${NC} %s\n" "Mało miejsca na dysku:" "backup-clean-emergency (głębokie czyszczenie, zostawia 1 najnowszą)"
 printf "  ${RED}%-30s${NC} %s\n" "Błędy uprawnień:" "wp-fix-perms"
 printf "  ${RED}%-30s${NC} %s\n" "Domena niedostępna (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Podejrzenie malware:" "clamav-deep-scan"
@@ -2652,7 +2793,7 @@ alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
 alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
-alias backup-clean-emergency='backup-emergency'
+alias backup-clean-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-deep'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
 alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'
@@ -2813,7 +2954,7 @@ alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
 alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
-alias backup-clean-emergency='backup-emergency'
+alias backup-clean-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-deep'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
 alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'

@@ -28,6 +28,7 @@ WSMS PRO is installer-centric.
 This means you can work on a single extracted script for convenience, but final canonical logic still lives in installer deploy blocks.
 
 ## What's New in v4.3
+
 ## SSL Certificate Expiry in Fleet Status
 
 Each site row in the fleet status output (command: `wp-status`) now displays:
@@ -104,13 +105,23 @@ ALERT_ON_SUCCESS="no"
 
 Add daily health check to cron:
 
-```
+```bash
 0 7 * * * bash $HOME/scripts/wsms-daily-check.sh
 ```
 
 Requires `mail` and a configured MTA on the server (e.g. `postfix`, `msmtp`). See `docs/TECHNICAL_REFERENCE.md` for full details.
 
 For the simplest SMTP relay setup on Ubuntu using `msmtp`, see `docs/MAIL_CONFIGURATION.md`.
+
+## Security Notes (Public Repository)
+
+This repository is public.
+
+- Do not commit real credentials, tokens, private keys, or server-specific secret config files.
+- Keep secrets only on target servers or local private files outside version control.
+- Safe to keep in repo: contact email addresses and GitHub links used in documentation.
+- Use example/template files for onboarding, but never replace placeholders with real secrets before commit.
+- Before push, verify staged files with `git status` and `git diff --staged`.
 
 ## Inspect Scripts Without Running Installer
 
@@ -126,6 +137,12 @@ To extract only selected modules:
 bash tools/wsms-export-runtime-scripts.sh --only wp-automated-maintenance-engine.sh,wp-smart-retention-manager.sh,wp-help.sh
 ```
 
+You can also pass `--only` multiple times:
+
+```bash
+bash tools/wsms-export-runtime-scripts.sh /tmp/wsms-one --only wp-smart-retention-manager.sh --only wp-help.sh
+```
+
 Preview output is generated to:
 
 - `scripts/runtime-preview/en/`
@@ -138,22 +155,64 @@ This preview is generated from installers and should be regenerated whenever ins
 If you want to modify only one module (for example `wp-smart-retention-manager.sh`):
 
 1. Edit both language variants in installers:
-	- `installers/install_wsms.sh` (English)
-	- `installers/install_wsms_pl.sh` (Polish)
-2. Regenerate preview files:
+   - `installers/install_wsms.sh` (English)
+   - `installers/install_wsms_pl.sh` (Polish)
+1. Regenerate preview files:
 
 ```bash
 bash tools/wsms-export-runtime-scripts.sh --only wp-smart-retention-manager.sh
 ```
 
-3. Review extracted outputs:
-	- `scripts/runtime-preview/en/wp-smart-retention-manager.sh`
-	- `scripts/runtime-preview/pl/wp-smart-retention-manager.sh`
-4. Run tests:
+1. Review extracted outputs:
+   - `scripts/runtime-preview/en/wp-smart-retention-manager.sh`
+   - `scripts/runtime-preview/pl/wp-smart-retention-manager.sh`
+1. Run tests:
 
 ```bash
 bash tests/test_suite.sh
 ```
+
+## Single Script Export, Diff, and Upload (Hotfix Workflow)
+
+This workflow is for fast, controlled replacement of one runtime script on a server without full reinstall.
+
+1. Export one module to a temporary local directory:
+
+```bash
+bash tools/wsms-export-runtime-scripts.sh /tmp/wsms-one --only wp-smart-retention-manager.sh
+ls -la /tmp/wsms-one/en /tmp/wsms-one/pl
+```
+
+1. Compare exported output against local runtime-preview:
+
+```bash
+diff -u scripts/runtime-preview/en/wp-smart-retention-manager.sh /tmp/wsms-one/en/wp-smart-retention-manager.sh | sed -n '1,200p'
+echo ""
+diff -u scripts/runtime-preview/pl/wp-smart-retention-manager.sh /tmp/wsms-one/pl/wp-smart-retention-manager.sh | sed -n '1,200p'
+```
+
+1. Upload only one selected language variant to a server:
+
+```bash
+SCRIPT_NAME="wp-smart-retention-manager.sh"
+LANG="en"                       # en or pl
+SERVER_USER="your_user"
+SERVER_HOST="your.host.tld"
+SERVER_SCRIPT_DIR="/home/your_user/scripts"
+
+scp "/tmp/wsms-one/$LANG/$SCRIPT_NAME" "$SERVER_USER@$SERVER_HOST:$SERVER_SCRIPT_DIR/$SCRIPT_NAME"
+```
+
+1. Remote quick check:
+
+```bash
+ssh "$SERVER_USER@$SERVER_HOST" "ls -la $SERVER_SCRIPT_DIR/$SCRIPT_NAME && bash $SERVER_SCRIPT_DIR/$SCRIPT_NAME --help 2>/dev/null || true"
+```
+
+Recommended policy:
+
+- Use single-script hotfix flow for isolated module changes.
+- Use full uninstall/install for broad changes affecting aliases, shell profiles, cron, or multiple modules.
 
 ## Automated Docker Smoke Test
 

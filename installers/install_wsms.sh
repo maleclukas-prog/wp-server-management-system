@@ -690,8 +690,8 @@ fi
 # Check disk space
 disk_usage=$(df /home 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//')
 if [ -n "$disk_usage" ] && [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
-    echo -e "   ⚠️  ${RED}CRITICAL: Disk usage at ${disk_usage}% - run backup-emergency!${NC}"
-    send_alert "failure" "CRITICAL: Disk usage at ${disk_usage}% on $(hostname)" "Disk usage reached ${disk_usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nRun: backup-emergency\nTime: $(date)"
+    echo -e "   ⚠️  ${RED}CRITICAL: Disk usage at ${disk_usage}% - run backup-clean-emergency!${NC}"
+    send_alert "failure" "CRITICAL: Disk usage at ${disk_usage}% on $(hostname)" "Disk usage reached ${disk_usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nRun: backup-clean-emergency\nTime: $(date)"
 fi
 
 # Check backups
@@ -1452,6 +1452,22 @@ log_success() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${GREEN}[$ts] �
 log_warning() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${YELLOW}[$ts] ⚠️ $1${NC}"; echo "[$ts] WARNING: $1" >> "$LOG_FILE"; }
 log_error() { local ts=$(date '+%Y-%m-%d %H:%M:%S'); echo -e "${RED}[$ts] ❌ $1${NC}"; echo "[$ts] ERROR: $1" >> "$LOG_FILE"; }
 
+print_divider() {
+    echo "----------------------------------------------------------"
+}
+
+print_section() {
+    echo ""
+    echo -e "${CYAN}=== $1 ===${NC}"
+}
+
+on_interrupt() {
+    log_error "NAS sync interrupted (SIGINT/SIGTERM). Stopping now."
+    exit 130
+}
+
+trap on_interrupt INT TERM
+
 get_file_age_days() {
     local filename="$1"
     if [[ "$filename" =~ ([0-9]{4})([0-9]{2})([0-9]{2}) ]]; then
@@ -1503,12 +1519,39 @@ get_remote_files_list() {
     ' | tr -d '\r' | sort -u
 }
 
+upload_file_with_retry() {
+    local local_file="$1"
+    local remote_file="$2"
+    local max_attempts=3
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if echo "put \"$local_file\" \"$remote_file\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null; then
+            return 0
+        fi
+
+        status=$?
+        if [ $status -eq 130 ]; then
+            return 130
+        fi
+
+        if [ $attempt -lt $max_attempts ]; then
+            echo -e "   ${YELLOW}↻ Retry $attempt/$max_attempts failed, retrying...${NC}"
+            sleep 1
+        fi
+        attempt=$((attempt + 1))
+    done
+
+    return 1
+}
+
 sync_directory() {
     local dir_name="$1"
     local local_dir="$LOCAL_BASE_DIR/$dir_name"
     local remote_dir="$REMOTE_BASE_DIR/$dir_name"
     
-    log_info "📂 Processing: $dir_name"
+    print_section "Directory: $dir_name"
+    log_info "📂 Processing backup set"
     
     if [ ! -d "$local_dir" ]; then
         mkdir -p "$local_dir"
@@ -1530,15 +1573,20 @@ sync_directory() {
     
     while IFS= read -r file; do
         if remote_file_exists "$remote_dir/$file"; then
-            echo -e "   ${YELLOW}⏭️ Already exists: $file${NC}"
+            echo -e "   ${YELLOW}⏭️ Existing${NC}  $file"
             ((existing++))
         else
-            echo -e "   ${CYAN}📤 Uploading: $file${NC}"
-            if echo "put \"$local_dir/$file\" \"$remote_dir/$file\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null; then
-                echo -e "   ${GREEN}✅ Uploaded: $file${NC}"
+            echo -e "   ${CYAN}📤 Uploading${NC}  $file"
+            if upload_file_with_retry "$local_dir/$file" "$remote_dir/$file"; then
+                echo -e "   ${GREEN}✅ Uploaded${NC}  $file"
                 ((uploaded++))
             else
-                echo -e "   ${RED}❌ Failed: $file${NC}"
+                status=$?
+                if [ $status -eq 130 ]; then
+                    log_error "Interrupted while uploading $file"
+                    exit 130
+                fi
+                echo -e "   ${RED}❌ Failed${NC}    $file"
                 ((failed++))
             fi
         fi
@@ -1584,18 +1632,25 @@ sync_directory() {
     
     TOTAL_DELETED=$((TOTAL_DELETED + deleted))
     
+    local processed=$((uploaded + existing + failed))
+
     echo ""
-    echo -e "   📊 ${CYAN}Summary for $dir_name:${NC}"
-    echo -e "      Uploaded: ${GREEN}$uploaded${NC} | Existing: ${YELLOW}$existing${NC} | Failed: ${RED}$failed${NC}"
-    echo -e "      Deleted: ${RED}$deleted${NC}"
-    echo -e "      Age: 0-14d:${GREEN}$age_new${NC} | 15-30d:${YELLOW}$age_medium${NC} | 31-${DAYS_TO_KEEP}d:${CYAN}$age_old${NC} | >${DAYS_TO_KEEP}d:${RED}$age_archive${NC}"
-    echo "----------------------------------------------------"
+    echo -e "   ${CYAN}📊 Directory Summary${NC}"
+    echo -e "      Files scanned: ${CYAN}$processed${NC}/${CYAN}$file_count${NC}"
+    echo -e "      Uploaded:      ${GREEN}$uploaded${NC}"
+    echo -e "      Existing:      ${YELLOW}$existing${NC}"
+    echo -e "      Failed:        ${RED}$failed${NC}"
+    echo -e "      Deleted:       ${RED}$deleted${NC}"
+    echo -e "      Age buckets:   0-14d=${GREEN}$age_new${NC} | 15-30d=${YELLOW}$age_medium${NC} | 31-${DAYS_TO_KEEP}d=${CYAN}$age_old${NC} | >${DAYS_TO_KEEP}d=${RED}$age_archive${NC}"
+    print_divider
 }
 
 main() {
     echo "=========================================================="
     echo -e "${CYAN}☁️ NAS SYNCHRONIZATION - $TIMESTAMP${NC}"
     echo "=========================================================="
+    echo -e "${CYAN}Target:${NC} $REMOTE_USER@$REMOTE_SERVER:$REMOTE_BASE_DIR"
+    echo -e "${CYAN}Sets:${NC} ${BACKUP_DIRS[*]}"
     echo ""
     
     log_info "Testing SFTP connection..."
@@ -1618,12 +1673,16 @@ main() {
     echo "=========================================================="
     echo -e "${CYAN}📊 FINAL SUMMARY${NC}"
     echo "=========================================================="
-    echo -e "   Uploaded:   ${GREEN}$TOTAL_UPLOADED${NC} files"
-    echo -e "   Already on NAS: ${YELLOW}$TOTAL_EXISTING${NC} files"
-    echo -e "   Failed:     ${RED}$TOTAL_FAILED${NC} files"
-    echo -e "   Deleted:    ${RED}$TOTAL_DELETED${NC} files"
-    echo "=========================================================="
-    echo -e "${GREEN}✅ NAS Sync Completed${NC}"
+    echo -e "   Uploaded:       ${GREEN}$TOTAL_UPLOADED${NC} file(s)"
+    echo -e "   Already on NAS: ${YELLOW}$TOTAL_EXISTING${NC} file(s)"
+    echo -e "   Failed:         ${RED}$TOTAL_FAILED${NC} file(s)"
+    echo -e "   Deleted:        ${RED}$TOTAL_DELETED${NC} file(s)"
+    print_divider
+    if [ "$TOTAL_FAILED" -eq 0 ]; then
+        echo -e "${GREEN}✅ NAS Sync Completed Successfully${NC}"
+    else
+        echo -e "${YELLOW}⚠️ NAS Sync Completed with failures (see log)${NC}"
+    fi
     echo "=========================================================="
     
     echo "[$TIMESTAMP] FINAL: U=$TOTAL_UPLOADED, E=$TOTAL_EXISTING, F=$TOTAL_FAILED, D=$TOTAL_DELETED" >> "$LOG_FILE"
@@ -1682,7 +1741,7 @@ show_size() {
     
     if [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
         echo -e "   ${RED}⚠️ WARNING: Disk usage above threshold ($DISK_ALERT_THRESHOLD%)!${NC}"
-        echo -e "   ${YELLOW}💡 Run 'backup-emergency' to free space urgently${NC}"
+        echo -e "   ${YELLOW}💡 Run 'backup-clean-emergency' to free space urgently${NC}"
     fi
 }
 
@@ -1805,9 +1864,9 @@ force_clean() {
     usage=$(get_disk_usage)
     
     if [ "$usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
-        echo -e "${YELLOW}⚠️ Disk usage at ${usage}% - triggering emergency mode${NC}"
-        send_alert "failure" "Disk usage critical: ${usage}%" "Disk usage on $(hostname) reached ${usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nEmergency cleanup triggered.\nTime: $(date)"
-        emergency_cleanup
+        echo -e "${YELLOW}⚠️ Disk usage at ${usage}% - triggering emergency deep clean${NC}"
+        send_alert "failure" "Disk usage critical: ${usage}%" "Disk usage on $(hostname) reached ${usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nEmergency deep clean triggered.\nTime: $(date)"
+        emergency_global_cleanup
     else
         echo -e "${GREEN}✅ Standard cleanup: Deleting files older than retention period${NC}"
         echo "=========================================================="
@@ -1827,7 +1886,7 @@ force_clean() {
 }
 
 emergency_global_cleanup() {
-    echo -e "${RED}🚨 EMERGENCY GLOBAL MODE: Keeping only 2 newest files total per directory!${NC}"
+    echo -e "${RED}🚨 EMERGENCY DEEP CLEAN MODE: Keeping only 1 newest copy of everything!${NC}"
     echo "=========================================================="
     total_deleted_all=0
 
@@ -1846,12 +1905,12 @@ emergency_global_cleanup() {
             continue
         fi
 
-        if [ "$total" -le 2 ]; then
+        if [ "$total" -le 1 ]; then
             echo "   ℹ️ Only $total file(s) present — nothing to remove"
             continue
         fi
 
-        to_delete=("${all_files[@]:2}")
+        to_delete=("${all_files[@]:1}")
         deleted=0
         for old_file in "${to_delete[@]}"; do
             [ -z "$old_file" ] && continue
@@ -1862,10 +1921,88 @@ emergency_global_cleanup() {
         done
 
         total_deleted_all=$((total_deleted_all + deleted))
-        echo "   📉 $(basename "$dir"): kept 2 newest, deleted $deleted"
+        echo "   📉 $(basename "$dir"): kept 1 newest, deleted $deleted"
     done
 
-    echo -e "\n${GREEN}✅ EMERGENCY GLOBAL CLEANUP COMPLETE — total deleted: $total_deleted_all${NC}"
+    if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
+        echo -e "\n📂 Processing $(basename "$BACKUP_ROLLBACK_DIR") snapshots..."
+        rollback_deleted=0
+
+        mapfile -t rollback_sites < <(find "$BACKUP_ROLLBACK_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
+        if [ "${#rollback_sites[@]}" -eq 0 ]; then
+            echo "   ℹ️ No rollback site directories found"
+        fi
+
+        for site_dir in "${rollback_sites[@]}"; do
+            [ -d "$site_dir" ] || continue
+            site_name=$(basename "$site_dir")
+            mapfile -t snapshots < <(ls -1dt "$site_dir"/*/ 2>/dev/null)
+            count=${#snapshots[@]}
+
+            if [ "$count" -le 1 ]; then
+                echo "   ℹ️ $site_name: only $count snapshot(s) — nothing to remove"
+                continue
+            fi
+
+            removed=0
+            for old_snapshot in "${snapshots[@]:1}"; do
+                [ -z "$old_snapshot" ] && continue
+                if rm -rf "$old_snapshot" 2>/dev/null; then
+                    ((removed++))
+                fi
+            done
+
+            rollback_deleted=$((rollback_deleted + removed))
+            echo "   🗑️ $site_name: kept 1 latest snapshot, deleted $removed"
+        done
+
+        total_deleted_all=$((total_deleted_all + rollback_deleted))
+        echo "   📉 $(basename "$BACKUP_ROLLBACK_DIR"): total snapshots deleted $rollback_deleted"
+    fi
+
+    echo -e "\n${GREEN}✅ EMERGENCY DEEP CLEAN COMPLETE — total deleted: $total_deleted_all${NC}"
+}
+
+cleanup_housekeeping() {
+    echo -e "${CYAN}🧽 HOUSEKEEPING CLEANUP${NC}"
+    echo "=========================================================="
+
+    local old_logs=0
+    local old_bashrc=0
+    local old_crontab=0
+
+    if [ -d "$HOME/logs/wsms" ]; then
+        while IFS= read -r log_file; do
+            [ -z "$log_file" ] && continue
+            rm -f "$log_file" 2>/dev/null || true
+            ((old_logs++))
+            echo "   🗑️ Removed old log: $(basename "$log_file")"
+        done < <(find "$HOME/logs/wsms" -type f -name "*.log" -mtime +30 2>/dev/null)
+    fi
+
+    mapfile -t bashrc_backups < <(ls -1t "$HOME"/.bashrc.backup.* 2>/dev/null || true)
+    if [ "${#bashrc_backups[@]}" -gt 1 ]; then
+        for backup_file in "${bashrc_backups[@]:1}"; do
+            rm -f "$backup_file" 2>/dev/null || true
+            ((old_bashrc++))
+            echo "   🗑️ Removed old bashrc backup: $(basename "$backup_file")"
+        done
+    fi
+
+    mapfile -t crontab_backups < <(ls -1t "$HOME"/crontab.backup.*.txt 2>/dev/null || true)
+    if [ "${#crontab_backups[@]}" -gt 1 ]; then
+        for backup_file in "${crontab_backups[@]:1}"; do
+            rm -f "$backup_file" 2>/dev/null || true
+            ((old_crontab++))
+            echo "   🗑️ Removed old crontab backup: $(basename "$backup_file")"
+        done
+    fi
+
+    echo ""
+    echo -e "   ${GREEN}✅ Housekeeping completed${NC}"
+    echo "      Old logs removed: $old_logs"
+    echo "      Old .bashrc backups removed: $old_bashrc"
+    echo "      Old crontab backups removed: $old_crontab"
 }
 
 interactive_clean() {
@@ -1880,10 +2017,11 @@ interactive_clean() {
     echo "   4) Rollback snapshots (older than $RETENTION_ROLLBACK days)"
     echo "   5) ALL (standard retention)"
     echo "   6) EMERGENCY (keep only 2 latest per site)"
-    echo "   7) EMERGENCY GLOBAL (keep only 2 newest total per dir)"
+    echo "   7) EMERGENCY DEEP CLEAN (keep only 1 newest copy of everything)"
+    echo "   8) HOUSEKEEPING (old logs + old bashrc/crontab backups)"
     echo "   0) Cancel"
     echo ""
-    read -p "Enter choice [0-7]: " choice
+    read -p "Enter choice [0-8]: " choice
     
     case $choice in
         1) find "$BACKUP_LITE_DIR" -type f -mtime "+$RETENTION_LITE" -delete 2>/dev/null && echo "✅ Lite backups cleaned" ;;
@@ -1893,6 +2031,7 @@ interactive_clean() {
         5) force_clean ;;
         6) emergency_cleanup ;;
         7) emergency_global_cleanup ;;
+        8) cleanup_housekeeping ;;
         0) echo "Cancelled." ;;
         *) echo "Invalid choice." ;;
     esac
@@ -1905,9 +2044,9 @@ case "${1:-}" in
     clean|c) interactive_clean ;;
     force-clean|force|f) force_clean ;;
     emergency|e) emergency_cleanup ;;
-    emergency-global|eg) emergency_global_cleanup ;;
+    emergency-global|eg|emergency-deep|ed) emergency_global_cleanup ;;
     *) 
-        echo "Usage: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global}"
+        echo "Usage: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global|emergency-deep}"
         echo ""
         echo "Commands:"
         echo "  list, l              - List all backups with details"
@@ -1916,7 +2055,8 @@ case "${1:-}" in
         echo "  clean, c             - Interactive cleanup"
         echo "  force-clean, f       - Automatic cleanup based on retention"
         echo "  emergency, e         - Keep only 2 latest copies per site"
-        echo "  emergency-global, eg - Keep only 2 newest files total per directory"
+        echo "  emergency-global, eg - Deep clean: keep only 1 newest copy of everything"
+        echo "  emergency-deep, ed   - Alias for emergency-global"
         ;;
 esac
 EOFRET
@@ -1991,7 +2131,8 @@ echo -e "${YELLOW}  Cleanup:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean" "Interactive (with confirmation)"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-force-clean" "Automatic by retention policy"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "EMERGENCY: keep only 2 latest per site"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "EMERGENCY GLOBAL: keep only 2 newest total per dir"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "EMERGENCY DEEP CLEAN: keep only 1 newest copy of everything"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "Alias of deep clean (legacy name)"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean" "Clean old logs and temp files"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean-force" "Force-clean with empty log removal"
 echo ""
@@ -2099,7 +2240,7 @@ echo -e "${BLUE}│  🚨 TROUBLESHOOTING                                       
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Site down after update:" "wp-rollback [site]"
-printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-emergency (per site) / backup-emergency-global (most aggressive)"
+printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-clean-emergency (deep clean, keep 1 latest)"
 printf "  ${RED}%-30s${NC} %s\n" "Permission errors:" "wp-fix-perms"
 printf "  ${RED}%-30s${NC} %s\n" "Domain unreachable (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Suspected malware:" "clamav-deep-scan"
@@ -2541,7 +2682,7 @@ alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
 alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
-alias backup-clean-emergency='backup-emergency'
+alias backup-clean-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-deep'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
 alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'
@@ -2702,7 +2843,7 @@ alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
 alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
 alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
-alias backup-clean-emergency='backup-emergency'
+alias backup-clean-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-deep'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
 alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'
