@@ -1485,6 +1485,24 @@ ensure_remote_dir() {
     return 0
 }
 
+remote_file_exists() {
+    local remote_file="$1"
+    local file_name
+    file_name=$(basename "$remote_file")
+
+    echo "ls \"$remote_file\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -qF "$file_name"
+}
+
+get_remote_files_list() {
+    local remote_dir="$1"
+
+    echo "ls \"$remote_dir\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | awk '
+        /^sftp>/ { next }
+        NF == 0 { next }
+        { print $NF }
+    ' | tr -d '\r' | sort -u
+}
+
 sync_directory() {
     local dir_name="$1"
     local local_dir="$LOCAL_BASE_DIR/$dir_name"
@@ -1508,13 +1526,10 @@ sync_directory() {
     # Upewnij się że folder na NAS istnieje
     ensure_remote_dir "$remote_dir"
     
-    # Pobierz listę plików z NAS
-    local remote_files=$(echo "ls -1 \"$remote_dir\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -v "sftp>" | tr -d '\r' | sort)
-    
     local uploaded=0; local existing=0; local failed=0
     
     while IFS= read -r file; do
-        if echo "$remote_files" | grep -q "^$file$"; then
+        if remote_file_exists "$remote_dir/$file"; then
             echo -e "   ${YELLOW}⏭️ Already exists: $file${NC}"
             ((existing++))
         else
@@ -1534,7 +1549,8 @@ sync_directory() {
     TOTAL_FAILED=$((TOTAL_FAILED + failed))
     
     # Analiza wieku plików na NAS
-    local remote_files_list=$(echo "ls -1 \"$remote_dir\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -v "sftp>" | tr -d '\r' | sort)
+    local remote_files_list
+    remote_files_list=$(get_remote_files_list "$remote_dir")
     
     local age_new=0; local age_medium=0; local age_old=0; local age_archive=0
     

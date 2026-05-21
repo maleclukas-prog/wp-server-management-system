@@ -1486,6 +1486,24 @@ utworz_folder_zdalny() {
     return 0
 }
 
+zdalny_plik_istnieje() {
+    local zdalny_plik="$1"
+    local nazwa_pliku
+    nazwa_pliku=$(basename "$zdalny_plik")
+
+    echo "ls \"$zdalny_plik\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -qF "$nazwa_pliku"
+}
+
+pobierz_liste_zdalnych_plikow() {
+    local zdalny_katalog="$1"
+
+    echo "ls \"$zdalny_katalog\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | awk '
+        /^sftp>/ { next }
+        NF == 0 { next }
+        { print $NF }
+    ' | tr -d '\r' | sort -u
+}
+
 synchronizuj_katalog() {
     local nazwa_katalogu="$1"
     local katalog_lokalny="$LOCAL_BASE_DIR/$nazwa_katalogu"
@@ -1509,13 +1527,10 @@ synchronizuj_katalog() {
     # Upewnij się że folder na NAS istnieje
     utworz_folder_zdalny "$katalog_zdalny"
     
-    # Pobierz listę plików z NAS
-    local pliki_zdalne=$(echo "ls -1 \"$katalog_zdalny\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -v "sftp>" | tr -d '\r' | sort)
-    
     local wyslane=0; local istniejace=0; local nieudane=0
     
     while IFS= read -r plik; do
-        if echo "$pliki_zdalne" | grep -q "^$plik$"; then
+        if zdalny_plik_istnieje "$katalog_zdalny/$plik"; then
             echo -e "   ${YELLOW}⏭️ Już istnieje: $plik${NC}"
             ((istniejace++))
         else
@@ -1535,7 +1550,8 @@ synchronizuj_katalog() {
     TOTAL_FAILED=$((TOTAL_FAILED + nieudane))
     
     # Analiza wieku plików na NAS
-    local pliki_zdalne_lista=$(echo "ls -1 \"$katalog_zdalny\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -v "sftp>" | tr -d '\r' | sort)
+    local pliki_zdalne_lista
+    pliki_zdalne_lista=$(pobierz_liste_zdalnych_plikow "$katalog_zdalny")
     
     local nowe=0; local srednie=0; local stare=0; local archiwalne=0
     
