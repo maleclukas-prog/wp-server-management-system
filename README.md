@@ -288,6 +288,7 @@ Uninstaller cleanup covers both marker-based WSMS blocks and legacy v4.2-style s
 - `docs/FISH_SETUP_GUIDE.md`
 - `docs/MAIL_CONFIGURATION.md`
 - `docs/TECHNICAL_REFERENCE.md`
+- `docs/TUTORIAL_DODAWANIE_NOWEJ_STRONY_PL.md`
 - `DOCKER_HELP.md`
 - `CHANGELOG.md`
 
