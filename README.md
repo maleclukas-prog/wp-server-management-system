@@ -1,6 +1,6 @@
 # WSMS PRO - WordPress Server Management System
 
-**Version:** 4.3 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog)
+**Version:** 4.4 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog)
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
@@ -27,7 +27,7 @@ WSMS PRO is installer-centric.
 
 This means you can work on a single extracted script for convenience, but final canonical logic still lives in installer deploy blocks.
 
-## What's New in v4.3
+## What's New in v4.4
 
 ## SSL Certificate Expiry in Fleet Status
 

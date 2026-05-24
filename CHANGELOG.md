@@ -2,6 +2,19 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.4.0] - 2026-05-24
+
+### Changed
+- Version synchronization bump to `4.4` in installer-facing and user-facing descriptions.
+- Installer headers now show `WSMS PRO v4.4` (`installers/install_wsms.sh`, `installers/install_wsms_pl.sh`).
+- README version and "What's New" section now point to `v4.4`.
+
+### Fixed
+- Emergency cleanup semantics are now explicitly split and documented:
+  - `backup-clean-emergency` / `emergency-deep`: keep 1 newest backup per site/group + 1 snapshot per site.
+  - `backup-emergency-global` / `emergency-global`: keep 1 newest file total per backup directory.
+- Backup help descriptions (EN/PL) were aligned with actual command behavior to avoid confusion with `red-robin`.
+
 ## [4.3.10] - 2026-05-13
 
 ### Added

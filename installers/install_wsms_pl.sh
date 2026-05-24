@@ -1,7 +1,7 @@
 #!/bin/bash
 # =================================================================
-# 🚀 WSMS PRO v4.3 - UNIWERSALNY INSTALATOR
-# Wersja: 4.3 | Działa w każdej powłoce (Bash, Fish, Zsh, Sh)
+# 🚀 WSMS PRO v4.4 - UNIWERSALNY INSTALATOR
+# Wersja: 4.4 | Działa w każdej powłoce (Bash, Fish, Zsh, Sh)
 # Autor: Lukasz Malec / GitHub: maleclukas-prog
 # Licencja: MIT
 # Opis: Kompletny instalator WordPress Server Management System
@@ -69,7 +69,7 @@ trap 'on_install_error "$LINENO" "$BASH_COMMAND" "$?"' ERR
 trap 'on_install_exit "$?"' EXIT
 
 echo -e "${CYAN}==========================================================${NC}"
-echo -e "${CYAN}   🚀 WSMS PRO v4.3 - UNIWERSALNY INSTALATOR               ${NC}"
+echo -e "${CYAN}   🚀 WSMS PRO v4.4 - UNIWERSALNY INSTALATOR               ${NC}"
 echo -e "${CYAN}   WordPress Server Management System                       ${NC}"
 echo -e "${CYAN}   Działa w Bash, Fish, Zsh, Sh                            ${NC}"
 echo -e "${CYAN}==========================================================${NC}"
@@ -1888,7 +1888,7 @@ force_clean() {
 }
 
 emergency_global_cleanup() {
-    echo -e "${RED}🚨 TRYB AWARYJNEGO GŁĘBOKIEGO CZYSZCZENIA: Zachowuję tylko 1 najnowszą kopię wszystkiego!${NC}"
+    echo -e "${RED}🚨 TRYB AWARYJNY GLOBALNY: Zachowuję tylko 1 najnowszy plik łącznie w każdym katalogu!${NC}"
     echo "=========================================================="
     total_deleted_all=0
 
@@ -1926,9 +1926,66 @@ emergency_global_cleanup() {
         echo "   📉 $(basename "$dir"): zachowano 1 najnowszy, usunięto $deleted"
     done
 
+    echo -e "\n${GREEN}✅ AWARYJNE CZYSZCZENIE GLOBALNE ZAKOŃCZONE — łącznie usunięto: $total_deleted_all${NC}"
+}
+
+awaryjne_glebokie_czyszczenie() {
+    echo -e "${RED}🚨 TRYB AWARYJNEGO GŁĘBOKIEGO CZYSZCZENIA: zachowuję tylko 1 najnowszy backup na stronę/grupę!${NC}"
+    echo "=========================================================="
+    lacznie_usuniete=0
+
+    for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
+        if [ ! -d "$dir" ]; then
+            continue
+        fi
+
+        echo -e "\n📂 Przetwarzanie $(basename "$dir")..."
+
+        mapfile -t wszystkie_pliki < <(find "$dir" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null | sort -r)
+        if [ "${#wszystkie_pliki[@]}" -eq 0 ]; then
+            echo "   ℹ️ Brak plików"
+            continue
+        fi
+
+        declare -A grupy_plikow=()
+        for plik in "${wszystkie_pliki[@]}"; do
+            [ -z "$plik" ] && continue
+            klucz=$(normalizuj_klucz_backupu "$plik")
+            grupy_plikow["$klucz"]+=$'\n'"$plik"
+        done
+
+        usuniete_w_katalogu=0
+        grupy_ponad_limit=0
+        while IFS= read -r klucz; do
+            [ -z "$klucz" ] && continue
+            pliki_grupy=$(echo "${grupy_plikow[$klucz]}" | sed '/^$/d' | sort -r)
+            count=$(echo "$pliki_grupy" | grep -c . 2>/dev/null || echo 0)
+
+            if [ "$count" -gt 1 ]; then
+                ((grupy_ponad_limit++))
+                usuniete=0
+                while IFS= read -r stary_plik; do
+                    [ -z "$stary_plik" ] && continue
+                    if rm -f "$dir/$stary_plik" 2>/dev/null; then
+                        ((usuniete++))
+                    fi
+                done < <(echo "$pliki_grupy" | tail -n +2)
+
+                usuniete_w_katalogu=$((usuniete_w_katalogu + usuniete))
+                echo "   🗑️ $klucz: zachowano 1 najnowszy, usunięto $usuniete"
+            fi
+        done < <(printf "%s\n" "${!grupy_plikow[@]}" | sort)
+
+        lacznie_usuniete=$((lacznie_usuniete + usuniete_w_katalogu))
+        echo "   📉 $(basename "$dir"): łącznie usunięto $usuniete_w_katalogu"
+        if [ "$grupy_ponad_limit" -eq 0 ]; then
+            echo "   ℹ️ Brak plików do usunięcia: każda grupa backupów ma już 1 lub mniej plików"
+        fi
+    done
+
     if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
         echo -e "\n📂 Przetwarzanie migawek $(basename "$BACKUP_ROLLBACK_DIR")..."
-        rollback_deleted=0
+        rollback_usuniete=0
 
         mapfile -t rollback_strony < <(find "$BACKUP_ROLLBACK_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | sort)
         if [ "${#rollback_strony[@]}" -eq 0 ]; then
@@ -1954,15 +2011,15 @@ emergency_global_cleanup() {
                 fi
             done
 
-            rollback_deleted=$((rollback_deleted + usuniete))
+            rollback_usuniete=$((rollback_usuniete + usuniete))
             echo "   🗑️ $nazwa_strony: zachowano 1 najnowszą migawkę, usunięto $usuniete"
         done
 
-        total_deleted_all=$((total_deleted_all + rollback_deleted))
-        echo "   📉 $(basename "$BACKUP_ROLLBACK_DIR"): łącznie usunięto migawek $rollback_deleted"
+        lacznie_usuniete=$((lacznie_usuniete + rollback_usuniete))
+        echo "   📉 $(basename "$BACKUP_ROLLBACK_DIR"): łącznie usunięto migawek $rollback_usuniete"
     fi
 
-    echo -e "\n${GREEN}✅ AWARYJNE GŁĘBOKIE CZYSZCZENIE ZAKOŃCZONE — łącznie usunięto: $total_deleted_all${NC}"
+    echo -e "\n${GREEN}✅ AWARYJNE GŁĘBOKIE CZYSZCZENIE ZAKOŃCZONE — łącznie usunięto: $lacznie_usuniete${NC}"
 }
 
 cleanup_housekeeping() {
@@ -2046,7 +2103,8 @@ case "${1:-}" in
     clean|c) interactive_clean ;;
     force-clean|force|f) force_clean ;;
     emergency|e) emergency_cleanup ;;
-    emergency-global|eg|emergency-deep|ed) emergency_global_cleanup ;;
+    emergency-global|eg) emergency_global_cleanup ;;
+    emergency-deep|ed) awaryjne_glebokie_czyszczenie ;;
     *) 
         echo "Użycie: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global|emergency-deep}"
         echo ""
@@ -2057,8 +2115,8 @@ case "${1:-}" in
         echo "  clean, c             - Interaktywne czyszczenie"
         echo "  force-clean, f       - Automatyczne czyszczenie wg retencji"
         echo "  emergency, e         - Zachowaj tylko 2 najnowsze kopie na stronę"
-        echo "  emergency-global, eg - Głębokie czyszczenie: zostaw tylko 1 najnowszą kopię wszystkiego"
-        echo "  emergency-deep, ed   - Alias dla emergency-global"
+        echo "  emergency-global, eg - Zostaw tylko 1 najnowszy plik łącznie w katalogu"
+        echo "  emergency-deep, ed   - Zostaw tylko 1 najnowszy backup na stronę/grupę + 1 migawkę na stronę"
         ;;
 esac
 EOFRET
@@ -2069,7 +2127,7 @@ EOFRET
 deploy "wp-help.sh" << 'EOFHELP'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.3 - KOMPLETNY SPIS KOMEND
+# WSMS PRO v4.4 - KOMPLETNY SPIS KOMEND
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2078,9 +2136,9 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; WHITE='\033[1;37m'; NC='\033[0m'
 
 clear
 echo -e "${WHITE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${WHITE}║          🆘 WSMS PRO v4.3 — SPIS KOMEND                    ║${NC}"
+echo -e "${WHITE}║          🆘 WSMS PRO v4.4 — SPIS KOMEND                    ║${NC}"
 echo -e "${WHITE}╚════════════════════════════════════════════════════════════╝${NC}"
-echo -e "${CYAN}⏰ $(date) │ 📦 v4.3 │ 🖥️  $(hostname)${NC}"
+echo -e "${CYAN}⏰ $(date) │ 📦 v4.4 │ 🖥️  $(hostname)${NC}"
 echo ""
 
 # ============================================
@@ -2121,7 +2179,6 @@ printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-lite" "Szybki: motywy, wtyczki, 
 printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-full" "Pełny: wszystkie pliki + baza danych"
 printf "    ${GREEN}%-20s${NC} %s\n" "mysql-backup-all" "Wszystkie bazy WordPress"
 printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-ui" "Menu interaktywne"
-printf "    ${GREEN}%-20s${NC} %s\n" "red-robin" "Awaryjne uchwycenie stanu systemu"
 echo ""
 echo -e "${YELLOW}  Przeglądanie backupów:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-list" "Lista wszystkich backupów z rozmiarem i datą"
@@ -2133,8 +2190,8 @@ echo -e "${YELLOW}  Czyszczenie:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean" "Interaktywne (z potwierdzeniem)"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-force-clean" "Automatyczne wg polityki retencji"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "AWARYJNE: zachowaj tylko 2 najnowsze na stronę"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "AWARYJNE GŁĘBOKIE: zachowaj tylko 1 najnowszą kopię wszystkiego"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "Alias głębokiego czyszczenia (nazwa legacy)"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "AWARYJNE GŁĘBOKIE: zostaw 1 najnowszy backup na stronę/grupę + 1 migawkę"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "AWARYJNE GLOBALNE: zostaw tylko 1 najnowszy plik łącznie w katalogu"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean" "Wyczyść stare logi i pliki tymczasowe"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean-force" "Wymuś czyszczenie + puste logi"
 echo ""
@@ -2171,7 +2228,7 @@ echo ""
 # SEKCJA 6: SYSTEM ROLLBACK
 # ============================================
 echo -e "${BLUE}┌────────────────────────────────────────────────────────────┐${NC}"
-echo -e "${BLUE}│  🔄 SYSTEM ROLLBACK — NOWOŚĆ w v4.3                         │${NC}"
+echo -e "${BLUE}│  🔄 SYSTEM ROLLBACK — NOWOŚĆ w v4.4                         │${NC}"
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 echo -e "${CYAN}  Natychmiastowe odzyskiwanie po nieudanych aktualizacjach!${NC}"
@@ -2226,7 +2283,7 @@ echo -e "${BLUE}│  🚨 ROZWIĄZYWANIE PROBLEMÓW                             
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Strona padła po aktualizacji:" "wp-rollback [strona]"
-printf "  ${RED}%-30s${NC} %s\n" "Mało miejsca na dysku:" "backup-clean-emergency (głębokie czyszczenie, zostawia 1 najnowszą)"
+printf "  ${RED}%-30s${NC} %s\n" "Mało miejsca na dysku:" "backup-clean-emergency (zostawia 1 na stronę + migawki)"
 printf "  ${RED}%-30s${NC} %s\n" "Błędy uprawnień:" "wp-fix-perms"
 printf "  ${RED}%-30s${NC} %s\n" "Domena niedostępna (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Podejrzenie malware:" "clamav-deep-scan"
@@ -2273,7 +2330,7 @@ echo ""
 # STOPKA
 # ============================================
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}✅ WSMS PRO v4.3 — GOTOWY DO PRACY${NC}"
+echo -e "${GREEN}✅ WSMS PRO v4.4 — GOTOWY DO PRACY${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${WHITE}📚 Dokumentacja: ~/scripts/ │ 🐛 Zgłoś problem: github.com/maleclukas-prog${NC}"

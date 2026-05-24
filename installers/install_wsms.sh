@@ -1,7 +1,7 @@
 #!/bin/bash
 # =================================================================
-# 🚀 WSMS PRO v4.3 - UNIVERSAL INSTALLER
-# Version: 4.3 | Works in any shell (Bash, Fish, Zsh, Sh)
+# 🚀 WSMS PRO v4.4 - UNIVERSAL INSTALLER
+# Version: 4.4 | Works in any shell (Bash, Fish, Zsh, Sh)
 # Author: Lukasz Malec / GitHub: maleclukas-prog
 # License: MIT
 # Description: Complete WordPress Server Management System installer
@@ -69,7 +69,7 @@ trap 'on_install_error "$LINENO" "$BASH_COMMAND" "$?"' ERR
 trap 'on_install_exit "$?"' EXIT
 
 echo -e "${CYAN}==========================================================${NC}"
-echo -e "${CYAN}   🚀 WSMS PRO v4.3 - UNIVERSAL INSTALLER                  ${NC}"
+echo -e "${CYAN}   🚀 WSMS PRO v4.4 - UNIVERSAL INSTALLER                  ${NC}"
 echo -e "${CYAN}   WordPress Server Management System                       ${NC}"
 echo -e "${CYAN}   Works in Bash, Fish, Zsh, Sh                            ${NC}"
 echo -e "${CYAN}==========================================================${NC}"
@@ -1886,7 +1886,7 @@ force_clean() {
 }
 
 emergency_global_cleanup() {
-    echo -e "${RED}🚨 EMERGENCY DEEP CLEAN MODE: Keeping only 1 newest copy of everything!${NC}"
+    echo -e "${RED}🚨 EMERGENCY GLOBAL MODE: Keeping only 1 newest file total per directory!${NC}"
     echo "=========================================================="
     total_deleted_all=0
 
@@ -1922,6 +1922,63 @@ emergency_global_cleanup() {
 
         total_deleted_all=$((total_deleted_all + deleted))
         echo "   📉 $(basename "$dir"): kept 1 newest, deleted $deleted"
+    done
+
+    echo -e "\n${GREEN}✅ EMERGENCY GLOBAL CLEANUP COMPLETE — total deleted: $total_deleted_all${NC}"
+}
+
+emergency_deep_cleanup() {
+    echo -e "${RED}🚨 EMERGENCY DEEP CLEAN MODE: Keeping only 1 newest backup per site/group!${NC}"
+    echo "=========================================================="
+    total_deleted_all=0
+
+    for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
+        if [ ! -d "$dir" ]; then
+            continue
+        fi
+
+        echo -e "\n📂 Processing $(basename "$dir")..."
+
+        mapfile -t all_files < <(find "$dir" -maxdepth 1 -type f -exec basename {} \; 2>/dev/null | sort -r)
+        if [ "${#all_files[@]}" -eq 0 ]; then
+            echo "   ℹ️ No files found"
+            continue
+        fi
+
+        declare -A grouped_files=()
+        for file in "${all_files[@]}"; do
+            [ -z "$file" ] && continue
+            key=$(normalize_backup_key "$file")
+            grouped_files["$key"]+=$'\n'"$file"
+        done
+
+        deleted_in_dir=0
+        groups_over_limit=0
+        while IFS= read -r key; do
+            [ -z "$key" ] && continue
+            group_files=$(echo "${grouped_files[$key]}" | sed '/^$/d' | sort -r)
+            count=$(echo "$group_files" | grep -c . 2>/dev/null || echo 0)
+
+            if [ "$count" -gt 1 ]; then
+                ((groups_over_limit++))
+                removed=0
+                while IFS= read -r old_file; do
+                    [ -z "$old_file" ] && continue
+                    if rm -f "$dir/$old_file" 2>/dev/null; then
+                        ((removed++))
+                    fi
+                done < <(echo "$group_files" | tail -n +2)
+
+                deleted_in_dir=$((deleted_in_dir + removed))
+                echo "   🗑️ $key: Kept 1 newest, deleted $removed"
+            fi
+        done < <(printf "%s\n" "${!grouped_files[@]}" | sort)
+
+        total_deleted_all=$((total_deleted_all + deleted_in_dir))
+        echo "   📉 $(basename "$dir"): total deleted $deleted_in_dir"
+        if [ "$groups_over_limit" -eq 0 ]; then
+            echo "   ℹ️ Nothing to delete: every backup group already has 1 or fewer files"
+        fi
     done
 
     if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
@@ -2044,7 +2101,8 @@ case "${1:-}" in
     clean|c) interactive_clean ;;
     force-clean|force|f) force_clean ;;
     emergency|e) emergency_cleanup ;;
-    emergency-global|eg|emergency-deep|ed) emergency_global_cleanup ;;
+    emergency-global|eg) emergency_global_cleanup ;;
+    emergency-deep|ed) emergency_deep_cleanup ;;
     *) 
         echo "Usage: $0 {list|size|dirs|clean|force-clean|emergency|emergency-global|emergency-deep}"
         echo ""
@@ -2055,8 +2113,8 @@ case "${1:-}" in
         echo "  clean, c             - Interactive cleanup"
         echo "  force-clean, f       - Automatic cleanup based on retention"
         echo "  emergency, e         - Keep only 2 latest copies per site"
-        echo "  emergency-global, eg - Deep clean: keep only 1 newest copy of everything"
-        echo "  emergency-deep, ed   - Alias for emergency-global"
+        echo "  emergency-global, eg - Keep only 1 newest file total per directory"
+        echo "  emergency-deep, ed   - Keep only 1 newest backup per site/group + 1 snapshot per site"
         ;;
 esac
 EOFRET
@@ -2067,7 +2125,7 @@ EOFRET
 deploy "wp-help.sh" << 'EOFHELP'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.3 - COMPLETE SERVER MANAGEMENT REFERENCE
+# WSMS PRO v4.4 - COMPLETE SERVER MANAGEMENT REFERENCE
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2076,9 +2134,9 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; WHITE='\033[1;37m'; NC='\033[0m'
 
 clear
 echo -e "${WHITE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${WHITE}║          🆘 WSMS PRO v4.3 — COMMAND REFERENCE              ║${NC}"
+echo -e "${WHITE}║          🆘 WSMS PRO v4.4 — COMMAND REFERENCE              ║${NC}"
 echo -e "${WHITE}╚════════════════════════════════════════════════════════════╝${NC}"
-echo -e "${CYAN}⏰ $(date) │ 📦 v4.3 │ 🖥️  $(hostname)${NC}"
+echo -e "${CYAN}⏰ $(date) │ 📦 v4.4 │ 🖥️  $(hostname)${NC}"
 echo ""
 
 # ============================================
@@ -2119,7 +2177,6 @@ printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-lite" "Fast: themes, plugins, up
 printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-full" "Complete: all files + database"
 printf "    ${GREEN}%-20s${NC} %s\n" "mysql-backup-all" "All WordPress databases"
 printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-ui" "Interactive backup menu"
-printf "    ${GREEN}%-20s${NC} %s\n" "red-robin" "Emergency full system state capture"
 echo ""
 echo -e "${YELLOW}  View Backups:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-list" "List all backups with size and date"
@@ -2131,8 +2188,8 @@ echo -e "${YELLOW}  Cleanup:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean" "Interactive (with confirmation)"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-force-clean" "Automatic by retention policy"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "EMERGENCY: keep only 2 latest per site"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "EMERGENCY DEEP CLEAN: keep only 1 newest copy of everything"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "Alias of deep clean (legacy name)"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "EMERGENCY DEEP: keep 1 newest backup per site/group + 1 snapshot per site"
+printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "EMERGENCY GLOBAL: keep only 1 newest file total per directory"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean" "Clean old logs and temp files"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean-force" "Force-clean with empty log removal"
 echo ""
@@ -2169,7 +2226,7 @@ echo ""
 # SECTION 6: ROLLBACK SYSTEM
 # ============================================
 echo -e "${BLUE}┌────────────────────────────────────────────────────────────┐${NC}"
-echo -e "${BLUE}│  🔄 ROLLBACK SYSTEM — NEW in v4.3                           │${NC}"
+echo -e "${BLUE}│  🔄 ROLLBACK SYSTEM — NEW in v4.4                           │${NC}"
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 echo -e "${CYAN}  Instant recovery from failed updates!${NC}"
@@ -2240,7 +2297,7 @@ echo -e "${BLUE}│  🚨 TROUBLESHOOTING                                       
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Site down after update:" "wp-rollback [site]"
-printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-clean-emergency (deep clean, keep 1 latest)"
+printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-clean-emergency (keep 1 per site + snapshots)"
 printf "  ${RED}%-30s${NC} %s\n" "Permission errors:" "wp-fix-perms"
 printf "  ${RED}%-30s${NC} %s\n" "Domain unreachable (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Suspected malware:" "clamav-deep-scan"
@@ -2288,7 +2345,7 @@ echo ""
 # FOOTER
 # ============================================
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}✅ WSMS PRO v4.3 — READY FOR OPERATIONS${NC}"
+echo -e "${GREEN}✅ WSMS PRO v4.4 — READY FOR OPERATIONS${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${WHITE}📚 Docs: ~/scripts/ │ 🐛 Issues: github.com/maleclukas-prog${NC}"
