@@ -499,6 +499,32 @@ source "$HOME/scripts/wsms-notify.sh"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 
+is_web_healthy() {
+    case "$1" in
+        200|301|302|401|403) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+check_site_reachability() {
+    local name="$1"
+    local http_code
+    local https_code
+
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
+    if is_web_healthy "$http_code"; then
+        echo "HTTP:$http_code"
+        return
+    fi
+
+    https_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "https://$name" 2>/dev/null || echo "000")
+    if is_web_healthy "$https_code"; then
+        echo "HTTPS:$https_code"
+    else
+        echo "HTTP:$http_code"
+    fi
+}
+
 clear
 echo -e "${BLUE}🖥️  WSMS EXECUTIVE DIAGNOSTICS v4.4${NC}"
 echo "=========================================================="
@@ -606,11 +632,13 @@ done
 echo -e "\n${CYAN}🔗 DOMAIN REACHABILITY:${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
-    if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
-        echo -e "   ${GREEN}✅${NC} $name (HTTP $http_code)"
+    reachability=$(check_site_reachability "$name")
+    proto=${reachability%%:*}
+    code=${reachability##*:}
+    if is_web_healthy "$code"; then
+        echo -e "   ${GREEN}✅${NC} $name ($proto $code)"
     else
-        echo -e "   ${RED}❌${NC} $name (HTTP $http_code - unreachable)"
+        echo -e "   ${RED}❌${NC} $name (HTTP $code - unreachable)"
     fi
 done
 
@@ -761,6 +789,32 @@ resolve_site_domain() {
     echo "$domain"
 }
 
+is_web_healthy() {
+    case "$1" in
+        200|301|302|401|403) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+check_site_reachability() {
+    local domain="$1"
+    local http_code
+    local https_code
+
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$domain" 2>/dev/null || echo "000")
+    if is_web_healthy "$http_code"; then
+        echo "$http_code"
+        return
+    fi
+
+    https_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "https://$domain" 2>/dev/null || echo "000")
+    if is_web_healthy "$https_code"; then
+        echo "$https_code"
+    else
+        echo "$http_code"
+    fi
+}
+
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
     
@@ -785,9 +839,9 @@ for site in "${SITES[@]}"; do
         fi
 
         # HTTP/HTTPS status check
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$site_domain" 2>/dev/null || echo "000")
-        
-        if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
+        http_code=$(check_site_reachability "$site_domain")
+
+        if is_web_healthy "$http_code"; then
             status_icon="${GREEN}✅${NC}"
         else
             status_icon="${RED}❌ (HTTP $http_code)${NC}"
@@ -910,9 +964,13 @@ find_site_config() {
 check_http_code() {
     local name="$1"
     local http_code
+    local https_code
     http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
-    if [ "$http_code" = "000" ]; then
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+    if ! is_http_healthy "$http_code"; then
+        https_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+        if is_http_healthy "$https_code"; then
+            http_code="$https_code"
+        fi
     fi
     echo "$http_code"
 }
@@ -1108,6 +1166,7 @@ BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC
 LOG_FILE="$LOG_PERMISSIONS"
 REPAIR_HTTP=false
 TARGET_SITE=""
+HTTP_TARGETS=()
 
 check_http_code() {
     local name="$1"
@@ -1124,6 +1183,17 @@ is_http_healthy() {
         200|301|302) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+is_http_target() {
+    local candidate="$1"
+    local site
+    for site in "${HTTP_TARGETS[@]}"; do
+        if [ "$site" = "$candidate" ]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 while [ $# -gt 0 ]; do
@@ -1151,6 +1221,33 @@ log "=========================================================="
 log "🔐 PERMISSION FIX - $(date)"
 log "=========================================================="
 
+fixed_count=0
+error_count=0
+http_selected=0
+http_recovered=0
+http_still_failed=0
+repaired_sites=()
+
+if [ "$REPAIR_HTTP" = true ]; then
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name _ _ <<< "$site"
+
+        if [ -n "$TARGET_SITE" ] && [ "$name" != "$TARGET_SITE" ]; then
+            continue
+        fi
+
+        pre_code=$(check_http_code "$name")
+        if is_http_healthy "$pre_code"; then
+            log ""
+            log "${GREEN}ℹ️  $name already healthy (HTTP $pre_code) — skipping${NC}"
+            continue
+        fi
+
+        HTTP_TARGETS+=("$name")
+        ((http_selected++))
+    done
+fi
+
 # Stop web server temporarily
 WEB_SERVER=""
 if systemctl is-active --quiet nginx; then
@@ -1164,13 +1261,6 @@ if [ -n "$WEB_SERVER" ]; then
     sudo systemctl stop "$WEB_SERVER" 2>/dev/null || true
 fi
 
-fixed_count=0
-error_count=0
-http_selected=0
-http_recovered=0
-http_still_failed=0
-repaired_sites=()
-
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
 
@@ -1179,13 +1269,9 @@ for site in "${SITES[@]}"; do
     fi
 
     if [ "$REPAIR_HTTP" = true ]; then
-        pre_code=$(check_http_code "$name")
-        if is_http_healthy "$pre_code"; then
-            log ""
-            log "${GREEN}ℹ️  $name already healthy (HTTP $pre_code) — skipping${NC}"
+        if ! is_http_target "$name"; then
             continue
         fi
-        ((http_selected++))
     fi
 
     log ""
@@ -1241,7 +1327,7 @@ fi
 if [ "$REPAIR_HTTP" = true ]; then
     if [ "$http_selected" -eq 0 ]; then
         log ""
-        log "${GREEN}ℹ️  No HTTP 500/000 sites found in selected scope.${NC}"
+        log "${GREEN}ℹ️  No failing HTTP sites found in selected scope.${NC}"
     else
         log ""
         log "${CYAN}🌐 HTTP RECOVERY CHECK:${NC}"

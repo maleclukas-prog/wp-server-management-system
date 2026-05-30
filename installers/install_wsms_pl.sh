@@ -499,6 +499,32 @@ source "$HOME/scripts/wsms-notify.sh"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'
 BLUE='\033[0;34m'; CYAN='\033[0;36m'; NC='\033[0m'
 
+czy_web_ok() {
+    case "$1" in
+        200|301|302|401|403) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+sprawdz_dostepnosc_strony() {
+    local name="$1"
+    local http_code
+    local https_code
+
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
+    if czy_web_ok "$http_code"; then
+        echo "HTTP:$http_code"
+        return
+    fi
+
+    https_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "https://$name" 2>/dev/null || echo "000")
+    if czy_web_ok "$https_code"; then
+        echo "HTTPS:$https_code"
+    else
+        echo "HTTP:$http_code"
+    fi
+}
+
 clear
 echo -e "${BLUE}🖥️  WSMS DIAGNOSTYKA SYSTEMU v4.4${NC}"
 echo "=========================================================="
@@ -606,11 +632,13 @@ done
 echo -e "\n${CYAN}🔗 DOSTĘPNOŚĆ DOMEN:${NC}"
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
-    if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
-        echo -e "   ${GREEN}✅${NC} $name (HTTP $http_code)"
+    dostepnosc=$(sprawdz_dostepnosc_strony "$name")
+    proto=${dostepnosc%%:*}
+    code=${dostepnosc##*:}
+    if czy_web_ok "$code"; then
+        echo -e "   ${GREEN}✅${NC} $name ($proto $code)"
     else
-        echo -e "   ${RED}❌${NC} $name (HTTP $http_code - nieosiągalna)"
+        echo -e "   ${RED}❌${NC} $name (HTTP $code - nieosiągalna)"
     fi
 done
 
@@ -761,6 +789,32 @@ resolve_site_domain() {
     echo "$domain"
 }
 
+czy_web_ok() {
+    case "$1" in
+        200|301|302|401|403) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+sprawdz_dostepnosc_strony() {
+    local domain="$1"
+    local http_code
+    local https_code
+
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$domain" 2>/dev/null || echo "000")
+    if czy_web_ok "$http_code"; then
+        echo "$http_code"
+        return
+    fi
+
+    https_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "https://$domain" 2>/dev/null || echo "000")
+    if czy_web_ok "$https_code"; then
+        echo "$https_code"
+    else
+        echo "$http_code"
+    fi
+}
+
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
 
@@ -785,9 +839,9 @@ for site in "${SITES[@]}"; do
         fi
 
         # Sprawdzanie HTTP/HTTPS statusu
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$site_domain" 2>/dev/null || echo "000")
+        http_code=$(sprawdz_dostepnosc_strony "$site_domain")
 
-        if [ "$http_code" = "200" ] || [ "$http_code" = "301" ] || [ "$http_code" = "302" ] || [ "$http_code" = "401" ] || [ "$http_code" = "403" ]; then
+        if czy_web_ok "$http_code"; then
             status_icon="${GREEN}✅${NC}"
         else
             status_icon="${RED}❌ (HTTP $http_code)${NC}"
@@ -910,9 +964,13 @@ znajdz_konfiguracje_strony() {
 sprawdz_http_code() {
     local name="$1"
     local http_code
+    local https_code
     http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
-    if [ "$http_code" = "000" ]; then
-        http_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+    if ! czy_http_ok "$http_code"; then
+        https_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+        if czy_http_ok "$https_code"; then
+            http_code="$https_code"
+        fi
     fi
     echo "$http_code"
 }
@@ -1109,6 +1167,7 @@ BLUE='\033[0;34m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC
 LOG_FILE="$LOG_PERMISSIONS"
 NAPRAWA_HTTP=false
 TARGET_SITE=""
+HTTP_TARGETS=()
 
 sprawdz_http_code() {
     local name="$1"
@@ -1125,6 +1184,17 @@ czy_http_ok() {
         200|301|302) return 0 ;;
         *) return 1 ;;
     esac
+}
+
+czy_http_target() {
+    local candidate="$1"
+    local site
+    for site in "${HTTP_TARGETS[@]}"; do
+        if [ "$site" = "$candidate" ]; then
+            return 0
+        fi
+    done
+    return 1
 }
 
 while [ $# -gt 0 ]; do
@@ -1152,6 +1222,33 @@ log "=========================================================="
 log "🔐 NAPRAWA UPRAWNIEŃ - $(date)"
 log "=========================================================="
 
+naprawione=0
+bledy=0
+http_wybrane=0
+http_naprawione=0
+http_nadal_bledy=0
+naprawione_strony=()
+
+if [ "$NAPRAWA_HTTP" = true ]; then
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name _ _ <<< "$site"
+
+        if [ -n "$TARGET_SITE" ] && [ "$name" != "$TARGET_SITE" ]; then
+            continue
+        fi
+
+        pre_code=$(sprawdz_http_code "$name")
+        if czy_http_ok "$pre_code"; then
+            log ""
+            log "${GREEN}ℹ️  $name działa poprawnie (HTTP $pre_code) — pomijam${NC}"
+            continue
+        fi
+
+        HTTP_TARGETS+=("$name")
+        ((http_wybrane++))
+    done
+fi
+
 # Zatrzymaj serwer WWW tymczasowo
 WEB_SERVER=""
 if systemctl is-active --quiet nginx; then
@@ -1165,13 +1262,6 @@ if [ -n "$WEB_SERVER" ]; then
     sudo systemctl stop "$WEB_SERVER" 2>/dev/null || true
 fi
 
-naprawione=0
-bledy=0
-http_wybrane=0
-http_naprawione=0
-http_nadal_bledy=0
-naprawione_strony=()
-
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
 
@@ -1180,13 +1270,9 @@ for site in "${SITES[@]}"; do
     fi
 
     if [ "$NAPRAWA_HTTP" = true ]; then
-        pre_code=$(sprawdz_http_code "$name")
-        if czy_http_ok "$pre_code"; then
-            log ""
-            log "${GREEN}ℹ️  $name działa poprawnie (HTTP $pre_code) — pomijam${NC}"
+        if ! czy_http_target "$name"; then
             continue
         fi
-        ((http_wybrane++))
     fi
 
     log ""
@@ -1242,7 +1328,7 @@ fi
 if [ "$NAPRAWA_HTTP" = true ]; then
     if [ "$http_wybrane" -eq 0 ]; then
         log ""
-        log "${GREEN}ℹ️  Brak stron z HTTP 500/000 w wybranym zakresie.${NC}"
+        log "${GREEN}ℹ️  Brak stron z błędnym HTTP w wybranym zakresie.${NC}"
     else
         log ""
         log "${CYAN}🌐 KONTROLA NAPRAWY HTTP:${NC}"
