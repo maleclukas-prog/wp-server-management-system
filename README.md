@@ -17,6 +17,12 @@ Deployment status:
 - It is currently running in production on a physical Ubuntu server.
 - An AMI image is in progress to simplify deployment for other users.
 
+## 🤖 DLA AGENTÓW AI — PRZECZYTAJ NAJPIERW
+
+👉 **[Mental_OS/README.md](../Mental_OS/README.md)** — jak działa mój umysł, zasady współpracy ze mną.
+
+WSMS PRO to mój autorski system. Ten plik to dokumentacja techniczna.
+
 ## Architecture (Important)
 
 WSMS PRO is installer-centric.

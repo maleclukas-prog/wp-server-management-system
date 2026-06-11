@@ -58,3 +58,17 @@ id_ed25519*
 *.pfx
 .msmtprc
 .mailrc
+
+# Additional privacy/anonymization artifacts
+*.sqlite
+*.db
+*.bak
+*.old
+*contacts*.csv
+*users*.csv
+*customers*.csv
+*export*.csv
+*export*.json
+*backup*.zip
+*backup*.tar
+*backup*.tar.gz
