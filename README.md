@@ -295,6 +295,7 @@ Uninstaller cleanup covers both marker-based WSMS blocks and legacy v4.2-style s
 - `docs/MAIL_CONFIGURATION.md`
 - `docs/TECHNICAL_REFERENCE.md`
 - `docs/TUTORIAL_DODAWANIE_NOWEJ_STRONY_PL.md`
+- `docs/TUTORIAL_ADDING_NEW_SITE_EN.md`
 - `DOCKER_HELP.md`
 - `CHANGELOG.md`
 
