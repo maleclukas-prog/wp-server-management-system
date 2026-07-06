@@ -81,11 +81,34 @@ Ten test runtime:
 
 - instaluje WSMS w czystym kontenerze Ubuntu,
 - uruchamia wybrane skrypty runtime (`wp-help`, backup lite, backup full, retention list/clean),
-- dodaje stare pliki backupów i sprawdza, że tryb awaryjny zostawia dokładnie 2 najnowsze kopie,
+- dodaje stare pliki backupów i sprawdza, że ścieżka `force-clean` w trybie awaryjnym globalnym zostawia 1 najnowszy plik backupu na katalog,
 - uruchamia `wp-hosts-sync` dwukrotnie i sprawdza idempotencję bloku markerów w `/etc/hosts`,
 - weryfikuje, że output `wp-fleet-status-monitor` zawiera pole statusu SSL (`SSL:`),
 - sprawdza widoczne komunikaty na stdout,
 - sprawdza zapis logów w `~/logs/wsms/retention/retention.log` i `~/logs/wsms/sync/nas-sync.log`.
+
+## 2.1.1 Weryfikacja realnego uploadu na NAS (poza Dockerem)
+
+Test runtime w Dockerze sprawdza ścieżkę braku konfiguracji NAS i logowanie synchronizacji. Żeby potwierdzić realny upload na docelowy serwer NAS, uruchom na serwerze produkcyjnym:
+
+1. Utwórz świeży plik testowy w backupach lokalnych:
+
+```bash
+mkdir -p "$HOME/backups-manual"
+touch "$HOME/backups-manual/wsms-sync-test-$(date +%Y%m%d-%H%M%S).txt"
+```
+
+2. Uruchom synchronizację:
+
+```bash
+nas-sync
+```
+
+3. Potwierdź transfer:
+
+- W podsumowaniu `Uploaded` powinno być większe niż `0`.
+- W `nas-sync.log` powinien pojawić się wpis uploadu dla pliku testowego.
+- Plik powinien istnieć w ścieżce docelowej NAS.
 
 ## 2.2 Pełny smoke test modułów (20/20 skryptów)
 

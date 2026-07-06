@@ -81,11 +81,34 @@ This runtime smoke test:
 
 - installs WSMS in a clean Ubuntu container,
 - executes selected runtime scripts (`wp-help`, lite backup, full backup, retention list/clean),
-- seeds old backup files and verifies emergency cleanup keeps exactly 2 newest copies,
+- seeds old backup files and verifies `force-clean` emergency-global path keeps 1 newest backup file per directory,
 - executes `wp-hosts-sync` twice and verifies marker-block idempotency in `/etc/hosts`,
 - validates that `wp-fleet-status-monitor` output contains SSL status field (`SSL:`),
 - verifies user-visible output markers,
 - verifies log persistence in `~/logs/wsms/retention/retention.log` and `~/logs/wsms/sync/nas-sync.log`.
+
+## 2.1.1 Verify real NAS uploads (outside Docker)
+
+Docker runtime test validates the missing-NAS-config path and sync logging. To confirm real upload behavior to your NAS server, run this on production host:
+
+1. Create a fresh test artifact in local backups:
+
+```bash
+mkdir -p "$HOME/backups-manual"
+touch "$HOME/backups-manual/wsms-sync-test-$(date +%Y%m%d-%H%M%S).txt"
+```
+
+2. Trigger sync:
+
+```bash
+nas-sync
+```
+
+3. Confirm transfer:
+
+- `Uploaded` should be greater than `0` in summary output.
+- `nas-sync.log` should include upload entry for the test filename.
+- File should exist on NAS target path.
 
 ## 2.2 Full modules smoke test (20/20 scripts)
 
