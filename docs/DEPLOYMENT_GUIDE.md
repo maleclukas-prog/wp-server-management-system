@@ -1,4 +1,4 @@
-# WSMS PRO v4.3 - Deployment Guide
+# WSMS PRO v4.4 - Deployment Guide
 
 ## Prerequisites
 
@@ -54,6 +54,40 @@ For Fish:
 source ~/.config/fish/config.fish
 wp-status
 ```
+
+## NAS Sync Verification (Production)
+
+Use this runbook to confirm that `nas-sync` uploads new backups to NAS.
+
+1. Create a fresh local backup file:
+
+```bash
+mkdir -p "$HOME/backups-manual"
+touch "$HOME/backups-manual/wsms-sync-test-$(date +%Y%m%d-%H%M%S).txt"
+```
+
+2. Run manual sync:
+
+```bash
+nas-sync
+```
+
+3. Verify sync output:
+
+- In directory summary, check `Uploaded` is greater than `0` for the target set.
+- Confirm final summary does not report failures.
+
+4. Check logs:
+
+```bash
+nas-sync-status
+nas-sync-logs
+```
+
+Expected result:
+
+- The new test file is uploaded to NAS.
+- `nas-sync.log` contains upload entries and no transfer errors for that file.
 
 ## Key Paths
 

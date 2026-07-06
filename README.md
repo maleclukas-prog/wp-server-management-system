@@ -55,6 +55,11 @@ This ensures you always see the true SSL status for each managed site.
 - Uninstaller now removes legacy v4.2 shell blocks even when no marker delimiters are present.
 - Granular update modes in maintenance engine: `site`, `plugin`, `theme`.
 - Emergency retention now also prunes rollback snapshots (keeps latest 2 per site).
+- Retention emergency actions are menu-driven via `backup-clean` (interactive), including:
+   - keep latest 2 per site/group,
+   - deep clean (keep 1 per site/group + 1 rollback snapshot per site),
+   - purge-all emergency option with explicit `DELETE-ALL` confirmation.
+- NAS SFTP sync now performs strict remote filename checks and correctly uploads new files instead of false "Existing" matches.
 - Runtime exporter supports selective extraction with `--only`.
 - Added regression test for legacy uninstaller cleanup.
 - Email alert system (`wsms-notify.sh`, `wsms-daily-check.sh`) with configurable failure/success notifications.
@@ -98,6 +103,9 @@ Notable runtime commands:
 - `wp-update-site <site>` - update one site (core + all plugins/themes)
 - `wp-update-plugin <site> <plugin>` - update one plugin on one site
 - `wp-update-theme <site> <theme>` - update one theme on one site
+- `nas-sync` - manual NAS synchronization (new files are uploaded, old files pruned by retention policy)
+- `backup-clean` - interactive retention menu (standard + emergency modes)
+- `backup-force-clean` - automatic retention cleanup
 
 ## Email Alerts
 
