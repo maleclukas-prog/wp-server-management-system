@@ -718,8 +718,8 @@ fi
 # Check disk space
 disk_usage=$(df /home 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//')
 if [ -n "$disk_usage" ] && [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
-    echo -e "   ⚠️  ${RED}CRITICAL: Disk usage at ${disk_usage}% - run backup-clean-emergency!${NC}"
-    send_alert "failure" "CRITICAL: Disk usage at ${disk_usage}% on $(hostname)" "Disk usage reached ${disk_usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nRun: backup-clean-emergency\nTime: $(date)"
+    echo -e "   ⚠️  ${RED}CRITICAL: Disk usage at ${disk_usage}% - run backup-clean!${NC}"
+    send_alert "failure" "CRITICAL: Disk usage at ${disk_usage}% on $(hostname)" "Disk usage reached ${disk_usage}% (threshold: ${DISK_ALERT_THRESHOLD}%).\nRun: backup-clean\nTime: $(date)"
 fi
 
 # Check backups
@@ -1589,10 +1589,12 @@ ensure_remote_dir() {
 
 remote_file_exists() {
     local remote_file="$1"
+    local remote_dir
     local file_name
+    remote_dir=$(dirname "$remote_file")
     file_name=$(basename "$remote_file")
 
-    echo "ls \"$remote_file\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | grep -qF "$file_name"
+    get_remote_files_list "$remote_dir" | grep -Fxq "$file_name"
 }
 
 get_remote_files_list() {
@@ -1600,8 +1602,15 @@ get_remote_files_list() {
 
     echo "ls \"$remote_dir\"" | sftp -i "$SSH_KEY" -P "$REMOTE_PORT" -o StrictHostKeyChecking=no "$REMOTE_USER@$REMOTE_SERVER" 2>/dev/null | awk '
         /^sftp>/ { next }
+        /^Can.t / { next }
         NF == 0 { next }
-        { print $NF }
+        {
+            entry=$NF
+            gsub(/\r/, "", entry)
+            sub(/\/$/, "", entry)
+            split(entry, parts, "/")
+            print parts[length(parts)]
+        }
     ' | tr -d '\r' | sort -u
 }
 
@@ -1688,19 +1697,19 @@ sync_directory() {
     
     local age_new=0; local age_medium=0; local age_old=0; local age_archive=0
     
-    for file in $remote_files_list; do
+    while IFS= read -r file; do
         [ -z "$file" ] && continue
         local age=$(get_file_age_days "$file")
         if [ "$age" -le 14 ]; then ((age_new++))
         elif [ "$age" -le 30 ]; then ((age_medium++))
         elif [ "$age" -le $DAYS_TO_KEEP ]; then ((age_old++))
         else ((age_archive++)); fi
-    done
+    done <<< "$remote_files_list"
     
     # Czyszczenie starych plików
     local keep_count=0; local deleted=0
     
-    for file in $(echo "$remote_files_list" | sort -r); do
+    while IFS= read -r file; do
         [ -z "$file" ] && continue
         local age=$(get_file_age_days "$file")
         
@@ -1714,7 +1723,7 @@ sync_directory() {
         else
             ((keep_count++))
         fi
-    done
+    done < <(echo "$remote_files_list" | sort -r)
     
     TOTAL_DELETED=$((TOTAL_DELETED + deleted))
     
@@ -1794,6 +1803,17 @@ wsms_init_live_logging "$LOG_FILE"
 
 get_disk_usage() { df "$HOME" 2>/dev/null | awk 'NR==2 {print $5}' | sed 's/%//'; }
 
+normalize_backup_key() {
+    local file_name="$1"
+    local key="$file_name"
+    key="${key%.tar.gz}"
+    key="${key%.sql.gz}"
+    key="${key%.gz}"
+    key="${key%.zip}"
+    key=$(echo "$key" | sed -E 's/[-_][0-9]{8}[-_][0-9]{6}$//; s/[-_][0-9]{8}$//')
+    echo "$key"
+}
+
 list_backups() {
     echo -e "${CYAN}📋 ALL BACKUPS WITH DETAILS v4.4${NC}"
     echo "=========================================================="
@@ -1827,7 +1847,7 @@ show_size() {
     
     if [ "$disk_usage" -ge "$DISK_ALERT_THRESHOLD" ]; then
         echo -e "   ${RED}⚠️ WARNING: Disk usage above threshold ($DISK_ALERT_THRESHOLD%)!${NC}"
-        echo -e "   ${YELLOW}💡 Run 'backup-clean-emergency' to free space urgently${NC}"
+        echo -e "   ${YELLOW}💡 Run 'backup-clean' to free space urgently (choose emergency mode in menu)${NC}"
     fi
 }
 
@@ -1841,17 +1861,6 @@ emergency_cleanup() {
     echo -e "${RED}🚨 EMERGENCY MODE: Keeping only 2 latest copies per site!${NC}"
     echo "=========================================================="
     total_deleted_all=0
-    
-    normalize_backup_key() {
-        local file_name="$1"
-        local key="$file_name"
-        key="${key%.tar.gz}"
-        key="${key%.sql.gz}"
-        key="${key%.gz}"
-        key="${key%.zip}"
-        key=$(echo "$key" | sed -E 's/[-_][0-9]{8}[-_][0-9]{6}$//; s/[-_][0-9]{8}$//')
-        echo "$key"
-    }
 
     for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
         if [ ! -d "$dir" ]; then
@@ -2106,6 +2115,46 @@ emergency_deep_cleanup() {
     echo -e "\n${GREEN}✅ EMERGENCY DEEP CLEAN COMPLETE — total deleted: $total_deleted_all${NC}"
 }
 
+emergency_purge_all() {
+    echo -e "${RED}☢️ EMERGENCY PURGE: Delete ALL backups and rollback snapshots${NC}"
+    echo "=========================================================="
+    echo -e "${YELLOW}This will permanently remove all files from:${NC}"
+    echo "  - $(basename "$BACKUP_LITE_DIR")"
+    echo "  - $(basename "$BACKUP_FULL_DIR")"
+    echo "  - $(basename "$BACKUP_MYSQL_DIR")"
+    echo "  - $(basename "$BACKUP_ROLLBACK_DIR")"
+    echo ""
+    read -r -p "Type DELETE-ALL to confirm: " confirm
+    if [ "$confirm" != "DELETE-ALL" ]; then
+        echo -e "${YELLOW}Cancelled.${NC}"
+        return 0
+    fi
+
+    local deleted=0
+    local dir
+
+    for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR"; do
+        [ -d "$dir" ] || continue
+        while IFS= read -r file; do
+            [ -z "$file" ] && continue
+            rm -f "$file" 2>/dev/null || true
+            ((deleted++))
+        done < <(find "$dir" -mindepth 1 -maxdepth 1 -type f 2>/dev/null)
+        echo "   🗑️ Cleared files in $(basename "$dir")"
+    done
+
+    if [ -d "$BACKUP_ROLLBACK_DIR" ]; then
+        while IFS= read -r snapshot_dir; do
+            [ -z "$snapshot_dir" ] && continue
+            rm -rf "$snapshot_dir" 2>/dev/null || true
+            ((deleted++))
+        done < <(find "$BACKUP_ROLLBACK_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null)
+        echo "   🗑️ Cleared snapshots in $(basename "$BACKUP_ROLLBACK_DIR")"
+    fi
+
+    echo -e "\n${GREEN}✅ EMERGENCY PURGE COMPLETE — removed entries: $deleted${NC}"
+}
+
 cleanup_housekeeping() {
     echo -e "${CYAN}🧽 HOUSEKEEPING CLEANUP${NC}"
     echo "=========================================================="
@@ -2160,11 +2209,12 @@ interactive_clean() {
     echo "   4) Rollback snapshots (older than $RETENTION_ROLLBACK days)"
     echo "   5) ALL (standard retention)"
     echo "   6) EMERGENCY (keep only 2 latest per site)"
-    echo "   7) EMERGENCY DEEP CLEAN (keep only 1 newest copy of everything)"
+    echo "   7) EMERGENCY DEEP CLEAN (keep 1 newest backup per site/group + 1 snapshot per site)"
     echo "   8) HOUSEKEEPING (old logs + old bashrc/crontab backups)"
+    echo "   9) EMERGENCY PURGE ALL (delete all backups and snapshots)"
     echo "   0) Cancel"
     echo ""
-    read -p "Enter choice [0-8]: " choice
+    read -p "Enter choice [0-9]: " choice
     
     case $choice in
         1) find "$BACKUP_LITE_DIR" -type f -mtime "+$RETENTION_LITE" -delete 2>/dev/null && echo "✅ Lite backups cleaned" ;;
@@ -2173,8 +2223,9 @@ interactive_clean() {
         4) find "$BACKUP_ROLLBACK_DIR" -type d -mtime "+$RETENTION_ROLLBACK" -exec rm -rf {} \; 2>/dev/null && echo "✅ Rollback snapshots cleaned" ;;
         5) force_clean ;;
         6) emergency_cleanup ;;
-        7) emergency_global_cleanup ;;
+        7) emergency_deep_cleanup ;;
         8) cleanup_housekeeping ;;
+        9) emergency_purge_all ;;
         0) echo "Cancelled." ;;
         *) echo "Invalid choice." ;;
     esac
@@ -2273,9 +2324,6 @@ echo ""
 echo -e "${YELLOW}  Cleanup:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean" "Interactive (with confirmation)"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-force-clean" "Automatic by retention policy"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency" "EMERGENCY: keep only 2 latest per site"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-clean-emergency" "EMERGENCY DEEP: keep 1 newest backup per site/group + 1 snapshot per site"
-printf "    ${GREEN}%-20s${NC} %s\n" "backup-emergency-global" "EMERGENCY GLOBAL: keep only 1 newest file total per directory"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean" "Clean old logs and temp files"
 printf "    ${GREEN}%-20s${NC} %s\n" "wsms-clean-force" "Force-clean with empty log removal"
 echo ""
@@ -2383,7 +2431,7 @@ echo -e "${BLUE}│  🚨 TROUBLESHOOTING                                       
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 printf "  ${RED}%-30s${NC} %s\n" "Site down after update:" "wp-rollback [site]"
-printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-clean-emergency (keep 1 per site + snapshots)"
+printf "  ${RED}%-30s${NC} %s\n" "Low disk space:" "backup-clean (use emergency options in menu)"
 printf "  ${RED}%-30s${NC} %s\n" "Permission errors:" "wp-fix-perms"
 printf "  ${RED}%-30s${NC} %s\n" "Domain unreachable (HTTP 500):" "http200-fix"
 printf "  ${RED}%-30s${NC} %s\n" "Suspected malware:" "clamav-deep-scan"
@@ -2847,9 +2895,6 @@ alias backup-list='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh list'
 alias backup-size='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh size'
 alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
-alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
-alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
-alias backup-clean-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-deep'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
 alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'
@@ -3008,9 +3053,6 @@ alias backup-list='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh list'
 alias backup-size='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh size'
 alias backup-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh clean'
 alias backup-force-clean='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh force-clean'
-alias backup-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency'
-alias backup-emergency-global='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-global'
-alias backup-clean-emergency='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh emergency-deep'
 alias backup-dirs='bash $SCRIPTS_DIR/wp-smart-retention-manager.sh dirs'
 alias backup-smart-clean='backup-clean'
 alias wsms-clean='bash $HOME/scripts/wsms-clean.sh'

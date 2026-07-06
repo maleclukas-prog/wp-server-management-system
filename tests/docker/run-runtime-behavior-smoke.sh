@@ -61,18 +61,18 @@ validate_retention_effect() {
     mysql_count=$(run_as_tester "ls -1 ~/mysql-backups/db-site1-*.sql.gz 2>/dev/null | wc -l")
     rollback_count=$(run_as_tester "find ~/backups-rollback/site1 -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l")
 
-    if [ "$lite_count" -ne 2 ]; then
-        echo "Expected exactly 2 lite-site1 backups after emergency cleanup, got: $lite_count" >&2
+    if [ "$lite_count" -ne 1 ]; then
+        echo "Expected exactly 1 lite-site1 backup after emergency global cleanup, got: $lite_count" >&2
         exit 1
     fi
 
-    if [ "$mysql_count" -ne 2 ]; then
-        echo "Expected exactly 2 db-site1 backups after emergency cleanup, got: $mysql_count" >&2
+    if [ "$mysql_count" -ne 1 ]; then
+        echo "Expected exactly 1 db-site1 backup after emergency global cleanup, got: $mysql_count" >&2
         exit 1
     fi
 
-    if [ "$rollback_count" -ne 2 ]; then
-        echo "Expected exactly 2 rollback snapshots for site1 after emergency cleanup, got: $rollback_count" >&2
+    if [ "$rollback_count" -ne 3 ]; then
+        echo "Expected rollback snapshots for site1 to remain unchanged (3) after emergency global cleanup, got: $rollback_count" >&2
         exit 1
     fi
 }
@@ -81,7 +81,7 @@ validate_logs() {
     assert_file "$HOME_DIR/logs/wsms/retention/retention.log"
     assert_file "$HOME_DIR/logs/wsms/sync/nas-sync.log"
 
-    assert_contains "EMERGENCY MODE" "$HOME_DIR/logs/wsms/retention/retention.log"
+    assert_contains "EMERGENCY GLOBAL MODE" "$HOME_DIR/logs/wsms/retention/retention.log"
     assert_contains "Processing backups-lite" "$HOME_DIR/logs/wsms/retention/retention.log"
     assert_contains "Missing NAS configuration" "$HOME_DIR/logs/wsms/sync/nas-sync.log"
 }
@@ -117,9 +117,9 @@ run_runtime_scripts() {
 validate_stdout_markers() {
     assert_contains "Completed" "/tmp/wsms-lite.out"
     assert_contains "Completed" "/tmp/wsms-full.out"
-    assert_contains "EMERGENCY MODE" "/tmp/wsms-clean.out"
+    assert_contains "EMERGENCY GLOBAL MODE" "/tmp/wsms-clean.out"
     assert_contains "Processing backups-lite" "/tmp/wsms-clean.out"
-    assert_contains "backups-rollback" "/tmp/wsms-clean.out"
+    assert_contains "kept 1 newest" "/tmp/wsms-clean.out"
     assert_contains "Missing NAS configuration" "/tmp/wsms-nas.out"
     assert_contains "SSL:" "/tmp/wsms-fleet.out"
 }
