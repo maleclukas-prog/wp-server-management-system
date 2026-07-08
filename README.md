@@ -166,6 +166,42 @@ This repository is public.
 - Use example/template files for onboarding, but never replace placeholders with real secrets before commit.
 - Before push, verify staged files with `git status` and `git diff --staged`.
 
+## 🔒 Sudoers and `NOPASSWD`
+
+Adding `lukasz ALL=(ALL) NOPASSWD: ALL` means the `lukasz` user can run **any** `sudo` command **without a password**. That is convenient, but it also increases the impact of an account compromise, because an attacker would gain full control over the system.
+
+### Safer alternative: limit passwordless sudo to scripts only
+
+Instead of granting full access, restrict passwordless `sudo` to WSMS PRO scripts only:
+
+```bash
+sudo visudo -f /etc/sudoers.d/lukasz
+```
+
+Add:
+
+```bash
+# Allow WSMS PRO scripts to run without a password
+lukasz ALL=(ALL) NOPASSWD: /home/lukasz/scripts/*.sh
+```
+
+Effect:
+
+- `lukasz` can run scripts from `~/scripts/` without a password.
+- Other commands, such as `apt install` or destructive shell commands, still require a password.
+
+### Comparison of options
+
+| Option | Security | Convenience |
+|--------|----------|-------------|
+| Full `NOPASSWD` (`ALL`) | Low, high risk if the account is compromised | Very convenient |
+| Scripts only (`~/scripts/*.sh`) | High, limited blast radius | Convenient |
+| No `NOPASSWD` | Highest | Least convenient |
+
+### Recommendation
+
+Use the scripts-only variant as the default compromise between safety and convenience. If you already added full `NOPASSWD`, replace it in `/etc/sudoers.d/lukasz` with the scripts-only rule above.
+
 ## Inspect Scripts Without Running Installer
 
 To review copy-ready runtime modules as separate files (instead of reading large installer heredocs):
