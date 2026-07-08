@@ -84,6 +84,35 @@ chmod +x installers/install_wsms_pl.sh
 ./installers/install_wsms_pl.sh
 ```
 
+## 👥 Required Permissions for Backup User
+
+Runtime scripts like `wp-backup-lite` automatically extract database credentials directly from each site's `wp-config.php` — no need for manual `.my.cnf` files or password prompts. However, the user running these scripts (e.g., `lukasz`) must have read permissions on all `wp-config.php` files.
+
+By default, these files are owned by dedicated site system users (e.g., `wordpress_photo`, `mindreflection`) and belong to their groups. To grant read access:
+
+1. **Add your user to each site's group:**
+
+   ```bash
+   sudo usermod -aG wordpress_photo lukasz
+   sudo usermod -aG mindreflection lukasz
+   sudo usermod -aG polskieokna lukasz
+   sudo usermod -aG superphotocam lukasz
+   sudo usermod -aG wedzarniczebractwo lukasz
+   sudo usermod -aG whiteeaglesmokehouse lukasz
+   ```
+
+   *(Adjust group names to match your site configuration.)*
+
+2. **Log out and back in** to activate the new group memberships.
+
+3. **Verify** the scripts run without password prompts:
+
+   ```bash
+   wp-backup-lite
+   ```
+
+This method is secure (no plaintext passwords) and universal (works for any username).
+
 ## Runtime Layout
 
 After installation, runtime modules are generated in:

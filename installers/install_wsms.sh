@@ -389,7 +389,6 @@ sed -i "s|NAS_PORT=\"22\"|NAS_PORT=\"$NAS_PORT\"|" "$HOME/scripts/wsms-config.sh
 sed -i "s|NAS_USER=\"CHANGE_ME\"|NAS_USER=\"$NAS_USER\"|" "$HOME/scripts/wsms-config.sh"
 sed -i "s|NAS_PATH=\"CHANGE_ME\"|NAS_PATH=\"$NAS_PATH\"|" "$HOME/scripts/wsms-config.sh"
 sed -i "s|NAS_SSH_KEY=\"CHANGE_ME\"|NAS_SSH_KEY=\"$NAS_SSH_KEY\"|" "$HOME/scripts/wsms-config.sh"
-sed -i "s|\$HOME|$HOME|g" "$HOME/scripts/wsms-config.sh"
 
 chmod +x "$HOME/scripts/wsms-config.sh"
 source "$HOME/scripts/wsms-config.sh"
