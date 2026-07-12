@@ -40,7 +40,7 @@ This means you can work on a single extracted script for convenience, but final 
 - Deployment and setup: `docs/DEPLOYMENT_GUIDE.md`, `docs/FISH_SETUP_GUIDE.md`
 - Case studies: `CASE-STUDIES.md`
 - Troubleshooting playbooks: `TROUBLESHOOTING.md`
-- Session reports: `RAPORT-SESJI/`
+- Central session reports (organizational): `../Mental_OS/05_Notatki_z_Sesji/`
 - Training/productization data model: `docs/TRAINING_AND_PRODUCTIZATION.md`
 - Repository tooling notes: `tools/README.md`, `scripts/README.md`
 - Experimental sandbox notes: `experimental/Tworzenie srodowiska docker/README.md`
@@ -58,21 +58,43 @@ This repository is both:
 - a production operations system,
 - and a source asset for future training products and paid implementation templates.
 
+## Public vs Internal Split
+
+Public (sync to GitHub):
+
+- runtime and installer code,
+- public docs and case studies,
+- tests and tooling.
+
+Internal (local only, never sync):
+
+- organizational notes,
+- sensitive deployment context,
+- commercial go-to-market drafts.
+
+Use local-only folders (ignored by git):
+
+- `INTERNAL/`
+- `INTERNAL_ORG/`
+- `PRIVATE/`
+
+Reference structure for internal notes is documented in `INTERNAL_TEMPLATE.md`.
+
 ## Session Reporting Workflow
 
-Use `RAPORT-SESJI/` for operational notes after every work session.
+Use central reporting in `../Mental_OS/05_Notatki_z_Sesji/03_wp-server-management-system/`.
 
 Rules:
 
-- After each session, create one report file in `RAPORT-SESJI/`.
+- After each session, create one report file in Mental_OS project folder.
 - Use filename format with date and time: `RAPORT-SESJI-YYYY-MM-DD_HH-MM.md`.
 - At the end of each day, merge all session reports from that day into one daily summary file.
 - Use daily summary format: `RAPORT-DZIENNY-YYYY-MM-DD.md`.
 
 Example:
 
-- Session files: `RAPORT-SESJI-2026-07-12_09-30.md`, `RAPORT-SESJI-2026-07-12_14-10.md`
-- Daily merged file: `RAPORT-DZIENNY-2026-07-12.md`
+- Session files: `../Mental_OS/05_Notatki_z_Sesji/03_wp-server-management-system/RAPORT-SESJI-2026-07-12_09-30.md`
+- Daily merged file: `../Mental_OS/05_Notatki_z_Sesji/03_wp-server-management-system/RAPORT-DZIENNY-2026-07-12.md`
 
 ## Extended Data Capture (for Training and Product Sales)
 

@@ -72,3 +72,8 @@ id_ed25519*
 *backup*.zip
 *backup*.tar
 *backup*.tar.gz
+
+# Internal organizational notes (local only, never sync)
+INTERNAL/
+INTERNAL_ORG/
+PRIVATE/
