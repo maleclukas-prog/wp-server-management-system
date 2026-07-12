@@ -15,7 +15,7 @@ Turn real infrastructure operations into:
 
 Use these sources as canonical input:
 
-- `RAPORT-SESJI/` for chronological execution traces.
+- `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/` for chronological execution traces.
 - `CASE-STUDIES.md` for condensed incident narratives.
 - `TROUBLESHOOTING.md` for repeatable repair paths.
 - `CHANGELOG.md` for behavior-level delta.
@@ -44,15 +44,15 @@ Daily aggregate file:
 
 ## Conversion Pipeline (Ops -> Product)
 
-1. Capture session report in `RAPORT-SESJI/`.
-2. Extract stable incident pattern into `CASE-STUDIES.md`.
-3. Convert fix sequence into `TROUBLESHOOTING.md` playbook.
-4. Derive reusable template blocks for training:
+1. Capture session report in `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/`.
+1. Extract stable incident pattern into `CASE-STUDIES.md`.
+1. Convert fix sequence into `TROUBLESHOOTING.md` playbook.
+1. Derive reusable template blocks for training:
    - prerequisites checklist,
    - diagnostics flow,
    - rollback/safety guardrails,
    - verification checklist.
-5. Package as product-ready assets (course lesson, implementation SOP, prompt kit).
+1. Package as product-ready assets (course lesson, implementation SOP, prompt kit).
 
 ## Prompt-Template Preparation (for future sales)
 

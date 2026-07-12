@@ -40,7 +40,7 @@ This means you can work on a single extracted script for convenience, but final 
 - Deployment and setup: `docs/DEPLOYMENT_GUIDE.md`, `docs/FISH_SETUP_GUIDE.md`
 - Case studies: `CASE-STUDIES.md`
 - Troubleshooting playbooks: `TROUBLESHOOTING.md`
-- Central session reports (organizational): `../Mental_OS/05_Notatki_z_Sesji/`
+- Central session reports (organizational): `../Mental_OS/09_Raporty_Operacyjne/`
 - Training/productization data model: `docs/TRAINING_AND_PRODUCTIZATION.md`
 - Repository tooling notes: `tools/README.md`, `scripts/README.md`
 - Experimental sandbox notes: `experimental/Tworzenie srodowiska docker/README.md`
@@ -82,7 +82,7 @@ Reference structure for internal notes is documented in `INTERNAL_TEMPLATE.md`.
 
 ## Session Reporting Workflow
 
-Use central reporting in `../Mental_OS/05_Notatki_z_Sesji/03_wp-server-management-system/`.
+Use central reporting in `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/`.
 
 Rules:
 
@@ -93,8 +93,8 @@ Rules:
 
 Example:
 
-- Session files: `../Mental_OS/05_Notatki_z_Sesji/03_wp-server-management-system/RAPORT-SESJI-2026-07-12_09-30.md`
-- Daily merged file: `../Mental_OS/05_Notatki_z_Sesji/03_wp-server-management-system/RAPORT-DZIENNY-2026-07-12.md`
+- Session files: `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/RAPORT-SESJI-2026-07-12_09-30.md`
+- Daily merged file: `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/RAPORT-DZIENNY-2026-07-12.md`
 
 ## Extended Data Capture (for Training and Product Sales)
 
