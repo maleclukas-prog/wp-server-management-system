@@ -33,6 +33,67 @@ WSMS PRO is installer-centric.
 
 This means you can work on a single extracted script for convenience, but final canonical logic still lives in installer deploy blocks.
 
+## Documentation Map
+
+- Core docs: `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`
+- Technical reference: `docs/TECHNICAL_REFERENCE.md`
+- Deployment and setup: `docs/DEPLOYMENT_GUIDE.md`, `docs/FISH_SETUP_GUIDE.md`
+- Case studies: `CASE-STUDIES.md`
+- Troubleshooting playbooks: `TROUBLESHOOTING.md`
+- Session reports: `RAPORT-SESJI/`
+- Training/productization data model: `docs/TRAINING_AND_PRODUCTIZATION.md`
+- Repository tooling notes: `tools/README.md`, `scripts/README.md`
+- Experimental sandbox notes: `experimental/Tworzenie srodowiska docker/README.md`
+
+## Project Context in the Ecosystem
+
+WSMS PRO is a practical implementation module inside a bigger learning and automation ecosystem:
+
+- `../Mental_OS/` - personal adaptive learning platform and decision framework.
+- `../Media/` - content execution and publication workflows.
+- `wp-server-management-system/` - operational automation and infrastructure practice layer.
+
+This repository is both:
+
+- a production operations system,
+- and a source asset for future training products and paid implementation templates.
+
+## Session Reporting Workflow
+
+Use `RAPORT-SESJI/` for operational notes after every work session.
+
+Rules:
+
+- After each session, create one report file in `RAPORT-SESJI/`.
+- Use filename format with date and time: `RAPORT-SESJI-YYYY-MM-DD_HH-MM.md`.
+- At the end of each day, merge all session reports from that day into one daily summary file.
+- Use daily summary format: `RAPORT-DZIENNY-YYYY-MM-DD.md`.
+
+Example:
+
+- Session files: `RAPORT-SESJI-2026-07-12_09-30.md`, `RAPORT-SESJI-2026-07-12_14-10.md`
+- Daily merged file: `RAPORT-DZIENNY-2026-07-12.md`
+
+## Extended Data Capture (for Training and Product Sales)
+
+To prepare this system for a future training product, capture more than standard technical notes.
+
+For each session report, include at minimum:
+
+- Business context: who is the target user and what pain point is solved.
+- Initial state: environment, constraints, and baseline risk.
+- Actions taken: exact commands and decision sequence.
+- Outcome metrics: time-to-diagnosis, time-to-recovery, and automation coverage.
+- Lessons learned: what to keep, what to change, what to automate next.
+- Productization hints: what can become a reusable checklist, script, or prompt block.
+
+Detailed structure and templates are in `docs/TRAINING_AND_PRODUCTIZATION.md`.
+
+## Migration Note (Reports Naming)
+
+Older files with date-only names (for example `RAPORT-SESJI-YYYY-MM-DD.md`) can stay as archive.
+For all new sessions, use the datetime format: `RAPORT-SESJI-YYYY-MM-DD_HH-MM.md`.
+
 ## What's New in v4.4
 
 ## SSL Certificate Expiry in Fleet Status

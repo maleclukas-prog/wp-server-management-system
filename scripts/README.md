@@ -20,3 +20,16 @@ Generated preview paths:
 
 - `scripts/runtime-preview/en/`
 - `scripts/runtime-preview/pl/`
+
+## Rules
+
+- Do not keep manually edited runtime script snapshots in this directory.
+- Canonical logic always lives in installer deploy blocks:
+  - `installers/install_wsms.sh`
+  - `installers/install_wsms_pl.sh`
+- Use exported preview files only for inspection, review, and controlled hotfix flow.
+
+## Why this matters
+
+This repository is used not only for operations, but also as source material for training and productization.
+Keeping one source of truth prevents drift between production behavior and educational documentation.

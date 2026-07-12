@@ -2,6 +2,12 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [Unreleased]
+
+### Added
+- New incident write-up in `CASE-STUDIES.md`: recovery of `photographerwithawalker.com` after snapshot restore (HTTP 404 -> 301).
+- New operator guide in `TROUBLESHOOTING.md`: step-by-step playbook for HTTP 404 after restore, including permissions/ACL checks and Nginx reload verification.
+
 ## [4.4.0] - 2026-05-24
 
 ### Changed

@@ -93,3 +93,13 @@ Use uninstall + install when changes affect:
 - crontab entries
 - multiple modules at once
 - installer-side orchestration behavior
+
+## Documentation and Reporting Touchpoints
+
+After tooling-driven operational changes, update related docs when needed:
+
+- `CHANGELOG.md` for visible behavior changes.
+- `CASE-STUDIES.md` for real incidents and recoveries.
+- `TROUBLESHOOTING.md` for repeatable fix procedures.
+- `RAPORT-SESJI/` for per-session execution logs.
+- `docs/TRAINING_AND_PRODUCTIZATION.md` for reusable training/product blocks.

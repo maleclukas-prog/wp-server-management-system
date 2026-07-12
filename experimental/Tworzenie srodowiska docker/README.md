@@ -1,5 +1,17 @@
 # Tworzenie środowiska testowego serwera (Docker, etap 1)
 
+## Status dokumentu
+
+Ten dokument opisuje eksperymentalny workflow odwzorowania serwera z backupu.
+Nie jest to glowna, kanoniczna sciezka testowa repozytorium.
+
+Preferowana sciezka testow (utrzymywana na biezaco):
+
+- `bash tests/run_docker_smoke_test.sh`
+- `bash tests/run_docker_runtime_smoke_test.sh`
+- `bash tests/run_docker_all_modules_smoke_test.sh`
+- `bash tests/run_docker_notify_smoke_test.sh`
+
 Ten dokument opisuje bezpieczny i praktyczny proces odwzorowania serwera do testów WSMS.
 
 Cel na teraz: stabilne środowisko testowe w Dockerze.
