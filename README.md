@@ -17,12 +17,6 @@ Deployment status:
 - It is currently running in production on a physical Ubuntu server.
 - An AMI image is in progress to simplify deployment for other users.
 
-## 🤖 DLA AGENTÓW AI — PRZECZYTAJ NAJPIERW
-
-👉 **[Mental_OS/README.md](../Mental_OS/README.md)** — jak działa mój umysł, zasady współpracy ze mną.
-
-WSMS PRO to mój autorski system. Ten plik to dokumentacja techniczna.
-
 ## Architecture (Important)
 
 WSMS PRO is installer-centric.
@@ -40,23 +34,8 @@ This means you can work on a single extracted script for convenience, but final 
 - Deployment and setup: `docs/DEPLOYMENT_GUIDE.md`, `docs/FISH_SETUP_GUIDE.md`
 - Case studies: `CASE-STUDIES.md`
 - Troubleshooting playbooks: `TROUBLESHOOTING.md`
-- Central session reports (organizational): `../Mental_OS/09_Raporty_Operacyjne/`
-- Training/productization data model: `docs/TRAINING_AND_PRODUCTIZATION.md`
 - Repository tooling notes: `tools/README.md`, `scripts/README.md`
 - Experimental sandbox notes: `experimental/Tworzenie srodowiska docker/README.md`
-
-## Project Context in the Ecosystem
-
-WSMS PRO is a practical implementation module inside a bigger learning and automation ecosystem:
-
-- `../Mental_OS/` - personal adaptive learning platform and decision framework.
-- `../Media/` - content execution and publication workflows.
-- `wp-server-management-system/` - operational automation and infrastructure practice layer.
-
-This repository is both:
-
-- a production operations system,
-- and a source asset for future training products and paid implementation templates.
 
 ## Public vs Internal Split
 
@@ -80,41 +59,31 @@ Use local-only folders (ignored by git):
 
 Reference structure for internal notes is documented in `INTERNAL_TEMPLATE.md`.
 
-## Session Reporting Workflow
+## Publication Guardrail (Required)
 
-Use central reporting in `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/`.
+Before any commit/push/publication from this repository, enforce this rule:
 
-Rules:
+- Never publish internal or sensitive data from local/internal context.
 
-- After each session, create one report file in Mental_OS project folder.
-- Use filename format with date and time: `RAPORT-SESJI-YYYY-MM-DD_HH-MM.md`.
-- At the end of each day, merge all session reports from that day into one daily summary file.
-- Use daily summary format: `RAPORT-DZIENNY-YYYY-MM-DD.md`.
+Do NOT publish, commit, or paste into public docs/issues/PRs:
 
-Example:
+- server IPs, hostnames, private network details,
+- credentials, tokens, keys, secrets, API payload samples with real data,
+- customer/internal operational notes, private timelines, internal pricing/sales plans,
+- raw logs that contain identifiable or sensitive environment details.
 
-- Session files: `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/RAPORT-SESJI-2026-07-12_09-30.md`
-- Daily merged file: `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/RAPORT-DZIENNY-2026-07-12.md`
+If a case study or note is needed publicly, create a sanitized version only:
 
-## Extended Data Capture (for Training and Product Sales)
+- anonymize names/hosts/paths/IDs,
+- keep architecture and lessons,
+- remove environment-identifying details.
 
-To prepare this system for a future training product, capture more than standard technical notes.
+Pre-push check (mandatory):
 
-For each session report, include at minimum:
-
-- Business context: who is the target user and what pain point is solved.
-- Initial state: environment, constraints, and baseline risk.
-- Actions taken: exact commands and decision sequence.
-- Outcome metrics: time-to-diagnosis, time-to-recovery, and automation coverage.
-- Lessons learned: what to keep, what to change, what to automate next.
-- Productization hints: what can become a reusable checklist, script, or prompt block.
-
-Detailed structure and templates are in `docs/TRAINING_AND_PRODUCTIZATION.md`.
-
-## Migration Note (Reports Naming)
-
-Older files with date-only names (for example `RAPORT-SESJI-YYYY-MM-DD.md`) can stay as archive.
-For all new sessions, use the datetime format: `RAPORT-SESJI-YYYY-MM-DD_HH-MM.md`.
+1. `git status`
+2. `git diff --staged`
+3. verify staged content contains no sensitive/internal data
+4. if uncertain, move the material to `INTERNAL/`, `INTERNAL_ORG/`, or `PRIVATE/` instead of publishing
 
 ## What's New in v4.4
 
