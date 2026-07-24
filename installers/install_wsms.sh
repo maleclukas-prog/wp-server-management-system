@@ -949,15 +949,55 @@ success_count=0
 fail_count=0
 
 find_site_config() {
-    local target_name="$1"
+    local target_name
+    target_name=$(normalize_site_arg "$1")
+
+    [ -z "$target_name" ] && return 1
+
     for site in "${SITES[@]}"; do
         IFS=':' read -r name path user <<< "$site"
-        if [ "$name" = "$target_name" ]; then
+        local normalized_name
+        local short_name
+        normalized_name=$(normalize_site_arg "$name")
+        short_name="${normalized_name%%.*}"
+
+        if [ "$normalized_name" = "$target_name" ] || [ "$short_name" = "$target_name" ]; then
             echo "$site"
             return 0
         fi
     done
     return 1
+}
+
+normalize_site_arg() {
+    local raw="$1"
+    local cleaned
+
+    cleaned="${raw//[/}"
+    cleaned="${cleaned//]/}"
+    cleaned="${cleaned//\"/}"
+    cleaned="${cleaned//\'/}"
+    cleaned="$(echo "$cleaned" | xargs 2>/dev/null || true)"
+    cleaned="${cleaned,,}"
+
+    echo "$cleaned"
+}
+
+print_available_sites() {
+    local site
+    local name
+    local short_name
+
+    echo "   Available sites:"
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name _ _ <<< "$site"
+        short_name="${name%%.*}"
+        if [ "$short_name" = "$name" ]; then
+            echo "   - $name"
+        else
+            echo "   - $name (alias: $short_name)"
+        fi
+    done
 }
 
 check_http_code() {
@@ -1081,9 +1121,20 @@ update_all_sites() {
 
 update_single_site() {
     local site_name="$1"
+    local normalized_site_name
     local site_config
-    site_config=$(find_site_config "$site_name") || {
+
+    normalized_site_name=$(normalize_site_arg "$site_name")
+    if [ -z "$normalized_site_name" ] || [ "$normalized_site_name" = "wp-update-site" ] || [ "$normalized_site_name" = "site" ]; then
+        echo -e "${RED}❌ Invalid site argument: '$site_name'${NC}"
+        print_usage
+        print_available_sites
+        return 1
+    fi
+
+    site_config=$(find_site_config "$normalized_site_name") || {
         echo -e "${RED}❌ Site not found: $site_name${NC}"
+        print_available_sites
         return 1
     }
 
@@ -1095,9 +1146,20 @@ update_single_component() {
     local mode="$1"
     local site_name="$2"
     local slug="$3"
+    local normalized_site_name
     local site_config
-    site_config=$(find_site_config "$site_name") || {
+
+    normalized_site_name=$(normalize_site_arg "$site_name")
+    if [ -z "$normalized_site_name" ] || [ "$normalized_site_name" = "wp-update-plugin" ] || [ "$normalized_site_name" = "wp-update-theme" ] || [ "$normalized_site_name" = "plugin" ] || [ "$normalized_site_name" = "theme" ]; then
+        echo -e "${RED}❌ Invalid site argument: '$site_name'${NC}"
+        print_usage
+        print_available_sites
+        return 1
+    fi
+
+    site_config=$(find_site_config "$normalized_site_name") || {
         echo -e "${RED}❌ Site not found: $site_name${NC}"
+        print_available_sites
         return 1
     }
 
@@ -1113,6 +1175,11 @@ print_usage() {
     echo "  site <site>              - update full stack for one site"
     echo "  plugin <site> <plugin>   - update one plugin on one site"
     echo "  theme <site> <theme>     - update one theme on one site"
+    echo ""
+    echo "Examples:"
+    echo "  wp-update-site wedzarniczebractwo.uk"
+    echo "  wp-update-site wedzarniczebractwo"
+    echo "  wp-update-plugin polskieokna.uk woocommerce"
 }
 
 case "${1:-all}" in
@@ -2274,6 +2341,8 @@ echo -e "${WHITE}║          🆘 WSMS PRO v4.4 — COMMAND REFERENCE          
 echo -e "${WHITE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo -e "${CYAN}⏰ $(date) │ 📦 v4.4 │ 🖥️  $(hostname)${NC}"
 echo ""
+echo -e "${YELLOW}ℹ️  Placeholder syntax:${NC} use values without brackets (example: wp-update-site wedzarniczebractwo.uk)"
+echo ""
 
 # ============================================
 # SECTION 1: SYSTEM DIAGNOSTICS
@@ -2350,9 +2419,9 @@ echo ""
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-safe" "RECOMMENDED: Backup → Snapshot → Update"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-all" "Update all sites (skips backup)"
 printf "  ${GREEN}%-22s${NC} %s\n" "wp-update" "Alias for wp-update-all"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-site [site]" "Update one site (core + all plugins/themes)"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-plugin [site] [plugin]" "Update one plugin on one site"
-printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-theme [site] [theme]" "Update one theme on one site"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-site <site>" "Update one site (core + all plugins/themes)"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-plugin <site> <plugin>" "Update one plugin on one site"
+printf "  ${GREEN}%-22s${NC} %s\n" "wp-update-theme <site> <theme>" "Update one theme on one site"
 echo ""
 
 # ============================================
