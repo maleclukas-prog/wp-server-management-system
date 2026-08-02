@@ -1000,13 +1000,20 @@ print_available_sites() {
     done
 }
 
+is_http_healthy() {
+    case "$1" in
+        200|301|302) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 check_http_code() {
     local name="$1"
     local http_code
     local https_code
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
     if ! is_http_healthy "$http_code"; then
-        https_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+        https_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "https://$name" 2>/dev/null || echo "000")
         if is_http_healthy "$https_code"; then
             http_code="$https_code"
         fi

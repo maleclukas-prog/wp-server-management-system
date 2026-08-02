@@ -960,13 +960,20 @@ znajdz_konfiguracje_strony() {
     return 1
 }
 
+czy_http_ok() {
+    case "$1" in
+        200|301|302) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 sprawdz_http_code() {
     local name="$1"
     local http_code
     local https_code
-    http_code=$(curl -s -o /dev/null -w "%{http_code}" "http://$name" 2>/dev/null || echo "000")
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "http://$name" 2>/dev/null || echo "000")
     if ! czy_http_ok "$http_code"; then
-        https_code=$(curl -s -o /dev/null -w "%{http_code}" "https://$name" 2>/dev/null || echo "000")
+        https_code=$(curl -s -o /dev/null -w "%{http_code}" -k -L "https://$name" 2>/dev/null || echo "000")
         if czy_http_ok "$https_code"; then
             http_code="$https_code"
         fi
