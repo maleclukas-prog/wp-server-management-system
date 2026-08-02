@@ -98,6 +98,8 @@ This ensures you always see the true SSL status for each managed site.
 
 - Live console output and persistent installer logs in both installers.
 - Improved installer error diagnostics with step, line, command, exit code, and log path.
+- HTTP health checks in maintenance engine and installers follow 301/302 redirects (e.g. non-www to www) using `curl -k -L`.
+- Maintenance engine self-contains `is_http_healthy` / `czy_http_ok` helper functions to prevent runtime `command not found` errors.
 - Live logging bootstrap for generated runtime scripts in `~/scripts`.
 - Self-contained alias provisioning inside installers (Bash and Fish).
 - Optional Fish handling with explicit warning when Fish is not installed.

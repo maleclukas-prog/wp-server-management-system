@@ -8,6 +8,10 @@ All notable changes to WSMS PRO are documented in this file.
 - New incident write-up in `CASE-STUDIES.md`: recovery of `photographerwithawalker.com` after snapshot restore (HTTP 404 -> 301).
 - New operator guide in `TROUBLESHOOTING.md`: step-by-step playbook for HTTP 404 after restore, including permissions/ACL checks and Nginx reload verification.
 
+### Fixed
+- `wp-automated-maintenance-engine.sh` & installers (`install_wsms.sh`, `install_wsms_pl.sh`): Defined missing `is_http_healthy` / `czy_http_ok` helper function to prevent `command not found` runtime errors.
+- HTTP reachability checks (`check_http_code` / `sprawdz_http_code`): Added `-k -L` flags to `curl` to follow HTTP 301/302 redirects (e.g., non-www to www or http to https) before asserting site health.
+
 ## [4.4.0] - 2026-05-24
 
 ### Changed
