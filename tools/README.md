@@ -79,10 +79,10 @@ SERVER_SCRIPT_DIR="/home/your_user/scripts"
 scp "/tmp/wsms-one/$LANG/$SCRIPT_NAME" "$SERVER_USER@$SERVER_HOST:$SERVER_SCRIPT_DIR/$SCRIPT_NAME"
 ```
 
-1. Verify on remote host:
+1. Ensure executable permissions and verify on remote host:
 
 ```bash
-ssh "$SERVER_USER@$SERVER_HOST" "ls -la $SERVER_SCRIPT_DIR/$SCRIPT_NAME && bash $SERVER_SCRIPT_DIR/$SCRIPT_NAME --help 2>/dev/null || true"
+ssh "$SERVER_USER@$SERVER_HOST" "chmod +x $SERVER_SCRIPT_DIR/$SCRIPT_NAME && ls -la $SERVER_SCRIPT_DIR/$SCRIPT_NAME && bash $SERVER_SCRIPT_DIR/$SCRIPT_NAME --help 2>/dev/null || true"
 ```
 
 ## When to Use Full Reinstall Instead

@@ -85,6 +85,14 @@ Pre-push check (mandatory):
 3. verify staged content contains no sensitive/internal data
 4. if uncertain, move the material to `INTERNAL/`, `INTERNAL_ORG/`, or `PRIVATE/` instead of publishing
 
+## What's New in v4.4.1
+
+- **Standardized Per-Site Commands in `wp-help`**: Replaced phantom hyphenated command names (`wp-snapshot-DOMENA`, `wp-rollback-DOMENA`, `wp-backup-DOMENA`) with standard Unix command + argument syntax with spaces (`wp-snapshot DOMENA`, `wp-rollback DOMENA`, `wp-update-site DOMENA`, `mysql-backup DOMENA`).
+- **Dynamic Site Iteration**: Preserved dynamic loop over `${SITES[@]}` from `wsms-config.sh`, ensuring newly configured domains automatically appear in help output.
+- **Improved Column Alignment**: Expanded per-site command column width from 22 to 46 characters (`%-46s`) so descriptions align in a straight, readable vertical column regardless of domain length.
+- **Permissions Maintenance**: Added guidance to ensure executable permissions on scripts (`chmod +x ~/scripts/*.sh`) when updating runtime scripts manually or after hotfix exports.
+- **HTTP Health & Redirect Checks**: Follow HTTP 301/302 redirects with `curl -k -L` during site reachability verification and self-contain `is_http_healthy` / `czy_http_ok` helper functions in maintenance engines and installers.
+
 ## What's New in v4.4
 
 ## SSL Certificate Expiry in Fleet Status
@@ -186,6 +194,9 @@ Notable runtime commands:
 - `wp-update-site <site>` - update one site (core + all plugins/themes)
 - `wp-update-plugin <site> <plugin>` - update one plugin on one site
 - `wp-update-theme <site> <theme>` - update one theme on one site
+- `wp-snapshot <site>` - create instant snapshot (files and DB) for one site
+- `wp-rollback <site>` - restore one site to its latest snapshot
+- `mysql-backup <site>` - dump MySQL database for one site
 - `nas-sync` - manual NAS synchronization (new files are uploaded, old files pruned by retention policy)
 - `backup-clean` - interactive retention menu (standard + emergency modes)
 - `backup-force-clean` - automatic retention cleanup
