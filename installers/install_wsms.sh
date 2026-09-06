@@ -2524,14 +2524,10 @@ echo -e "${BLUE}└────────────────────�
 echo ""
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
-    printf "  ${GREEN}%-22s${NC} %s\n" "wp-$name" "WP-CLI for $name"
-done
-echo ""
-for site in "${SITES[@]}"; do
-    IFS=':' read -r name path user <<< "$site"
-    printf "  ${GREEN}%-22s${NC} %s\n" "wp-backup-$name" "Lite backup for $name"
-    printf "  ${GREEN}%-22s${NC} %s\n" "wp-snapshot-$name" "Snapshot for $name"
-    printf "  ${GREEN}%-22s${NC} %s\n" "wp-rollback-$name" "Rollback for $name"
+    printf "  ${GREEN}%-46s${NC} %s\n" "wp-snapshot $name" "Snapshot for $name"
+    printf "  ${GREEN}%-46s${NC} %s\n" "wp-rollback $name" "Rollback for $name"
+    printf "  ${GREEN}%-46s${NC} %s\n" "wp-update-site $name" "Update for $name"
+    printf "  ${GREEN}%-46s${NC} %s\n" "mysql-backup $name" "Database backup for $name"
     echo ""
 done
 
