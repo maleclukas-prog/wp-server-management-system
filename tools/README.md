@@ -101,5 +101,5 @@ After tooling-driven operational changes, update related docs when needed:
 - `CHANGELOG.md` for visible behavior changes.
 - `CASE-STUDIES.md` for real incidents and recoveries.
 - `TROUBLESHOOTING.md` for repeatable fix procedures.
-- `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/` for centralized per-session execution logs.
+- `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/` for centralized per-session execution logs (split into `01_Serwer_Produkcyjny/` for incidents and `02_Repozytorium_Kod/` for code updates).
 - `docs/TRAINING_AND_PRODUCTIZATION.md` for reusable training/product blocks.

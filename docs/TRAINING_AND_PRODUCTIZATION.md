@@ -15,7 +15,7 @@ Turn real infrastructure operations into:
 
 Use these sources as canonical input:
 
-- `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/` for chronological execution traces.
+- `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/` for chronological execution traces (split into `01_Serwer_Produkcyjny/` for server incidents and `02_Repozytorium_Kod/` for repository code changes).
 - `CASE-STUDIES.md` for condensed incident narratives.
 - `TROUBLESHOOTING.md` for repeatable repair paths.
 - `CHANGELOG.md` for behavior-level delta.
@@ -44,7 +44,7 @@ Daily aggregate file:
 
 ## Conversion Pipeline (Ops -> Product)
 
-1. Capture session report in `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/`.
+1. Capture session report in `../Mental_OS/09_Raporty_Operacyjne/03_wp-server-management-system/` (under `01_Serwer_Produkcyjny/` or `02_Repozytorium_Kod/`).
 1. Extract stable incident pattern into `CASE-STUDIES.md`.
 1. Convert fix sequence into `TROUBLESHOOTING.md` playbook.
 1. Derive reusable template blocks for training:
