@@ -2,7 +2,12 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
-## [Unreleased]
+## [4.4.1] - 2026-09-06
+
+### Changed
+- Version numbering bumped across all installer headers, shell alias banners, crontab blocks, and runtime scripts to `v4.4.1`.
+- `wp-help.sh`: Standardized Section 10 per-site commands to use standard Unix command + argument syntax with spaces (`wp-snapshot DOMENA`, `wp-rollback DOMENA`, `wp-update-site DOMENA`, `mysql-backup DOMENA`) instead of non-existent hyphenated aliases.
+- `wp-help.sh`: Widened per-site command column formatting from `%-22s` to `%-46s` to ensure consistent vertical alignment regardless of domain length.
 
 ### Added
 - New incident write-up in `CASE-STUDIES.md`: recovery of `photographerwithawalker.com` after snapshot restore (HTTP 404 -> 301).

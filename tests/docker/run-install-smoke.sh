@@ -69,9 +69,9 @@ validate_installation() {
 
     assert_contains 'site1:/var/www/site1/public_html:wordpress_site1' "/home/$TEST_USER/scripts/wsms-config.sh"
     assert_contains 'site2:/var/www/site2/public_html:wordpress_site2' "/home/$TEST_USER/scripts/wsms-config.sh"
-    assert_contains 'WSMS PRO v4.4 BASH' "/home/$TEST_USER/.bashrc"
+    assert_contains 'WSMS PRO v4.4.1 BASH' "/home/$TEST_USER/.bashrc"
 
-    crontab -u "$TEST_USER" -l | grep -q 'WSMS PRO v4.4 - CRONTAB'
+    crontab -u "$TEST_USER" -l | grep -q 'WSMS PRO v4.4.1 - CRONTAB'
     crontab -u "$TEST_USER" -l | grep -q 'wp-smart-retention-manager.sh force-clean'
     su - "$TEST_USER" -c 'TERM=xterm bash ~/scripts/wp-help.sh >/tmp/wsms-help.out'
     su - "$TEST_USER" -c 'bash ~/scripts/wp-smart-retention-manager.sh dirs >/tmp/wsms-backup-dirs.out'
