@@ -1,6 +1,6 @@
 # WSMS PRO - WordPress Server Management System
 
-**Version:** 4.4.1 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog)
+**Version:** 4.4.2 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog)
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
@@ -84,6 +84,16 @@ Pre-push check (mandatory):
 2. `git diff --staged`
 3. verify staged content contains no sensitive/internal data
 4. if uncertain, move the material to `INTERNAL/`, `INTERNAL_ORG/`, or `PRIVATE/` instead of publishing
+
+## What's New in v4.4.2
+
+- **Centralized System Logs (`/var/log/wsms/`)**: Migrated all operational logs out of `$HOME/logs/wsms/` into standard FHS `/var/log/wsms/` with `root:sudo` (2775 SGID) permissions, keeping user home directories clean while granting seamless write access to administrators without root.
+- **Operator Home Symlink (`~/logs/wsms`)**: Automatically maintained transparent symlink `~/logs/wsms -> /var/log/wsms` for backwards compatibility and CLI muscle memory.
+- **ClamAV Quarantine Lock Protection**: Executed scans from `/tmp` (`cd /tmp || exit 1`) so ClamAV TOCTOU quarantine lock files (`.clamav-quarantine-lock.*`) never pollute `$HOME`.
+- **Quarantine Self-Exclusion & Root Device Exclusion**: Hardened `clamav-full-scan.sh` by excluding `/var/quarantine` (`--exclude-dir="^$QUARANTINE_DIR"`) as well as pseudo-filesystems `/dev` and `/run` to prevent recursive re-detection loops.
+- **Automatic Quarantine Directory Preparation**: Verified and created `/var/quarantine` with secure `root:sudo` (750) permissions prior to scans so `--move` never crashes if the directory is missing.
+- **Safe Quarantine Clean Alias**: Upgraded `clamav-clean-quarantine` to use `find /var/quarantine/ -mindepth 1 -delete` to prevent bash wildcard expansion errors when the quarantine is empty.
+- **Live Security Log Tail**: Updated `clamav-logs` alias to stream the real ClamAV scan log (`/var/log/wsms/security/clamav-scan.log`).
 
 ## What's New in v4.4.1
 

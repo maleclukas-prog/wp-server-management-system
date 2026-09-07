@@ -2,6 +2,23 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.4.2] - 2026-09-07
+
+### Changed
+- Centralized all WSMS operational logs from `$HOME/logs/wsms/` to system-wide `/var/log/wsms/` with `root:sudo` (2775 SGID) permissions, allowing administrators without root to write logs cleanly while keeping the user home directory pristine.
+- Added transparent symlink `~/logs/wsms -> /var/log/wsms` for operator convenience and backwards compatibility.
+- Updated all shell aliases (`logs-backup`, `logs-update`, `logs-sync`, `logs-scan`, `logs-all`) and Crontab redirects to point directly to `/var/log/wsms/`.
+- Updated `clamav-logs` alias to follow live security scan logs (`/var/log/wsms/security/clamav-scan.log`) instead of a legacy static path.
+
+### Fixed
+- `clamav-full-scan.sh` & `clamav-auto-scan.sh`: Execute scan from `/tmp` (`cd /tmp || exit 1`) to eliminate orphaned `.clamav-quarantine-lock.*` files owned by root in the user's `$HOME`.
+- `clamav-full-scan.sh`: Added `--exclude-dir="^$QUARANTINE_DIR"` to prevent recursive quarantine scanning loops (ClamAV re-detecting and re-locking quarantined threats on root disk scans).
+- `clamav-full-scan.sh`: Added `--exclude-dir="^/dev"` and `--exclude-dir="^/run"` to ignore pseudo-filesystems during full root scans.
+- `clamav-full-scan.sh`: Automatically verify and recreate `/var/quarantine` with `root:sudo` (750) permissions prior to scanning so `--move` never fails.
+- `clamav-clean-quarantine` alias: Replaced `rm -rf /var/quarantine/*` with safe `find /var/quarantine/ -mindepth 1 -delete` to prevent shell glob errors when quarantine is empty.
+- `wp-help.sh`: Clarified quarantine file path in command descriptions (`/var/quarantine`).
+- `tools/wsms-uninstall.sh`: Updated regex patterns to match and cleanly strip any `v4.x` alias blocks from `.bashrc` and `config.fish`.
+
 ## [4.4.1] - 2026-09-06
 
 ### Changed

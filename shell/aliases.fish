@@ -96,19 +96,18 @@ alias nas-sync-errors='tail -f $HOME/logs/wsms/sync/nas-errors.log 2>/dev/null |
 alias clamav-scan='bash $SCRIPTS_DIR/clamav-auto-scan.sh'
 alias clamav-deep-scan='bash $SCRIPTS_DIR/clamav-full-scan.sh'
 alias clamav-status='sudo systemctl status clamav-daemon --no-pager | head -15'
-alias clamav-update='sudo freshclam'
-alias clamav-logs='sudo tail -f /var/log/clamav/auto_scan.log'
+alias clamav-logs='tail -f /var/log/wsms/security/clamav-scan.log'
 alias clamav-quarantine='sudo ls -la /var/quarantine/'
-alias clamav-clean-quarantine='sudo rm -rf /var/quarantine/* && echo "✅ Quarantine cleaned"'
+alias clamav-clean-quarantine='sudo find /var/quarantine/ -mindepth 1 -delete; and echo "✅ Quarantine cleaned"'
 
 # ============================================
-# LOG VIEWING SHORTCUTS
+# LOG VIEWING SHORTCUTS (/var/log/wsms/)
 # ============================================
-alias logs-backup='tail -f $HOME/logs/wsms/backups/lite.log'
-alias logs-update='tail -f $HOME/logs/wsms/maintenance/updates.log'
-alias logs-sync='tail -f $HOME/logs/wsms/sync/nas-sync.log'
-alias logs-scan='tail -f $HOME/logs/wsms/security/clamav-scan.log'
-alias logs-all='ls -la $HOME/logs/wsms/*/'
+alias logs-backup='tail -f /var/log/wsms/backups/lite.log'
+alias logs-update='tail -f /var/log/wsms/maintenance/updates.log'
+alias logs-sync='tail -f /var/log/wsms/sync/nas-sync.log'
+alias logs-scan='tail -f /var/log/wsms/security/clamav-scan.log'
+alias logs-all='ls -la /var/log/wsms/*/'
 
 # ============================================
 # FUNCTIONS

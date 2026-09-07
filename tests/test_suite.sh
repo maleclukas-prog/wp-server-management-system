@@ -100,7 +100,9 @@ for installer in "$ROOT/installers/install_wsms.sh" "$ROOT/installers/install_ws
     assert_contains "$installer" "wp-smart-retention-manager.sh"          "retention manager in $base"
     assert_contains "$installer" "wp-rollback.sh"                         "rollback engine in $base"
     assert_contains "$installer" "wp-help.sh"                             "help script in $base"
-    assert_contains "$installer" "WSMS PRO v4.4.1"                        "version marker in $base"
+    assert_contains "$installer" "WSMS PRO v4.4.2"                        "version marker in $base"
+    assert_contains "$installer" "/var/log/wsms"                          "/var/log/wsms in $base"
+    assert_contains "$installer" "/var/quarantine"                        "/var/quarantine in $base"
     assert_contains "$installer" "CRONTAB"                                "crontab block in $base"
 done
 

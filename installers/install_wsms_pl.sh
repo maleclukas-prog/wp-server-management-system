@@ -187,8 +187,10 @@ else
     log_warning "Nie udało się ustawić uprawnień /var/quarantine"
 fi
 
-# Uprawnienia dla /var/log/wsms: grupa sudo + flaga SGID (2775)
-if sudo chown -R root:sudo /var/log/wsms 2>/dev/null && sudo chmod -R 2775 /var/log/wsms 2>/dev/null; then
+# Uprawnienia dla /var/log/wsms: właściciel $USER, grupa sudo + flaga SGID (2775)
+if sudo chown -R "$USER:sudo" /var/log/wsms 2>/dev/null && sudo chmod -R 2775 /var/log/wsms 2>/dev/null; then
+    log_success "Ustawiono uprawnienia dla /var/log/wsms ($USER:sudo 2775 SGID)"
+elif sudo chown -R root:sudo /var/log/wsms 2>/dev/null && sudo chmod -R 2775 /var/log/wsms 2>/dev/null; then
     log_success "Ustawiono uprawnienia dla /var/log/wsms (root:sudo 2775 SGID)"
 elif sudo chmod -R 775 /var/log/wsms 2>/dev/null; then
     log_warning "Ustawiono uprawnienia 775 dla /var/log/wsms"
