@@ -32,6 +32,18 @@ Icon
 *.icloud
 Thumbs.db
 
+# Linux / Ubuntu system & filesystem
+lost+found/
+.Trash-*/
+.fuse_hidden*
+.nfs*
+core
+core.*
+*.crash
+
+# Linux editors backup files
+*~
+
 # Temporary files
 /tmp/
 *.tmp
