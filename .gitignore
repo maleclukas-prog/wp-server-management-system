@@ -48,6 +48,7 @@ core.*
 /tmp/
 *.tmp
 *.temp
+*.bak
 *_BACKUP_*
 *_backup_*
 
