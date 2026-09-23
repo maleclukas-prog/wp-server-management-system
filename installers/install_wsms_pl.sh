@@ -82,10 +82,11 @@ echo -e "${BLUE}📍 Wykryta powłoka: $CURRENT_SHELL${NC}"
 # =================================================================
 # ⚙️ KONFIGURACJA - EDYTUJ TYLKO TUTAJ!
 # =================================================================
-# Format: "nazwa_strony:/pelna/sciezka/do/public_html:uzytkownik_systemowy"
+# Format: "twoja-domena.com:/pelna/sciezka/do/public_html:uzytkownik_systemowy"
+# Zastąp site1.com i site2.com swoimi domenami, ścieżkami i użytkownikiem systemu.
 MANAGED_SITES=(
-    "site1:/var/www/site1/public_html:wordpress_site1"
-    "site2:/var/www/site2/public_html:wordpress_site2"
+    "site1.com:/var/www/site1.com/public_html:ubuntu"
+    "site2.com:/var/www/site2.com/public_html:ubuntu"
 )
 
 # Ustawienia Synology NAS (Zdalny magazyn backupów)
@@ -1373,19 +1374,31 @@ for site in "${SITES[@]}"; do
     log "${YELLOW}Naprawa uprawnień dla $name (Użytkownik: $user)${NC}"
     
     if [ -d "$path" ]; then
-        # Właściciel
-        sudo chown -R "$user":"$user" "$path" 2>/dev/null
+        # Określ grupę serwera WWW (www-data w Debian/Ubuntu, fallback na usera)
+        GRUPA_WWW="www-data"
+        if ! getent group "$GRUPA_WWW" >/dev/null 2>&1; then
+            GRUPA_WWW="$user"
+        fi
+
+        # Właściciel: operator systemu + grupa serwera www
+        sudo chown -R "$user":"$GRUPA_WWW" "$path" 2>/dev/null
         
-        # Uprawnienia katalogów
-        sudo find "$path" -type d -exec chmod 755 {} \; 2>/dev/null
+        # Uprawnienia katalogów: 775 z SGID na wp-content dla dziedziczenia grupy
+        sudo find "$path" -type d -exec chmod 775 {} \; 2>/dev/null
+        if [ -d "$path/wp-content" ]; then
+            sudo find "$path/wp-content" -type d -exec chmod 2775 {} \; 2>/dev/null
+        fi
         
-        # Uprawnienia plików
-        sudo find "$path" -type f -exec chmod 644 {} \; 2>/dev/null
+        # Uprawnienia plików: 664
+        sudo find "$path" -type f -exec chmod 664 {} \; 2>/dev/null
         
-        # Zabezpiecz wp-config.php
+        # Zabezpiecz wp-config.php (640) oraz wymuś FS_METHOD direct (brak pytań o FTP w panelu WP)
         if [ -f "$path/wp-config.php" ]; then
             sudo chmod 640 "$path/wp-config.php" 2>/dev/null
-            log "   ✅ wp-config.php zabezpieczony (640)"
+            if ! grep -q "FS_METHOD" "$path/wp-config.php" 2>/dev/null; then
+                sudo sed -i "/<?php/a define('FS_METHOD', 'direct');" "$path/wp-config.php" 2>/dev/null || true
+            fi
+            log "   ✅ wp-config.php zabezpieczony (640) & bezpośredni zapis plików włączony"
         fi
         
         # Zabezpiecz .htaccess

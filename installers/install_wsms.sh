@@ -82,10 +82,11 @@ echo -e "${BLUE}📍 Detected shell: $CURRENT_SHELL${NC}"
 # =================================================================
 # ⚙️ CONFIGURATION - EDIT ONLY HERE!
 # =================================================================
-# Format: "site_nickname:/full/path/to/public_html:system_user"
+# Format: "your-domain.com:/full/path/to/public_html:system_user"
+# Replace site1.com and site2.com with your actual WordPress domains and paths.
 MANAGED_SITES=(
-    "site1:/var/www/site1/public_html:wordpress_site1"
-    "site2:/var/www/site2/public_html:wordpress_site2"
+    "site1.com:/var/www/site1.com/public_html:ubuntu"
+    "site2.com:/var/www/site2.com/public_html:ubuntu"
 )
 
 # Synology NAS Settings (Remote Backup Vault)
@@ -1440,19 +1441,31 @@ for site in "${SITES[@]}"; do
     log "${YELLOW}Fixing permissions for $name (User: $user)${NC}"
     
     if [ -d "$path" ]; then
-        # Ownership
-        sudo chown -R "$user":"$user" "$path" 2>/dev/null
+        # Determine web server group (www-data on Debian/Ubuntu, fallback to user)
+        WEB_GROUP="www-data"
+        if ! getent group "$WEB_GROUP" >/dev/null 2>&1; then
+            WEB_GROUP="$user"
+        fi
+
+        # Ownership: operator user + web server group
+        sudo chown -R "$user":"$WEB_GROUP" "$path" 2>/dev/null
         
-        # Directory permissions
-        sudo find "$path" -type d -exec chmod 755 {} \; 2>/dev/null
+        # Directory permissions: 775 with SGID on wp-content for group inheritance
+        sudo find "$path" -type d -exec chmod 775 {} \; 2>/dev/null
+        if [ -d "$path/wp-content" ]; then
+            sudo find "$path/wp-content" -type d -exec chmod 2775 {} \; 2>/dev/null
+        fi
         
-        # File permissions
-        sudo find "$path" -type f -exec chmod 644 {} \; 2>/dev/null
+        # File permissions: 664
+        sudo find "$path" -type f -exec chmod 664 {} \; 2>/dev/null
         
-        # Secure wp-config.php
+        # Secure wp-config.php (640) and ensure FS_METHOD is direct (no FTP prompt in wp-admin)
         if [ -f "$path/wp-config.php" ]; then
             sudo chmod 640 "$path/wp-config.php" 2>/dev/null
-            log "   ✅ wp-config.php secured (640)"
+            if ! grep -q "FS_METHOD" "$path/wp-config.php" 2>/dev/null; then
+                sudo sed -i "/<?php/a define('FS_METHOD', 'direct');" "$path/wp-config.php" 2>/dev/null || true
+            fi
+            log "   ✅ wp-config.php secured (640) & direct filesystem write enabled"
         fi
         
         # Secure .htaccess

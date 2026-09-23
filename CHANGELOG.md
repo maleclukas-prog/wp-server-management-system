@@ -9,6 +9,8 @@ All notable changes to WSMS PRO are documented in this file.
 - **Self-Healing SMTP / Auto-generated `~/.msmtprc`:** `wsms-notify.sh` now automatically generates and manages `~/.msmtprc` with strict `0600` permissions on demand, and configures `~/.mailrc` without requiring manual file editing or guesswork.
 - **Failover Alert Delivery:** `wsms-notify.sh` now gracefully falls back to direct `msmtp` delivery if the standard `mail` command is not yet linked.
 - **Automated Dependencies:** Installers (`install_wsms.sh`, `install_wsms_pl.sh`) now automatically install `msmtp`, `msmtp-mta`, `bsd-mailx`, and `ca-certificates` as part of Phase 2 dependencies.
+- **Filesystem Permission Fix & Direct Updates:** Updated `infrastructure-permission-orchestrator.sh` (`wp-fix-perms`) to set `www-data` group permissions (775/2775 SGID) and automatically inject `define('FS_METHOD', 'direct');` into `wp-config.php`, resolving WordPress prompting for FTP/SFTP credentials on plugin/theme installations.
+- **Anonymized Installer Site Templates:** Updated default `MANAGED_SITES` in `install_wsms.sh` and `install_wsms_pl.sh` to use clean `site1.com` and `site2.com` FQDN placeholders with clear instructions, preventing regex rejection in `wp-hosts-sync`.
 
 ## [4.4.3] - 2026-09-23
 
