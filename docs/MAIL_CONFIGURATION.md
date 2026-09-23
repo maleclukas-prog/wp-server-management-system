@@ -22,17 +22,17 @@ Simply configure your SMTP settings directly in `~/scripts/wsms-config.sh` (or d
 
 ```bash
 # ==================== NOTIFICATIONS & SMTP (SSOT) ====================
-ALERT_EMAIL="admin@yourdomain.com"
+ALERT_EMAIL="from_you@email.com"
 ALERT_ON_FAILURE="yes"
 ALERT_ON_SUCCESS="no"
 
 # SMTP Relay Configuration (auto-manages ~/.msmtprc)
 SMTP_ENABLED="yes"
-SMTP_HOST="smtp.yourdomain.com"
+SMTP_HOST="SMTP_SERVER"
 SMTP_PORT="587"
-SMTP_USER="admin@yourdomain.com"
-SMTP_PASS="YOUR_SMTP_PASSWORD"
-SMTP_FROM="admin@yourdomain.com"
+SMTP_USER="YOUR_LOGIN(user@email.com)"
+SMTP_PASS="YOUR_PASSWORD"
+SMTP_FROM="from_you@email.com"
 SMTP_TLS="on"
 SMTP_STARTTLS="on"
 ```
@@ -66,11 +66,11 @@ tls_trust_file /etc/ssl/certs/ca-certificates.crt
 logfile ~/.msmtp.log
 
 account default
-host SMTP_HOST
+host SMTP_SERVER
 port 587
-from SMTP_FROM
-user SMTP_USER
-password SMTP_PASSWORD
+from from_you@email.com
+user YOUR_LOGIN(user@email.com)
+password YOUR_PASSWORD
 EOF
 
 chmod 600 ~/.msmtprc

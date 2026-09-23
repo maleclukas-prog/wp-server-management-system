@@ -7,8 +7,8 @@ auto_from off
 set_from_header on
 
 account default
-host SMTP_HOST
+host SMTP_SERVER
 port 587
-from SMTP_FROM
-user SMTP_USER
-password SMTP_PASSWORD
+from from_you@email.com
+user YOUR_LOGIN(user@email.com)
+password YOUR_PASSWORD

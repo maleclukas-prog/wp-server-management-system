@@ -98,14 +98,14 @@ NAS_SSH_KEY="$HOME/.ssh/id_rsa"
 
 # Ustawienia alertów email SMTP (Single Source of Truth)
 SMTP_ENABLED="no"                      # "yes" aby auto-konfigurować ~/.msmtprc, "no" aby wyłączyć
-ALERT_EMAIL=""                         # np. contact@lucasmalec.com
+ALERT_EMAIL="from_you@email.com"       # adres docelowy do odbierania alertów
 ALERT_ON_FAILURE="yes"                 # wyślij alert przy krytycznym błędzie
 ALERT_ON_SUCCESS="no"                  # wyślij alert po pomyślnym uruchomieniu crona
-SMTP_HOST=""                           # np. ssl0.ovh.net lub smtp.gmail.com
+SMTP_HOST="SMTP_SERVER"                # np. ssl0.ovh.net lub smtp.gmail.com
 SMTP_PORT="587"                        # 587 (STARTTLS) lub 465 (SSL)
-SMTP_USER=""                           # twój email / login smtp
-SMTP_PASS=""                           # twoje hasło smtp
-SMTP_FROM=""                           # adres nadawcy (domyślnie SMTP_USER jeśli puste)
+SMTP_USER="YOUR_LOGIN(user@email.com)" # twój login / adres email do SMTP
+SMTP_PASS="YOUR_PASSWORD"              # twoje hasło do konta SMTP
+SMTP_FROM="from_you@email.com"         # adres email nadawcy
 SMTP_TLS="on"
 SMTP_STARTTLS="on"
 # =================================================================
