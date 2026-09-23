@@ -1,6 +1,6 @@
 # WSMS PRO - WordPress Server Management System
 
-**Version:** 4.4.2 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog)
+**Version:** 4.4.3 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog) (<github@lucasmalec.com>) | [![ORCID](https://img.shields.io/badge/ORCID-0009--0004--3522--0828-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0004-3522-0828) | [![Cite](https://img.shields.io/badge/Cite-CITATION.cff-blue.svg)](CITATION.cff) | [lucasmalec.com](https://lucasmalec.com)
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
@@ -84,6 +84,13 @@ Pre-push check (mandatory):
 2. `git diff --staged`
 3. verify staged content contains no sensitive/internal data
 4. if uncertain, move the material to `INTERNAL/`, `INTERNAL_ORG/`, or `PRIVATE/` instead of publishing
+
+## What's New in v4.4.3
+
+- **Single-Site Asset Backups (`wp-backup-site <site>`)**: Enhanced `wp-interactive-backup-tool.sh` to accept an optional site argument. Running `wp-backup-site DOMENA` immediately creates a full essential asset backup (files + MySQL database) for the specified site without interactive prompts. Running without arguments launches the interactive selection menu.
+- **Symmetrical MySQL Alias (`mysql-backup-site`)**: Added `mysql-backup-site` alias pointing directly to `mysql-backup-manager.sh` matching the `wp-backup-site` naming convention.
+- **Enhanced Help Command Reference (`wp-help.sh`)**: Updated Section 3 to explicitly document `wp-backup-site [site]` and clarify `wp-backup-ui`. Added `wp-backup-site $name` to Section 10 per-site commands.
+- **Selective Lite Asset Archiving**: Extended `wp-essential-assets-backup.sh` to support targeting a single site (`$1`) or all sites (`all`), avoiding unnecessary multi-site archival when targeting a specific instance.
 
 ## What's New in v4.4.2
 
@@ -206,7 +213,9 @@ Notable runtime commands:
 - `wp-update-theme <site> <theme>` - update one theme on one site
 - `wp-snapshot <site>` - create instant snapshot (files and DB) for one site
 - `wp-rollback <site>` - restore one site to its latest snapshot
-- `mysql-backup <site>` - dump MySQL database for one site
+- `wp-backup-site <site>` - backup files and database for one site (interactive menu without arguments)
+- `wp-backup-ui` - interactive menu for single-site backup
+- `mysql-backup <site>` - dump MySQL database for one site (alias: `mysql-backup-site`)
 - `nas-sync` - manual NAS synchronization (new files are uploaded, old files pruned by retention policy)
 - `backup-clean` - interactive retention menu (standard + emergency modes)
 - `backup-force-clean` - automatic retention cleanup
@@ -216,7 +225,7 @@ Notable runtime commands:
 WSMS can send email notifications on critical failures. Configure in `~/scripts/wsms-config.sh` after installation:
 
 ```bash
-ALERT_EMAIL="you@example.com"   # leave empty to disable
+ALERT_EMAIL="admin@lucasmalec.com"   # leave empty to disable
 ALERT_ON_FAILURE="yes"
 ALERT_ON_SUCCESS="no"
 ```
@@ -451,3 +460,23 @@ Uninstaller cleanup covers both marker-based WSMS blocks and legacy v4.2-style s
 
 When this repository is synchronized via iCloud between macOS devices, Finder metadata files may appear locally.
 Repository `.gitignore` already excludes common macOS/iCloud artifacts (for example `.DS_Store`, `._*`, and `*.icloud`) to keep commits clean.
+
+## Citation
+
+If you use or reference WSMS PRO in your research, infrastructure, or technical publications, please cite it using the metadata in [CITATION.cff](CITATION.cff) or click the **"Cite this repository"** button in GitHub's sidebar:
+
+```bibtex
+@software{malec2026wsms,
+  author = {Malec, Lukasz},
+  title = {WSMS PRO - WordPress Server Management System},
+  year = {2026},
+  version = {4.4.3},
+  url = {https://github.com/maleclukas-prog/wp-server-management-system},
+  note = {ORCID: 0009-0004-3522-0828}
+}
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+

@@ -2,6 +2,18 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.4.3] - 2026-09-23
+
+### Added
+- `wp-backup-site <site>`: Added ability to backup a single site (files + database) directly with argument syntax or via interactive menu when run without parameters.
+- `mysql-backup-site`: Added symmetrical alias for single-site MySQL database backups.
+- `wp-help.sh`: Updated Section 3 to explicitly list `wp-backup-site [site]`, `wp-backup-ui`, and `mysql-backup [site]`. Added `wp-backup-site $name` to Section 10 per-site commands.
+
+### Changed
+- `wp-interactive-backup-tool.sh`: Refactored to support direct `$1` site argument and perform complete essential assets backup (files + database) for the chosen site.
+- `wp-essential-assets-backup.sh`: Added optional target site filtering (`$1`) for single-site asset backups while preserving global multi-site runs.
+- Bumped version to `v4.4.3` across all installers, shell aliases, crontab blocks, and runtime modules.
+
 ## [4.4.2] - 2026-09-07
 
 ### Changed

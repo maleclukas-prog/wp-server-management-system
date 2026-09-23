@@ -1,8 +1,8 @@
 #!/bin/bash
 # =================================================================
-# 🚀 WSMS PRO v4.4.2 - UNIWERSALNY INSTALATOR
-# Wersja: 4.4.2 | Działa w każdej powłoce (Bash, Fish, Zsh, Sh)
-# Autor: Lukasz Malec / GitHub: maleclukas-prog
+# 🚀 WSMS PRO v4.4.3 - UNIWERSALNY INSTALATOR
+# Wersja: 4.4.3 | Działa w każdej powłoce (Bash, Fish, Zsh, Sh)
+# Autor: Lukasz Malec <github@lucasmalec.com> / GitHub: maleclukas-prog / Web: lucasmalec.com
 # Licencja: MIT
 # Opis: Kompletny instalator WordPress Server Management System
 # =================================================================
@@ -69,7 +69,7 @@ trap 'on_install_error "$LINENO" "$BASH_COMMAND" "$?"' ERR
 trap 'on_install_exit "$?"' EXIT
 
 echo -e "${CYAN}==========================================================${NC}"
-echo -e "${CYAN}   🚀 WSMS PRO v4.4.2 - UNIWERSALNY INSTALATOR               ${NC}"
+echo -e "${CYAN}   🚀 WSMS PRO v4.4.3 - UNIWERSALNY INSTALATOR               ${NC}"
 echo -e "${CYAN}   WordPress Server Management System                       ${NC}"
 echo -e "${CYAN}   Działa w Bash, Fish, Zsh, Sh                            ${NC}"
 echo -e "${CYAN}==========================================================${NC}"
@@ -243,7 +243,7 @@ HOME_EXPANDED="$HOME"
 cat > "$HOME/scripts/wsms-config.sh" << 'EOF'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - KONFIGURACJA CENTRALNA
+# WSMS PRO v4.4.3 - KONFIGURACJA CENTRALNA
 # Wygenerowane przez instalator - NIE EDYTUJ RĘCZNIE
 # =================================================================
 
@@ -433,7 +433,7 @@ wsms_init_live_logging
 deploy "wsms-notify.sh" << 'EOFNOTIFY'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - MODUŁ ALERTÓW EMAIL
+# WSMS PRO v4.4.3 - MODUŁ ALERTÓW EMAIL
 # Dołącz ten plik w innych skryptach aby włączyć powiadomienia email.
 # Wymaga ALERT_EMAIL, ALERT_ON_FAILURE, ALERT_ON_SUCCESS w wsms-config.sh
 # =================================================================
@@ -466,7 +466,7 @@ EOFNOTIFY
 deploy "wsms-daily-check.sh" << 'EOFDAILY'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - CODZIENNY SPRAWDZIAN SYSTEMU
+# WSMS PRO v4.4.3 - CODZIENNY SPRAWDZIAN SYSTEMU
 # Uruchamiaj przez cron raz dziennie aby wykrywać krytyczne problemy.
 # Przykład cron: 0 7 * * * bash $HOME/scripts/wsms-daily-check.sh
 # =================================================================
@@ -505,7 +505,7 @@ EOFDAILY
 deploy "server-health-audit.sh" << 'EOFAUDIT'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - ROZSZERZONA DIAGNOSTYKA SYSTEMU
+# WSMS PRO v4.4.3 - ROZSZERZONA DIAGNOSTYKA SYSTEMU
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -540,7 +540,7 @@ sprawdz_dostepnosc_strony() {
 }
 
 clear
-echo -e "${BLUE}🖥️  WSMS DIAGNOSTYKA SYSTEMU v4.4.2${NC}"
+echo -e "${BLUE}🖥️  WSMS DIAGNOSTYKA SYSTEMU v4.4.3${NC}"
 echo "=========================================================="
 echo -e "⏰ Czas: $(date)"
 echo -e "💻 Host: $(hostname) | OS: $(lsb_release -d 2>/dev/null | cut -f2 || echo 'Ubuntu')"
@@ -755,13 +755,13 @@ EOFAUDIT
 deploy "wp-fleet-status-monitor.sh" << 'EOFFLEET'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - MONITOR STATUSU FLOTY WORDPRESS
+# WSMS PRO v4.4.3 - MONITOR STATUSU FLOTY WORDPRESS
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
 GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; RED='\033[0;31m'; NC='\033[0m'
 
-echo -e "${CYAN}📊 STATUS FLOTY WORDPRESS v4.4.2${NC}"
+echo -e "${CYAN}📊 STATUS FLOTY WORDPRESS v4.4.3${NC}"
 echo "=========================================================="
 
 check_ssl_expiry() {
@@ -885,13 +885,13 @@ EOFFLEET
 deploy "wp-multi-instance-audit.sh" << 'EOFAUDIT2'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - GŁĘBOKI AUDYT WIELU INSTANCJI
+# WSMS PRO v4.4.3 - GŁĘBOKI AUDYT WIELU INSTANCJI
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
 CYAN='\033[0;36m'; YELLOW='\033[1;33m'; GREEN='\033[0;32m'; RED='\033[0;31m'; NC='\033[0m'
 
-echo -e "${CYAN}🔍 ROZPOCZĘCIE GŁĘBOKIEGO AUDYTU v4.4.2${NC}"
+echo -e "${CYAN}🔍 ROZPOCZĘCIE GŁĘBOKIEGO AUDYTU v4.4.3${NC}"
 echo "=========================================================="
 
 for site in "${SITES[@]}"; do
@@ -946,7 +946,7 @@ EOFAUDIT2
 deploy "wp-automated-maintenance-engine.sh" << 'EOFMAINT'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - SILNIK UTRZYMANIA CAŁEJ FLOTY
+# WSMS PRO v4.4.3 - SILNIK UTRZYMANIA CAŁEJ FLOTY
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -957,7 +957,7 @@ LOG_FILE="$LOG_UPDATES"
 wsms_init_live_logging "$LOG_FILE"
 
 echo "=========================================================="
-echo "🔄 SILNIK UTRZYMANIA v4.4.2 - $(date)"
+echo "🔄 SILNIK UTRZYMANIA v4.4.3 - $(date)"
 echo "=========================================================="
 
 success_count=0
@@ -1179,7 +1179,7 @@ EOFMAINT
 deploy "infrastructure-permission-orchestrator.sh" << 'EOFPERM'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - ORKIESTRATOR UPRAWNIEŃ INFRASTRUKTURY
+# WSMS PRO v4.4.3 - ORKIESTRATOR UPRAWNIEŃ INFRASTRUKTURY
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -1387,7 +1387,7 @@ EOFPERM
 deploy "wp-full-recovery-backup.sh" << 'EOFFULL'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - PEŁNY BACKUP ODTWORZENIOWY
+# WSMS PRO v4.4.3 - PEŁNY BACKUP ODTWORZENIOWY
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -1398,7 +1398,7 @@ LOG_FILE="$LOG_FULL_BACKUP"
 wsms_init_live_logging "$LOG_FILE"
 
 echo "=========================================================="
-echo "💾 PEŁNY BACKUP v4.4.2 - $(date)"
+echo "💾 PEŁNY BACKUP v4.4.3 - $(date)"
 echo "=========================================================="
 
 for site in "${SITES[@]}"; do
@@ -1428,7 +1428,7 @@ EOFFULL
 deploy "wp-essential-assets-backup.sh" << 'EOFLITE'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - BACKUP NIEZBĘDNYCH ZASOBÓW (LITE)
+# WSMS PRO v4.4.3 - BACKUP NIEZBĘDNYCH ZASOBÓW (LITE)
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -1439,11 +1439,16 @@ LOG_FILE="$LOG_LITE_BACKUP"
 wsms_init_live_logging "$LOG_FILE"
 
 echo "=========================================================="
-echo "⚡ SZYBKI BACKUP v4.4.2 - $(date)"
+echo "⚡ SZYBKI BACKUP v4.4.3 - $(date)"
 echo "=========================================================="
+
+target_site="${1:-all}"
 
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
+    if [ "$target_site" != "all" ] && [ "$target_site" != "$name" ]; then
+        continue
+    fi
     echo -e "\n📁 Archiwizacja zasobów $name..."
     bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name" 2>/dev/null
     tar -czf "$BACKUP_LITE_DIR/lite-$name-$TS.tar.gz" -C "$path" wp-content/uploads wp-content/themes wp-content/plugins wp-config.php .htaccess 2>/dev/null
@@ -1467,7 +1472,7 @@ EOFLITE
 deploy "mysql-backup-manager.sh" << 'EOFMYSQL'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - MENEDŻER BACKUPÓW MYSQL
+# WSMS PRO v4.4.3 - MENEDŻER BACKUPÓW MYSQL
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -1522,7 +1527,7 @@ EOFMYSQL
 deploy "nas-sftp-sync.sh" << 'EOFNAS'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - SYNCHRONIZACJA NAS (SFTP)
+# WSMS PRO v4.4.3 - SYNCHRONIZACJA NAS (SFTP)
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -1815,7 +1820,7 @@ EOFNAS
 deploy "wp-smart-retention-manager.sh" << 'EOFRET'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - INTELIGENTNY MENEDŻER RETENCJI
+# WSMS PRO v4.4.3 - INTELIGENTNY MENEDŻER RETENCJI
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -1838,7 +1843,7 @@ normalizuj_klucz_backupu() {
 }
 
 list_backups() {
-    echo -e "${CYAN}📋 WSZYSTKIE BACKUPY ZE SZCZEGÓŁAMI v4.4.2${NC}"
+    echo -e "${CYAN}📋 WSZYSTKIE BACKUPY ZE SZCZEGÓŁAMI v4.4.3${NC}"
     echo "=========================================================="
     
     for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR" "$BACKUP_ROLLBACK_DIR"; do
@@ -1854,7 +1859,7 @@ list_backups() {
 }
 
 show_size() {
-    echo -e "${CYAN}💽 WYKORZYSTANIE MIEJSCA NA BACKUPY v4.4.2${NC}"
+    echo -e "${CYAN}💽 WYKORZYSTANIE MIEJSCA NA BACKUPY v4.4.3${NC}"
     echo "=========================================================="
     
     for dir in "$BACKUP_LITE_DIR" "$BACKUP_FULL_DIR" "$BACKUP_MYSQL_DIR" "$BACKUP_ROLLBACK_DIR"; do
@@ -2285,7 +2290,7 @@ EOFRET
 deploy "wp-help.sh" << 'EOFHELP'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - KOMPLETNY SPIS KOMEND
+# WSMS PRO v4.4.3 - KOMPLETNY SPIS KOMEND
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2294,9 +2299,9 @@ BLUE='\033[0;34m'; CYAN='\033[0;36m'; WHITE='\033[1;37m'; NC='\033[0m'
 
 clear
 echo -e "${WHITE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${WHITE}║          🆘 WSMS PRO v4.4.2 — SPIS KOMEND                    ║${NC}"
+echo -e "${WHITE}║          🆘 WSMS PRO v4.4.3 — SPIS KOMEND                    ║${NC}"
 echo -e "${WHITE}╚════════════════════════════════════════════════════════════╝${NC}"
-echo -e "${CYAN}⏰ $(date) │ 📦 v4.4.2 │ 🖥️  $(hostname)${NC}"
+echo -e "${CYAN}⏰ $(date) │ 📦 v4.4.3 │ 🖥️  $(hostname)${NC}"
 echo ""
 
 # ============================================
@@ -2333,10 +2338,12 @@ echo -e "${BLUE}│  💾 ZARZĄDZANIE BACKUPAMI                                
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 echo -e "${YELLOW}  Tworzenie backupów:${NC}"
-printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-lite" "Szybki: motywy, wtyczki, uploads, config"
-printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-full" "Pełny: wszystkie pliki + baza danych"
-printf "    ${GREEN}%-20s${NC} %s\n" "mysql-backup-all" "Wszystkie bazy WordPress"
-printf "    ${GREEN}%-20s${NC} %s\n" "wp-backup-ui" "Menu interaktywne"
+printf "    ${GREEN}%-24s${NC} %s\n" "wp-backup-lite" "Szybki: motywy, wtyczki, uploads, config"
+printf "    ${GREEN}%-24s${NC} %s\n" "wp-backup-full" "Pełny: wszystkie pliki + baza danych"
+printf "    ${GREEN}%-24s${NC} %s\n" "wp-backup-site [strona]" "Kopia pojedynczej strony (pliki + baza)"
+printf "    ${GREEN}%-24s${NC} %s\n" "wp-backup-ui" "Interaktywne menu wyboru strony do skopiowania"
+printf "    ${GREEN}%-24s${NC} %s\n" "mysql-backup-all" "Wszystkie bazy WordPress"
+printf "    ${GREEN}%-24s${NC} %s\n" "mysql-backup [strona]" "Kopia bazy strony (alias: mysql-backup-site)"
 echo ""
 echo -e "${YELLOW}  Przeglądanie backupów:${NC}"
 printf "    ${GREEN}%-20s${NC} %s\n" "backup-list" "Lista wszystkich backupów z rozmiarem i datą"
@@ -2383,7 +2390,7 @@ echo ""
 # SEKCJA 6: SYSTEM ROLLBACK
 # ============================================
 echo -e "${BLUE}┌────────────────────────────────────────────────────────────┐${NC}"
-echo -e "${BLUE}│  🔄 SYSTEM ROLLBACK — NOWOŚĆ w v4.4.2                         │${NC}"
+echo -e "${BLUE}│  🔄 SYSTEM ROLLBACK — NOWOŚĆ w v4.4.3                         │${NC}"
 echo -e "${BLUE}└────────────────────────────────────────────────────────────┘${NC}"
 echo ""
 echo -e "${CYAN}  Natychmiastowe odzyskiwanie po nieudanych aktualizacjach!${NC}"
@@ -2456,10 +2463,11 @@ echo -e "${BLUE}└────────────────────�
 echo ""
 for site in "${SITES[@]}"; do
     IFS=':' read -r name path user <<< "$site"
+    printf "  ${GREEN}%-46s${NC} %s\n" "wp-backup-site $name" "Kopia strony $name"
+    printf "  ${GREEN}%-46s${NC} %s\n" "mysql-backup $name" "Kopia bazy dla $name"
     printf "  ${GREEN}%-46s${NC} %s\n" "wp-snapshot $name" "Migawka dla $name"
     printf "  ${GREEN}%-46s${NC} %s\n" "wp-rollback $name" "Rollback dla $name"
     printf "  ${GREEN}%-46s${NC} %s\n" "wp-update-site $name" "Aktualizacja dla $name"
-    printf "  ${GREEN}%-46s${NC} %s\n" "mysql-backup $name" "Kopia bazy dla $name"
     echo ""
 done
 
@@ -2481,11 +2489,11 @@ echo ""
 # STOPKA
 # ============================================
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
-echo -e "${GREEN}✅ WSMS PRO v4.4.2 — GOTOWY DO PRACY${NC}"
+echo -e "${GREEN}✅ WSMS PRO v4.4.3 — GOTOWY DO PRACY${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
 echo ""
 echo -e "${WHITE}📚 Dokumentacja: ~/scripts/ │ 🐛 Zgłoś problem: github.com/maleclukas-prog${NC}"
-echo -e "${WHITE}👤 Autor: Lukasz Malec${NC}"
+echo -e "${WHITE}👤 Autor: Lukasz Malec <github@lucasmalec.com> │ 🌐 lucasmalec.com${NC}"
 echo ""
 EOFHELP
 
@@ -2495,19 +2503,49 @@ EOFHELP
 deploy "wp-interactive-backup-tool.sh" << 'EOFINTER'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - INTERAKTYWNY BACKUP TOOL
+# WSMS PRO v4.4.3 - INTERAKTYWNY BACKUP TOOL
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
+
+target="${1:-}"
+if [ -n "$target" ]; then
+    found=false
+    for site in "${SITES[@]}"; do
+        IFS=':' read -r name path user <<< "$site"
+        if [ "$target" = "$name" ]; then
+            found=true
+            break
+        fi
+    done
+    if [ "$found" = true ]; then
+        bash "$SCRIPT_DIR/wp-essential-assets-backup.sh" "$target"
+        exit $?
+    else
+        echo "❌ Nie znaleziono strony: $target"
+        echo "Dostępne strony:"
+        for site in "${SITES[@]}"; do
+            IFS=':' read -r name path user <<< "$site"
+            echo " - $name"
+        done
+        exit 1
+    fi
+fi
+
 echo "🎯 INTERAKTYWNY BACKUP"
 echo "0) Wszystkie strony"
 i=1; declare -A site_map
 for site in "${SITES[@]}"; do IFS=':' read -r name path user <<< "$site"; echo "$i) $name"; site_map[$i]="$site"; ((i++)); done
 read -p "Wybór: " choice
 [[ "$choice" == "0" ]] && bash "$SCRIPT_DIR/wp-essential-assets-backup.sh" && exit
-IFS=':' read -r name path user <<< "${site_map[$choice]}"
-bash "$SCRIPT_DIR/mysql-backup-manager.sh" "$name"
-echo "✅ Backup zakończony"
+if [ -n "${site_map[$choice]:-}" ]; then
+    IFS=':' read -r name path user <<< "${site_map[$choice]}"
+    bash "$SCRIPT_DIR/wp-essential-assets-backup.sh" "$name"
+    echo "✅ Backup zakończony"
+else
+    echo "❌ Nieprawidłowy wybór"
+    exit 1
+fi
 EOFINTER
 
 # -----------------------------------------------------------------
@@ -2516,7 +2554,7 @@ EOFINTER
 deploy "standalone-mysql-backup-engine.sh" << 'EOFSTAND'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - STANDALONE MYSQL BACKUP ENGINE
+# WSMS PRO v4.4.3 - STANDALONE MYSQL BACKUP ENGINE
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2529,7 +2567,7 @@ EOFSTAND
 deploy "red-robin-system-backup.sh" << 'EOFROBIN'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - RED-ROBIN BACKUP SYSTEMU
+# WSMS PRO v4.4.3 - RED-ROBIN BACKUP SYSTEMU
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2545,7 +2583,7 @@ EOFROBIN
 deploy "clamav-auto-scan.sh" << 'EOFCLAM'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - CLAMAV AUTO SCAN
+# WSMS PRO v4.4.3 - CLAMAV AUTO SCAN
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2566,7 +2604,7 @@ EOFCLAM
 deploy "clamav-full-scan.sh" << 'EOFFULLCLAM'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - CLAMAV FULL SCAN
+# WSMS PRO v4.4.3 - CLAMAV FULL SCAN
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2604,7 +2642,7 @@ EOFFULLCLAM
 deploy "wp-cli-infrastructure-validator.sh" << 'EOFCLI'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - WALIDATOR INFRASTRUKTURY WP-CLI
+# WSMS PRO v4.4.3 - WALIDATOR INFRASTRUKTURY WP-CLI
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2621,7 +2659,7 @@ EOFCLI
 deploy "wp-rollback.sh" << 'EOFROLLBACK'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - SILNIK ROLLBACK
+# WSMS PRO v4.4.3 - SILNIK ROLLBACK
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2693,7 +2731,7 @@ EOFROLLBACK
 deploy "wp-hosts-sync.sh" << 'EOFHOSTS'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - SYNCHRONIZACJA /etc/hosts
+# WSMS PRO v4.4.3 - SYNCHRONIZACJA /etc/hosts
 # =================================================================
 
 source "$HOME/scripts/wsms-config.sh"
@@ -2777,7 +2815,7 @@ EOFHOSTS
 deploy "wsms-clean.sh" << 'EOFCLEANPL'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.2 - SKRYPT CZYSZCZĄCY SYSTEM
+# WSMS PRO v4.4.3 - SKRYPT CZYSZCZĄCY SYSTEM
 # Opis: Czyści stare logi, backupy i pliki tymczasowe
 # Użycie: ./wsms-clean.sh [--force]
 # =================================================================
@@ -2790,7 +2828,7 @@ if [ "$1" = "--force" ] || [ "$1" = "-f" ]; then
 fi
 
 echo -e "${CYAN}==========================================================${NC}"
-echo -e "${CYAN}   🧹 WSMS PRO v4.4.2 - CZYSZCZENIE SYSTEMU                  ${NC}"
+echo -e "${CYAN}   🧹 WSMS PRO v4.4.3 - CZYSZCZENIE SYSTEMU                  ${NC}"
 echo -e "${CYAN}==========================================================${NC}"
 
 cd ~ || exit 1
@@ -2999,9 +3037,9 @@ if [ -f "$HOME/.bashrc" ]; then
     sed -i '/# >>> WSMS PRO v4\..* BASH >>>/,/# <<< WSMS PRO v4\..* BASH <<</d' "$HOME/.bashrc" 2> /dev/null
     cat >> "$HOME/.bashrc" << 'EOFALIAS'
 
-# >>> WSMS PRO v4.4.2 BASH >>>
+# >>> WSMS PRO v4.4.3 BASH >>>
 # ============================================
-# WSMS PRO v4.4.2 - BASH SHELL ALIASES
+# WSMS PRO v4.4.3 - BASH SHELL ALIASES
 # ============================================
 
 export SCRIPTS_DIR="$HOME/scripts"
@@ -3031,7 +3069,7 @@ alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 alias wp-backup-lite='bash $SCRIPTS_DIR/wp-essential-assets-backup.sh'
 alias wp-backup-full='bash $SCRIPTS_DIR/wp-full-recovery-backup.sh'
 alias wp-backup-ui='bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh'
-alias wp-backup-site='wp-backup-ui'
+alias wp-backup-site='bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh'
 alias red-robin='bash $SCRIPTS_DIR/red-robin-system-backup.sh'
 
 alias wp-snapshot='bash $SCRIPTS_DIR/wp-rollback.sh snapshot'
@@ -3050,6 +3088,7 @@ alias wsms-clean-force='bash $HOME/scripts/wsms-clean.sh --force'
 
 alias db-backup='bash $SCRIPTS_DIR/mysql-backup-manager.sh'
 alias mysql-backup='db-backup'
+alias mysql-backup-site='db-backup'
 alias mysql-backup-all='bash $SCRIPTS_DIR/mysql-backup-manager.sh all'
 alias mysql-backup-list='bash $SCRIPTS_DIR/mysql-backup-manager.sh list'
 
@@ -3073,7 +3112,7 @@ alias logs-scan='tail -f /var/log/wsms/security/clamav-scan.log'
 alias logs-all='ls -la /var/log/wsms/*/'
 
 wp-status() {
-    echo "🌐 WSMS PRO v4.4.2 - Quick Status:"
+    echo "🌐 WSMS PRO v4.4.3 - Quick Status:"
     echo "=========================================================="
     wp-list
     echo ""
@@ -3135,12 +3174,12 @@ alias wsms-daily-check='bash $SCRIPTS_DIR/wsms-daily-check.sh'
 alias wsms-test-alert='source $SCRIPTS_DIR/wsms-config.sh; source $SCRIPTS_DIR/wsms-notify.sh; send_alert failure "Test alert from $(hostname)" "This is a test alert from WSMS PRO.\nTime: $(date)\nIf you received this, alerts are working correctly." && echo "✅ Test alert submitted to local mail system for $ALERT_EMAIL" || echo "❌ Failed — check ALERT_EMAIL, mail command, and MTA configuration"'
 
 if [[ $- == *i* ]]; then
-    echo "✅ WSMS PRO v4.4.2 - Bash aliases loaded!"
+    echo "✅ WSMS PRO v4.4.3 - Bash aliases loaded!"
     echo "   Type 'wp-help' for command reference"
     echo "   Type 'wp-status' for system overview"
     echo "   Type 'wp-health' for health check"
 fi
-# <<< WSMS PRO v4.4.2 BASH <<<
+# <<< WSMS PRO v4.4.3 BASH <<<
 EOFALIAS
     echo -e "   ✅ Aliasy Bash zainstalowane"
 fi
@@ -3155,9 +3194,9 @@ if command -v fish &> /dev/null; then
     rm -f "$HOME/.config/fish/functions/wsms-test-alert.fish" 2> /dev/null
     cat >> "$HOME/.config/fish/config.fish" << 'EOFFISH'
 
-# >>> WSMS PRO v4.4.2 FISH >>>
+# >>> WSMS PRO v4.4.3 FISH >>>
 # ============================================
-# WSMS PRO v4.4.2 - FISH ALIASES
+# WSMS PRO v4.4.3 - FISH ALIASES
 # ============================================
 set -gx SCRIPTS_DIR "$HOME/scripts"
 
@@ -3189,7 +3228,7 @@ alias wp-hosts-sync='bash $SCRIPTS_DIR/wp-hosts-sync.sh'
 alias wp-backup-lite='bash $SCRIPTS_DIR/wp-essential-assets-backup.sh'
 alias wp-backup-full='bash $SCRIPTS_DIR/wp-full-recovery-backup.sh'
 alias wp-backup-ui='bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh'
-alias wp-backup-site='wp-backup-ui'
+alias wp-backup-site='bash $SCRIPTS_DIR/wp-interactive-backup-tool.sh'
 alias red-robin='bash $SCRIPTS_DIR/red-robin-system-backup.sh'
 
 alias wp-snapshot='bash $SCRIPTS_DIR/wp-rollback.sh snapshot'
@@ -3208,6 +3247,7 @@ alias wsms-clean-force='bash $HOME/scripts/wsms-clean.sh --force'
 
 alias db-backup='bash $SCRIPTS_DIR/mysql-backup-manager.sh'
 alias mysql-backup='db-backup'
+alias mysql-backup-site='db-backup'
 alias mysql-backup-all='bash $SCRIPTS_DIR/mysql-backup-manager.sh all'
 alias mysql-backup-list='bash $SCRIPTS_DIR/mysql-backup-manager.sh list'
 
@@ -3279,11 +3319,11 @@ function wsms-test-alert
     bash -lc 'source "$HOME/scripts/wsms-config.sh"; source "$HOME/scripts/wsms-notify.sh"; send_alert failure "Test alert from $(hostname)" "To jest testowy alert z WSMS PRO.\nCzas: $(date)\nJesli otrzymales te wiadomosc, alerty dzialaja poprawnie." && echo "✅ Test alert submitted to local mail system for $ALERT_EMAIL" || echo "❌ Failed — check ALERT_EMAIL, mail command, and MTA configuration"'
 end
 
-status --is-interactive; and echo "✅ WSMS PRO v4.4.2 - Fish aliases loaded!"
+status --is-interactive; and echo "✅ WSMS PRO v4.4.3 - Fish aliases loaded!"
 status --is-interactive; and echo "   Type 'wp-help' for command reference"
 status --is-interactive; and echo "   Type 'wp-status' for system overview"
 status --is-interactive; and echo "   Type 'wp-health' for health check"
-# <<< WSMS PRO v4.4.2 FISH <<<
+# <<< WSMS PRO v4.4.3 FISH <<<
 EOFFISH
     echo -e "   🐟 Aliasy Fish zainstalowane"
 else
@@ -3296,7 +3336,7 @@ echo -e "\n${BLUE}⏰ Faza 6: Konfiguracja crontab...${NC}"
 crontab -l > "/tmp/crontab_backup.txt" 2> /dev/null || true
 
 cat > /tmp/wsms_crontab.txt << CRON
-# WSMS PRO v4.4.2 - CRONTAB
+# WSMS PRO v4.4.3 - CRONTAB
 0 1 * * * sudo freshclam >> /var/log/wsms/security/clamav-update.log 2>&1
 0 3 * * * $HOME_EXPANDED/scripts/clamav-auto-scan.sh >> /var/log/wsms/security/clamav-scan.log 2>&1
 0 4 * * 0 $HOME_EXPANDED/scripts/clamav-full-scan.sh >> /var/log/wsms/security/clamav-full.log 2>&1
@@ -3318,7 +3358,7 @@ echo -e "${GREEN}✅ Uprawnienia nadane${NC}"
 
 # ==================== PODSUMOWANIE ====================
 echo -e "\n${GREEN}==========================================================${NC}"
-echo -e "${GREEN}✅ WSMS PRO v4.4.2 ZAINSTALOWANY POMYŚLNIE!${NC}"
+echo -e "${GREEN}✅ WSMS PRO v4.4.3 ZAINSTALOWANY POMYŚLNIE!${NC}"
 echo -e "${GREEN}==========================================================${NC}"
 echo ""
 echo -e "${YELLOW}📋 Podsumowanie:${NC}"
