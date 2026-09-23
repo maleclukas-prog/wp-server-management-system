@@ -1171,7 +1171,6 @@ else
     send_alert "success" "Cykl utrzymania zakończony" "Wszystkie $success_count stron(y) zaktualizowane pomyślnie.\nCzas: $(date)"
 fi
 EOFMAINT
-EOFMAINT
 
 # -----------------------------------------------------------------
 # SKRYPT 5: infrastructure-permission-orchestrator.sh
