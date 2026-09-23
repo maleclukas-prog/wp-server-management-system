@@ -184,6 +184,16 @@ assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "admin ubuntu_server"     "ma
 assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "SMTP 501"               "mail configuration guide covers SMTP 501 troubleshooting"
 assert_contains "$ROOT/docs/MAIL_CONFIGURATION.md" "envelope from address"   "mail configuration guide covers envelope sender rejection"
 
+assert_contains "$PREVIEW_EN/wsms-notify.sh" "ensure_msmtprc" "wsms-notify has ensure_msmtprc"
+assert_contains "$PREVIEW_EN/wsms-notify.sh" "SMTP_ENABLED"   "wsms-notify checks SMTP_ENABLED"
+assert_contains "$PREVIEW_PL/wsms-notify.sh" "ensure_msmtprc" "PL wsms-notify has ensure_msmtprc"
+assert_contains "$PREVIEW_PL/wsms-notify.sh" "SMTP_ENABLED"   "PL wsms-notify checks SMTP_ENABLED"
+assert_contains "$ROOT/installers/install_wsms.sh" "ensure_msmtprc" "installer has ensure_msmtprc"
+assert_contains "$ROOT/installers/install_wsms_pl.sh" "ensure_msmtprc" "PL installer has ensure_msmtprc"
+assert_contains "$ROOT/installers/install_wsms.sh" "SMTP_ENABLED" "installer has SMTP_ENABLED"
+assert_contains "$ROOT/installers/install_wsms_pl.sh" "SMTP_ENABLED" "PL installer has SMTP_ENABLED"
+
+
 # =================================================================
 # 7. BEHAVIORAL — normalize_backup_key logic
 # =================================================================
@@ -422,6 +432,45 @@ out=$(HOME="$RM_HOME" bash "$PREVIEW_EN/wp-smart-retention-manager.sh" badarg 2>
 echo "$out" | grep -qi "usage\|Usage\|list\|size\|clean" \
     && pass "retention manager: prints usage on unknown arg" \
     || fail "retention manager: no usage on unknown arg"
+
+# =================================================================
+# 16. BEHAVIORAL — ensure_msmtprc self-healing
+# =================================================================
+echo -e "\n${CYAN}[16] Behavioral: ensure_msmtprc self-healing SMTP${NC}"
+
+TEST_SMTP_HOME="$TMP_DIR/smtp_home"
+mkdir -p "$TEST_SMTP_HOME"
+
+(
+    export HOME="$TEST_SMTP_HOME"
+    export SMTP_ENABLED="yes"
+    export SMTP_HOST="smtp.example.com"
+    export SMTP_PORT="587"
+    export SMTP_USER="test@example.com"
+    export SMTP_PASS="secret123"
+    export SMTP_FROM="test@example.com"
+    export SMTP_TLS="on"
+    export SMTP_STARTTLS="on"
+    source "$PREVIEW_EN/wsms-notify.sh"
+    ensure_msmtprc
+)
+
+if [ -f "$TEST_SMTP_HOME/.msmtprc" ]; then
+    pass "ensure_msmtprc: created ~/.msmtprc"
+    mode=$(stat -f "%OLp" "$TEST_SMTP_HOME/.msmtprc" 2>/dev/null || stat -c "%a" "$TEST_SMTP_HOME/.msmtprc" 2>/dev/null || echo "600")
+    [ "$mode" = "600" ] && pass "ensure_msmtprc: ~/.msmtprc has 600 permissions" || fail "ensure_msmtprc: permissions $mode != 600"
+    grep -q "host.*smtp.example.com" "$TEST_SMTP_HOME/.msmtprc" && pass "ensure_msmtprc: contains correct host" || fail "ensure_msmtprc: missing host"
+    grep -q "password.*secret123" "$TEST_SMTP_HOME/.msmtprc" && pass "ensure_msmtprc: contains password" || fail "ensure_msmtprc: missing password"
+else
+    fail "ensure_msmtprc: ~/.msmtprc not created"
+fi
+
+if [ -f "$TEST_SMTP_HOME/.mailrc" ]; then
+    pass "ensure_msmtprc: created ~/.mailrc"
+    grep -q "set sendmail=/usr/bin/msmtp" "$TEST_SMTP_HOME/.mailrc" && pass "ensure_msmtprc: mailrc configures msmtp" || fail "ensure_msmtprc: mailrc missing sendmail"
+else
+    fail "ensure_msmtprc: ~/.mailrc not created"
+fi
 
 # =================================================================
 # SUMMARY

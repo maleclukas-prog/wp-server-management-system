@@ -2,6 +2,14 @@
 
 All notable changes to WSMS PRO are documented in this file.
 
+## [4.4.4] - 2026-09-23
+
+### Added
+- **Single Source of Truth (SSOT) SMTP Configuration:** Centralized all SMTP relay parameters (`SMTP_ENABLED`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `SMTP_TLS`, `SMTP_STARTTLS`) directly into `~/scripts/wsms-config.sh` and installer configuration headers.
+- **Self-Healing SMTP / Auto-generated `~/.msmtprc`:** `wsms-notify.sh` now automatically generates and manages `~/.msmtprc` with strict `0600` permissions on demand, and configures `~/.mailrc` without requiring manual file editing or guesswork.
+- **Failover Alert Delivery:** `wsms-notify.sh` now gracefully falls back to direct `msmtp` delivery if the standard `mail` command is not yet linked.
+- **Automated Dependencies:** Installers (`install_wsms.sh`, `install_wsms_pl.sh`) now automatically install `msmtp`, `msmtp-mta`, `bsd-mailx`, and `ca-certificates` as part of Phase 2 dependencies.
+
 ## [4.4.3] - 2026-09-23
 
 ### Added

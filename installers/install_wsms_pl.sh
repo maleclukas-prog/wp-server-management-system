@@ -94,6 +94,19 @@ NAS_PORT="22"
 NAS_USER="admin"
 NAS_PATH="/homes/admin/server_backups"
 NAS_SSH_KEY="$HOME/.ssh/id_rsa"
+
+# Ustawienia alertów email SMTP (Single Source of Truth)
+SMTP_ENABLED="no"                      # "yes" aby auto-konfigurować ~/.msmtprc, "no" aby wyłączyć
+ALERT_EMAIL=""                         # np. contact@lucasmalec.com
+ALERT_ON_FAILURE="yes"                 # wyślij alert przy krytycznym błędzie
+ALERT_ON_SUCCESS="no"                  # wyślij alert po pomyślnym uruchomieniu crona
+SMTP_HOST=""                           # np. ssl0.ovh.net lub smtp.gmail.com
+SMTP_PORT="587"                        # 587 (STARTTLS) lub 465 (SSL)
+SMTP_USER=""                           # twój email / login smtp
+SMTP_PASS=""                           # twoje hasło smtp
+SMTP_FROM=""                           # adres nadawcy (domyślnie SMTP_USER jeśli puste)
+SMTP_TLS="on"
+SMTP_STARTTLS="on"
 # =================================================================
 
 # Funkcja walidacji
@@ -206,7 +219,7 @@ echo -e "${GREEN}✅ Infrastruktura gotowa${NC}"
 log_step "Faza 2: Instalacja zależności"
 sudo apt-get update -qq
 
-PACKAGES="acl clamav clamav-daemon openssh-client bc curl mysql-client"
+PACKAGES="acl clamav clamav-daemon openssh-client bc curl mysql-client msmtp msmtp-mta bsd-mailx ca-certificates"
 echo -e "   Instalacja: $PACKAGES"
 if sudo apt-get install -y $PACKAGES; then
     log_success "Instalacja pakietów zakończona"
@@ -273,11 +286,21 @@ NAS_MIN_KEEP_COPIES=2
 DISK_ALERT_THRESHOLD=80
 ROLLBACK_MAX_SIZE_MB=500
 
-# ==================== POWIADOMIENIA ====================
+# ==================== POWIADOMIENIA I SMTP (SSOT) ====================
 SLACK_WEBHOOK_URL=""
 ALERT_EMAIL=""              # pozostaw puste aby wyłączyć alerty email
 ALERT_ON_FAILURE="yes"      # wyślij alert przy krytycznym błędzie
 ALERT_ON_SUCCESS="no"       # wyślij alert po pomyślnym uruchomieniu crona
+
+# Konfiguracja SMTP Relay (automatycznie generuje ~/.msmtprc)
+SMTP_ENABLED="no"
+SMTP_HOST=""
+SMTP_PORT="587"
+SMTP_USER=""
+SMTP_PASS=""
+SMTP_FROM=""
+SMTP_TLS="on"
+SMTP_STARTTLS="on"
 
 # ==================== ŚCIEŻKI KATALOGÓW ====================
 SCRIPT_DIR="$HOME/scripts"
@@ -373,6 +396,7 @@ export RETENTION_LITE RETENTION_FULL RETENTION_MYSQL RETENTION_ROLLBACK
 export NAS_RETENTION_DAYS NAS_MIN_KEEP_COPIES
 export DISK_ALERT_THRESHOLD ROLLBACK_MAX_SIZE_MB
 export SLACK_WEBHOOK_URL EMAIL_ALERT ALERT_EMAIL ALERT_ON_FAILURE ALERT_ON_SUCCESS
+export SMTP_ENABLED SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS SMTP_FROM SMTP_TLS SMTP_STARTTLS
 export SCRIPT_DIR
 export BACKUP_LITE_DIR BACKUP_FULL_DIR BACKUP_MANUAL_DIR BACKUP_MYSQL_DIR BACKUP_ROLLBACK_DIR
 export LOG_BASE_DIR LOG_BACKUPS_DIR LOG_MAINTENANCE_DIR LOG_SECURITY_DIR
@@ -404,6 +428,17 @@ sed -i "s|NAS_PORT=\"22\"|NAS_PORT=\"$NAS_PORT\"|" "$HOME/scripts/wsms-config.sh
 sed -i "s|NAS_USER=\"ZMIEN_MNIE\"|NAS_USER=\"$NAS_USER\"|" "$HOME/scripts/wsms-config.sh"
 sed -i "s|NAS_PATH=\"ZMIEN_MNIE\"|NAS_PATH=\"$NAS_PATH\"|" "$HOME/scripts/wsms-config.sh"
 sed -i "s|NAS_SSH_KEY=\"ZMIEN_MNIE\"|NAS_SSH_KEY=\"$NAS_SSH_KEY\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|ALERT_EMAIL=\"\"|ALERT_EMAIL=\"$ALERT_EMAIL\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|ALERT_ON_FAILURE=\"yes\"|ALERT_ON_FAILURE=\"$ALERT_ON_FAILURE\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|ALERT_ON_SUCCESS=\"no\"|ALERT_ON_SUCCESS=\"$ALERT_ON_SUCCESS\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_ENABLED=\"no\"|SMTP_ENABLED=\"$SMTP_ENABLED\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_HOST=\"\"|SMTP_HOST=\"$SMTP_HOST\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_PORT=\"587\"|SMTP_PORT=\"$SMTP_PORT\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_USER=\"\"|SMTP_USER=\"$SMTP_USER\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_PASS=\"\"|SMTP_PASS=\"$SMTP_PASS\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_FROM=\"\"|SMTP_FROM=\"$SMTP_FROM\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_TLS=\"on\"|SMTP_TLS=\"$SMTP_TLS\"|" "$HOME/scripts/wsms-config.sh"
+sed -i "s|SMTP_STARTTLS=\"on\"|SMTP_STARTTLS=\"$SMTP_STARTTLS\"|" "$HOME/scripts/wsms-config.sh"
 
 chmod +x "$HOME/scripts/wsms-config.sh"
 source "$HOME/scripts/wsms-config.sh"
@@ -433,10 +468,44 @@ wsms_init_live_logging
 deploy "wsms-notify.sh" << 'EOFNOTIFY'
 #!/bin/bash
 # =================================================================
-# WSMS PRO v4.4.3 - MODUŁ ALERTÓW EMAIL
+# WSMS PRO v4.4.4 - MODUŁ ALERTÓW EMAIL
 # Dołącz ten plik w innych skryptach aby włączyć powiadomienia email.
-# Wymaga ALERT_EMAIL, ALERT_ON_FAILURE, ALERT_ON_SUCCESS w wsms-config.sh
+# Samonaprawiający się SMTP: zarządza ~/.msmtprc z wsms-config.sh (SSOT)
 # =================================================================
+
+ensure_msmtprc() {
+    [ "${SMTP_ENABLED:-no}" = "yes" ] || return 0
+    [ -z "${SMTP_HOST:-}" ] || [ -z "${SMTP_USER:-}" ] && return 0
+
+    local msmtprc_file="$HOME/.msmtprc"
+    local new_content
+    new_content="# Wygenerowano automatycznie przez WSMS PRO z wsms-config.sh (SSOT)
+defaults
+auth           on
+tls            ${SMTP_TLS:-on}
+tls_starttls   ${SMTP_STARTTLS:-on}
+tls_trust_file /etc/ssl/certs/ca-certificates.crt
+logfile        ~/.msmtp.log
+
+account        default
+host           ${SMTP_HOST}
+port           ${SMTP_PORT:-587}
+from           ${SMTP_FROM:-$SMTP_USER}
+user           ${SMTP_USER}
+password       ${SMTP_PASS:-${SMTP_PASSWORD:-}}
+"
+
+    if [ ! -f "$msmtprc_file" ] || [ "$(cat "$msmtprc_file" 2>/dev/null)" != "$new_content" ]; then
+        printf "%s\n" "$new_content" > "$msmtprc_file"
+        chmod 600 "$msmtprc_file"
+    fi
+
+    local mailrc_file="$HOME/.mailrc"
+    if [ ! -f "$mailrc_file" ] || ! grep -q "sendmail.*msmtp" "$mailrc_file" 2>/dev/null; then
+        echo "set sendmail=/usr/bin/msmtp" >> "$mailrc_file"
+        chmod 600 "$mailrc_file"
+    fi
+}
 
 send_alert() {
     local type="$1"   # "failure" lub "success"
@@ -451,12 +520,17 @@ send_alert() {
         *)       return 0 ;;
     esac
 
-    command -v mail >/dev/null 2>&1 || {
-        echo "WSMS alert error: brak komendy 'mail'." >&2
-        return 1
-    }
+    ensure_msmtprc
 
-    printf '%b\n' "$body" | mail -s "[WSMS] $subject" "$ALERT_EMAIL"
+    if command -v mail >/dev/null 2>&1; then
+        printf '%b\n' "$body" | mail -s "[WSMS] $subject" "$ALERT_EMAIL"
+    elif command -v msmtp >/dev/null 2>&1; then
+        local sender="${SMTP_FROM:-${SMTP_USER:-wsms@localhost}}"
+        printf "To: %s\nFrom: %s\nSubject: [WSMS] %s\n\n%b\n" "$ALERT_EMAIL" "$sender" "$subject" "$body" | msmtp -a default "$ALERT_EMAIL"
+    else
+        echo "WSMS alert error: brak komendy 'mail' oraz 'msmtp'." >&2
+        return 1
+    fi
 }
 EOFNOTIFY
 

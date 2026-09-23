@@ -14,17 +14,39 @@ For alerts to work, the server must have:
 - a configured mail transport that can actually send messages
 - `ALERT_EMAIL` set in `~/scripts/wsms-config.sh`
 
-WSMS configuration controls whether alerts are attempted:
+## Automated Setup in WSMS PRO v4.4.4 (Recommended — SSOT)
+
+Starting with **v4.4.4**, WSMS PRO manages SMTP relay configuration automatically as a **Single Source of Truth (SSOT)**. You no longer need to manually create `~/.msmtprc`, manage permissions, or configure mail paths.
+
+Simply configure your SMTP settings directly in `~/scripts/wsms-config.sh` (or during installer setup):
 
 ```bash
-ALERT_EMAIL="admin@example.com"
+# ==================== NOTIFICATIONS & SMTP (SSOT) ====================
+ALERT_EMAIL="admin@yourdomain.com"
 ALERT_ON_FAILURE="yes"
 ALERT_ON_SUCCESS="no"
+
+# SMTP Relay Configuration (auto-manages ~/.msmtprc)
+SMTP_ENABLED="yes"
+SMTP_HOST="smtp.yourdomain.com"
+SMTP_PORT="587"
+SMTP_USER="admin@yourdomain.com"
+SMTP_PASS="YOUR_SMTP_PASSWORD"
+SMTP_FROM="admin@yourdomain.com"
+SMTP_TLS="on"
+SMTP_STARTTLS="on"
 ```
 
-This does not configure mail delivery by itself. It only tells WSMS where and when to send alerts.
+WSMS PRO (`wsms-notify.sh`) automatically:
+1. Detects `SMTP_ENABLED="yes"` and generates `~/.msmtprc` on demand.
+2. Enforces strict `0600` permissions required by msmtp.
+3. Automatically sets up `~/.mailrc` with `set sendmail=/usr/bin/msmtp`.
+4. Falls back to direct `msmtp` invocation if `mail` command is temporarily unavailable.
 
-## Simplest Setup: msmtp
+---
+
+## Manual Setup: msmtp (Legacy / Advanced)
+
 
 Install required packages:
 
