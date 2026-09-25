@@ -207,12 +207,12 @@ All notable changes to WSMS PRO are documented in this file.
 ### Added
 - Initial public release.
 
-[4.3.3]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.2...v4.3.3
-[4.3.6]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.5...v4.3.6
-[4.3.5]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.4...v4.3.5
-[4.3.4]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.3...v4.3.4
-[4.3.2]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.1...v4.3.2
-[4.3.1]: https://github.com/maleclukas-prog/wp-server-management-system/compare/v4.3.0...v4.3.1
-[4.3.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.3.0
-[4.2.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.2.0
-[4.1.0]: https://github.com/maleclukas-prog/wp-server-management-system/releases/tag/v4.1.0
+[4.3.3]: https://github.com/lucasmalec/wp-server-management-system/compare/v4.3.2...v4.3.3
+[4.3.6]: https://github.com/lucasmalec/wp-server-management-system/compare/v4.3.5...v4.3.6
+[4.3.5]: https://github.com/lucasmalec/wp-server-management-system/compare/v4.3.4...v4.3.5
+[4.3.4]: https://github.com/lucasmalec/wp-server-management-system/compare/v4.3.3...v4.3.4
+[4.3.2]: https://github.com/lucasmalec/wp-server-management-system/compare/v4.3.1...v4.3.2
+[4.3.1]: https://github.com/lucasmalec/wp-server-management-system/compare/v4.3.0...v4.3.1
+[4.3.0]: https://github.com/lucasmalec/wp-server-management-system/releases/tag/v4.3.0
+[4.2.0]: https://github.com/lucasmalec/wp-server-management-system/releases/tag/v4.2.0
+[4.1.0]: https://github.com/lucasmalec/wp-server-management-system/releases/tag/v4.1.0

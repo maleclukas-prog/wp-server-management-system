@@ -1,6 +1,6 @@
 # WSMS PRO - WordPress Server Management System
 
-**Version:** 4.4.3 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/maleclukas-prog) (<github@lucasmalec.com>) | [![ORCID](https://img.shields.io/badge/ORCID-0009--0004--3522--0828-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0004-3522-0828) | [![Cite](https://img.shields.io/badge/Cite-CITATION.cff-blue.svg)](CITATION.cff) | [lucasmalec.com](https://lucasmalec.com)
+**Version:** 4.4.3 | **Status:** Production Ready | **License:** MIT | **Author:** [Lukasz Malec](https://github.com/lucasmalec) (<github@lucasmalec.com>) | [![ORCID](https://img.shields.io/badge/ORCID-0009--0004--3522--0828-A6CE39?logo=orcid&logoColor=white)](https://orcid.org/0009-0004-3522-0828) | [![Cite](https://img.shields.io/badge/Cite-CITATION.cff-blue.svg)](CITATION.cff) | [lucasmalec.com](https://lucasmalec.com)
 
 WSMS PRO automates WordPress fleet operations on Ubuntu with backup, maintenance, security scans, rollback, and centralized logging.
 
@@ -146,7 +146,7 @@ This ensures you always see the true SSL status for each managed site.
 ## Quick Start
 
 ```bash
-git clone https://github.com/maleclukas-prog/wp-server-management-system.git
+git clone https://github.com/lucasmalec/wp-server-management-system.git
 cd wp-server-management-system
 
 # Configure managed sites and NAS
@@ -471,7 +471,7 @@ If you use or reference WSMS PRO in your research, infrastructure, or technical 
   title = {WSMS PRO - WordPress Server Management System},
   year = {2026},
   version = {4.4.3},
-  url = {https://github.com/maleclukas-prog/wp-server-management-system},
+  url = {https://github.com/lucasmalec/wp-server-management-system},
   note = {ORCID: 0009-0004-3522-0828}
 }
 ```

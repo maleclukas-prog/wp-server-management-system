@@ -20,7 +20,7 @@ WSMS is an author-driven personal server management system and includes operatio
 ## Install (English)
 
 ```bash
-git clone https://github.com/maleclukas-prog/wp-server-management-system.git
+git clone https://github.com/lucasmalec/wp-server-management-system.git
 cd wp-server-management-system
 nano installers/install_wsms.sh
 chmod +x installers/install_wsms.sh

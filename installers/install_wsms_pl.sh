@@ -2,7 +2,7 @@
 # =================================================================
 # 🚀 WSMS PRO v4.4.3 - UNIWERSALNY INSTALATOR
 # Wersja: 4.4.3 | Działa w każdej powłoce (Bash, Fish, Zsh, Sh)
-# Autor: Lukasz Malec <github@lucasmalec.com> / GitHub: maleclukas-prog / Web: lucasmalec.com
+# Autor: Lukasz Malec <github@lucasmalec.com> / GitHub: lucasmalec / Web: lucasmalec.com
 # Licencja: MIT
 # Opis: Kompletny instalator WordPress Server Management System
 # =================================================================
@@ -2578,7 +2578,7 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}✅ WSMS PRO v4.4.3 — GOTOWY DO PRACY${NC}"
 echo -e "${GREEN}════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "${WHITE}📚 Dokumentacja: ~/scripts/ │ 🐛 Zgłoś problem: github.com/maleclukas-prog${NC}"
+echo -e "${WHITE}📚 Dokumentacja: ~/scripts/ │ 🐛 Zgłoś problem: github.com/lucasmalec${NC}"
 echo -e "${WHITE}👤 Autor: Lukasz Malec <github@lucasmalec.com> │ 🌐 lucasmalec.com${NC}"
 echo ""
 EOFHELP
